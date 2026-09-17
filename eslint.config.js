@@ -37,6 +37,40 @@ export default tseslint.config(
     },
   },
   {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: [
+      'src/**/__tests__/**',
+      'src/test/**',
+      // The helper is the only production module allowed to touch localStorage.
+      'src/utils/persistedStorage.ts',
+      // Remaining raw writers are not useLocalStorage-backed (auth/session/
+      // debug/migration). Fold them in as later WS3 issues close those seams.
+      'src/services/spotify/auth.ts',
+      'src/providers/dropbox/dropboxAuthAdapter.ts',
+      'src/services/sessionPersistence.ts',
+      'src/services/settings/pinnedItemsStorage.ts',
+      'src/services/cache/likedCountSnapshot.ts',
+      'src/contexts/ProfilingContext.tsx',
+      'src/contexts/VisualizerDebugContext.tsx',
+      'src/components/DebugOverlay.tsx',
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'MemberExpression[object.name="localStorage"]',
+          message:
+            'Use persistedStorage helpers (readLocalStorageRaw / writeLocalStorageJson / removeLocalStorageKey) so same-tab listeners stay in sync.',
+        },
+        {
+          selector: 'MemberExpression[object.object.name="window"][object.property.name="localStorage"]',
+          message:
+            'Use persistedStorage helpers (readLocalStorageRaw / writeLocalStorageJson / removeLocalStorageKey) so same-tab listeners stay in sync.',
+        },
+      ],
+    },
+  },
+  {
     files: ['playwright/**/*.{ts,tsx}'],
     rules: {
       'react-hooks/rules-of-hooks': 'off',

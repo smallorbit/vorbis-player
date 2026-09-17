@@ -34,6 +34,8 @@ interface MockTestApi {
   setPlaybackState(state: { trackId: string; positionMs?: number; isPlaying?: boolean }): Promise<void>;
   expireAuth(providerId: ProviderId, opts?: ExpireAuthOptions): Promise<void>;
   restoreAuth(providerId: ProviderId): Promise<void>;
+  /** Synchronous auth probe for Playwright waits around expire/restore races. */
+  isAuthenticated(providerId: ProviderId): boolean;
   reset(): Promise<void>;
   triggerNaturalEnd(providerId: ProviderId): Promise<void>;
   /**
@@ -121,6 +123,10 @@ export function installMockTestApi(opts: InstallOptions): void {
     async restoreAuth(providerId) {
       resolveAuth(providerId).__testRestoreAuth();
       window.dispatchEvent(new CustomEvent(AUTH_STATE_CHANGED_EVENT));
+    },
+
+    isAuthenticated(providerId) {
+      return resolveAuth(providerId).isAuthenticated();
     },
 
     async reset() {

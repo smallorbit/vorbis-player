@@ -21,15 +21,12 @@ import { DevBugProvider } from '@/contexts/DevBugContext';
 import { DevBugFAB } from '@/components/DevBug';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { STORAGE_KEYS } from '@/constants/storage';
+import { removeLocalStorageKey } from '@/utils/persistedStorage';
 import { Toaster } from '@/components/ui/sonner';
 
 const cleanupDeprecatedLocalStorage = () => {
-  try {
-    localStorage.removeItem('customAccentColorOverrides');
-    logApp('cleaned up deprecated localStorage key: customAccentColorOverrides');
-  } catch (error) {
-    console.warn('Failed to clean up deprecated localStorage keys:', error);
-  }
+  removeLocalStorageKey('customAccentColorOverrides');
+  logApp('cleaned up deprecated localStorage key: customAccentColorOverrides');
 };
 
 const AppContainer = styled.div`

@@ -149,6 +149,11 @@ describe('DropboxPreferencesSyncService', () => {
         pins: { playlists: ['p1'], albums: ['a1'] },
         accent: { overrides: { id1: '#red' }, customColors: { id1: '#blue' } },
       });
+      const dispatched: unknown[] = [];
+      const onChange = (event: Event) => {
+        if (event instanceof CustomEvent) dispatched.push(event.detail);
+      };
+      window.addEventListener('vorbis-local-storage-change', onChange);
 
       // #when
       await applyRemoteToLocal(remote);
@@ -164,6 +169,14 @@ describe('DropboxPreferencesSyncService', () => {
         'vorbis-player-custom-accent-colors',
         JSON.stringify({ id1: '#blue' }),
       );
+      expect(dispatched).toEqual(
+        expect.arrayContaining([
+          { key: 'vorbis-player-accent-color-overrides', newValue: JSON.stringify({ id1: '#red' }) },
+          { key: 'vorbis-player-custom-accent-colors', newValue: JSON.stringify({ id1: '#blue' }) },
+        ]),
+      );
+
+      window.removeEventListener('vorbis-local-storage-change', onChange);
     });
   });
 

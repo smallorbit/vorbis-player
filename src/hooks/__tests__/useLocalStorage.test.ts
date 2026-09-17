@@ -1,9 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { LOCAL_STORAGE_CHANGE_EVENT } from '@/constants/events';
+import { removeLocalStorageKey, writeLocalStorageJson } from '@/utils/persistedStorage';
 
 describe('useLocalStorage', () => {
   beforeEach(() => {
+    vi.mocked(window.localStorage.getItem).mockReset();
+    vi.mocked(window.localStorage.setItem).mockReset();
+    vi.mocked(window.localStorage.removeItem).mockReset();
     vi.mocked(window.localStorage.getItem).mockReturnValue(null);
   });
 
@@ -70,12 +75,11 @@ describe('useLocalStorage', () => {
     warnSpy.mockRestore();
   });
 
-  it('warns and still updates React state when localStorage.setItem throws', () => {
+  it('still updates React state when localStorage.setItem throws', () => {
     // #given
     vi.mocked(window.localStorage.setItem).mockImplementation(() => {
       throw new DOMException('QuotaExceededError');
     });
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { result } = renderHook(() => useLocalStorage('test-key', 'original'));
 
     // #when
@@ -83,11 +87,28 @@ describe('useLocalStorage', () => {
       result.current[1]('new-value');
     });
 
-    // #then
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('test-key'), expect.anything());
+    // #then — in-memory state follows the write intent; failure is logged via logCaughtError
     expect(result.current[0]).toBe('new-value');
+  });
 
-    warnSpy.mockRestore();
+  it('resets to the mount-time initial value even if a later render passes a new default', () => {
+    // #given
+    const { result, rerender } = renderHook(
+      ({ initial }: { initial: string }) => useLocalStorage('test-key', initial),
+      { initialProps: { initial: 'mount-default' } },
+    );
+    act(() => {
+      result.current[1]('updated');
+    });
+    rerender({ initial: 'later-default' });
+
+    // #when
+    act(() => {
+      removeLocalStorageKey('test-key');
+    });
+
+    // #then
+    expect(result.current[0]).toBe('mount-default');
   });
 
   it('syncs state from a StorageEvent fired by another tab', () => {
@@ -136,7 +157,73 @@ describe('useLocalStorage', () => {
 
     // #then
     expect(removeListenerSpy).toHaveBeenCalledWith('storage', expect.any(Function));
+    expect(removeListenerSpy).toHaveBeenCalledWith(LOCAL_STORAGE_CHANGE_EVENT, expect.any(Function));
 
     removeListenerSpy.mockRestore();
+  });
+
+  it('syncs a second mount of the same key when setValue is called in the same tab', () => {
+    // #given
+    const first = renderHook(() => useLocalStorage('test-key', 'initial'));
+    const second = renderHook(() => useLocalStorage('test-key', 'initial'));
+
+    // #when
+    act(() => {
+      first.result.current[1]('updated');
+    });
+
+    // #then
+    expect(first.result.current[0]).toBe('updated');
+    expect(second.result.current[0]).toBe('updated');
+  });
+
+  it('re-reads an external same-tab write through the shared helper', () => {
+    // #given
+    const { result } = renderHook(() => useLocalStorage<Record<string, string>>('test-key', {}));
+
+    // #when
+    act(() => {
+      writeLocalStorageJson('test-key', { album: '#ff0000' });
+    });
+
+    // #then
+    expect(result.current[0]).toEqual({ album: '#ff0000' });
+  });
+
+  it('resets to the initial value when the shared helper removes the key', () => {
+    // #given
+    const { result } = renderHook(() => useLocalStorage('test-key', 'initial'));
+    act(() => {
+      result.current[1]('updated');
+    });
+
+    // #when
+    act(() => {
+      removeLocalStorageKey('test-key');
+    });
+
+    // #then
+    expect(result.current[0]).toBe('initial');
+  });
+
+  it('resets to the initial value when another tab removes the key', () => {
+    // #given
+    const { result } = renderHook(() => useLocalStorage('test-key', 'initial'));
+    act(() => {
+      result.current[1]('updated');
+    });
+
+    // #when
+    act(() => {
+      window.dispatchEvent(
+        new StorageEvent('storage', {
+          key: 'test-key',
+          newValue: null,
+        }),
+      );
+    });
+
+    // #then
+    expect(result.current[0]).toBe('initial');
   });
 });

@@ -8,21 +8,19 @@ import { requireLongTrack } from '../fixtures/require-snapshot';
  * See openspec/changes/reload-track-after-provider-reauth/. When a provider
  * transitions from `not authenticated` to `authenticated` while the queue's
  * current track belongs to that provider, the playback engine re-primes the
- * current track at the persisted SessionSnapshot.playbackPosition (or 0 if
- * the snapshot's trackId does not match).
+ * current track at SessionSnapshot.playbackPosition when the snapshot matches,
+ * otherwise at the live PlaybackStore cursor (hydrate clears the session after
+ * restore, so the store fallback is what keeps mid-track position across
+ * re-auth).
  *
- * The spec seeds a non-zero playback position via the existing
- * `?mock-session=` URL param (which writes SessionSnapshot.playbackPosition
- * to localStorage), waits for `useSessionPersistence` to debounce-save the
- * post-hydrate snapshot so the in-memory state and on-disk snapshot agree,
- * then expires the spotify mock auth adapter and restores it. The seek bar
- * SHALL return to ~45_000ms after the re-prime, not snap back to 0.
+ * The spec seeds a non-zero playback position via `?mock-session=`, waits for
+ * the hydrate path to paint the seek bar, then expires and restores the
+ * spotify mock auth adapter. The seek bar SHALL stay near 45_000ms after the
+ * re-prime, not snap back to 0.
  */
 
 const SEEK_TIMELINE_LABEL = 'Seek timeline';
 const SEED_POSITION_MS = 45_000;
-// useSessionPersistence DEBOUNCE_MS=1000; wait a hair longer to be safe.
-const SESSION_DEBOUNCE_SETTLE_MS = 1_500;
 
 const seedTrack = requireLongTrack(spotifySnapshot, 'spotify');
 
@@ -43,37 +41,47 @@ test.describe('Provider re-authentication — re-prime current track at saved po
     await sliderLocator.waitFor({ state: 'attached', timeout: 15_000 });
 
     // Wait for the hydrate path to settle so the slider reflects the seeded
-    // duration (not the disabled aria-valuemax=1 placeholder).
+    // duration (not the disabled aria-valuemax=1 placeholder) and the live
+    // PlaybackStore cursor is at the seeded position.
     await expect(sliderLocator).not.toHaveAttribute('aria-valuemax', '1', { timeout: 10_000 });
-
-    // useSessionPersistence debounces saves by 1s — wait long enough that the
-    // post-hydrate snapshot (with playbackPosition=45000) is committed to
-    // localStorage. The re-prime handler reads via loadSession(), so the
-    // on-disk value must reflect the in-memory state before we re-auth.
-    await page.waitForTimeout(SESSION_DEBOUNCE_SETTLE_MS);
+    await expect
+      .poll(async () => Number(await sliderLocator.getAttribute('aria-valuenow')), { timeout: 5_000 })
+      .toBeGreaterThanOrEqual(SEED_POSITION_MS - 2_000);
 
     // #when — expire the spotify mock auth adapter, then restore it. The
     // ProviderContext diff detects spotify transitioning `unauthed → authed`
     // and dispatches PROVIDER_RECONNECTED_EVENT; useProviderPlayback's
-    // listener re-primes the current track at SessionSnapshot.playbackPosition.
+    // listener re-primes at the live PlaybackStore cursor (session was cleared
+    // by hydrate's resetLastSession).
     await page.evaluate(async () => {
       await window.__mockTest!.expireAuth('spotify');
     });
 
-    // Yield once so React processes the AUTH_STATE_CHANGED_EVENT and the
-    // ProviderContext effect commits previousConnectedRef = { dropbox } before
-    // the restore flips it back — otherwise the diff sees no `false` baseline
-    // for spotify and the restoration is a no-op.
-    await page.waitForTimeout(50);
+    // Wait until the adapter reports unauthenticated AND React has had a
+    // frame to commit previousConnectedRef — a fixed 50ms yield was racing
+    // the effect and sometimes skipped PROVIDER_RECONNECTED_EVENT (false green).
+    await page.waitForFunction(
+      () => window.__mockTest?.isAuthenticated('spotify') === false,
+      undefined,
+      { timeout: 5_000 },
+    );
+    await page.evaluate(
+      () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+    );
 
     await page.evaluate(async () => {
       await window.__mockTest!.restoreAuth('spotify');
     });
 
     // #then — aria-valuemax remains > 1 (real duration painted) and
-    // aria-valuenow is within ±2s of the seeded position (the re-prime
-    // restored the cursor to where the user left off, not 0:00).
+    // aria-valuenow stays near the seeded position (re-prime kept the cursor).
     await expect(sliderLocator).not.toHaveAttribute('aria-valuemax', '1', { timeout: 5_000 });
+    await expect
+      .poll(async () => Number(await sliderLocator.getAttribute('aria-valuenow')), {
+        timeout: 5_000,
+        message: 'aria-valuenow must restore to the seeded playback position after re-auth re-prime',
+      })
+      .toBeGreaterThanOrEqual(SEED_POSITION_MS - 2_000);
 
     const valueMaxAttr = await sliderLocator.getAttribute('aria-valuemax');
     const valueNowAttr = await sliderLocator.getAttribute('aria-valuenow');
@@ -81,10 +89,6 @@ test.describe('Provider re-authentication — re-prime current track at saved po
     const valueNow = valueNowAttr !== null ? Number(valueNowAttr) : NaN;
 
     expect(valueMax, 'aria-valuemax must reflect real duration after re-prime').toBeGreaterThan(1);
-    expect(
-      valueNow,
-      'aria-valuenow must restore to the seeded playback position after re-auth re-prime',
-    ).toBeGreaterThanOrEqual(SEED_POSITION_MS - 2_000);
     expect(
       valueNow,
       'aria-valuenow must not exceed the seeded position by more than a few seconds',

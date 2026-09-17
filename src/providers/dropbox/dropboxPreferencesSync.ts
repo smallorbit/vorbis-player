@@ -9,6 +9,12 @@ import { ensureVorbisFolder } from './dropboxSyncFolder';
 import { contentApiRequest } from './dropboxContentApiClient';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { logCaughtError } from '@/utils/logCaughtError';
+import {
+  readLocalStorageRaw,
+  removeLocalStorageKey,
+  writeLocalStorageJson,
+  writeLocalStorageRaw,
+} from '@/utils/persistedStorage';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -46,8 +52,8 @@ export async function buildPreferencesFromLocal(): Promise<Omit<RemotePreference
     getPins(UNIFIED_PROVIDER, 'playlists'),
     getPins(UNIFIED_PROVIDER, 'albums'),
   ]);
-  const overrides = parseJsonObject(localStorage.getItem(STORAGE_KEYS.ACCENT_COLOR_OVERRIDES));
-  const customColors = parseJsonObject(localStorage.getItem(STORAGE_KEYS.CUSTOM_ACCENT_COLORS));
+  const overrides = parseJsonObject(readLocalStorageRaw(STORAGE_KEYS.ACCENT_COLOR_OVERRIDES));
+  const customColors = parseJsonObject(readLocalStorageRaw(STORAGE_KEYS.CUSTOM_ACCENT_COLORS));
   return {
     pins: { playlists, albums },
     accent: { overrides, customColors },
@@ -61,16 +67,16 @@ export async function applyRemoteToLocal(data: RemotePreferencesFile): Promise<v
   ]);
   notifyPinsChanged();
   const accent = data.accent ?? { overrides: {}, customColors: {} };
-  localStorage.setItem(STORAGE_KEYS.ACCENT_COLOR_OVERRIDES, JSON.stringify(accent.overrides ?? {}));
-  localStorage.setItem(STORAGE_KEYS.CUSTOM_ACCENT_COLORS, JSON.stringify(accent.customColors ?? {}));
+  writeLocalStorageJson(STORAGE_KEYS.ACCENT_COLOR_OVERRIDES, accent.overrides ?? {});
+  writeLocalStorageJson(STORAGE_KEYS.CUSTOM_ACCENT_COLORS, accent.customColors ?? {});
 }
 
 function getLocalUpdatedAt(): string | null {
-  return localStorage.getItem(STORAGE_KEYS.PREFERENCES_SYNC_UPDATED_AT);
+  return readLocalStorageRaw(STORAGE_KEYS.PREFERENCES_SYNC_UPDATED_AT);
 }
 
 function setLocalUpdatedAt(updatedAt: string): void {
-  localStorage.setItem(STORAGE_KEYS.PREFERENCES_SYNC_UPDATED_AT, updatedAt);
+  writeLocalStorageRaw(STORAGE_KEYS.PREFERENCES_SYNC_UPDATED_AT, updatedAt);
 }
 
 // ── Sync service ────────────────────────────────────────────────────────────
@@ -253,5 +259,5 @@ export function getPreferencesSync(): DropboxPreferencesSyncService | null {
  * Call this when pins or accent colors are cleared locally.
  */
 export function clearPreferencesSyncTimestamp(): void {
-  localStorage.removeItem(STORAGE_KEYS.PREFERENCES_SYNC_UPDATED_AT);
+  removeLocalStorageKey(STORAGE_KEYS.PREFERENCES_SYNC_UPDATED_AT);
 }
