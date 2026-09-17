@@ -11,6 +11,7 @@ import { STORAGE_KEYS } from '@/constants/storage';
 import type { MediaTrack } from '@/types/domain';
 import { SPOTIFY_QUEUE_SYNC_DELAY_MS } from '@/constants/timing';
 import { logCaughtError } from '@/utils/logCaughtError';
+import { readLocalStorageRaw } from '@/utils/persistedStorage';
 
 const QUEUE_URI_LIMIT = 200;
 const MAX_CONCURRENT_SEARCHES = 3;
@@ -23,7 +24,7 @@ class SpotifyQueueSyncService {
   /** Read the user's queue-sync setting from localStorage. */
   isSyncEnabled(): boolean {
     try {
-      const stored = localStorage.getItem(STORAGE_KEYS.SPOTIFY_QUEUE_SYNC);
+      const stored = readLocalStorageRaw(STORAGE_KEYS.SPOTIFY_QUEUE_SYNC);
       if (stored === null) return true; // default on
       return JSON.parse(stored);
     } catch (err) {
@@ -35,7 +36,7 @@ class SpotifyQueueSyncService {
   /** Read the user's cross-provider resolution setting from localStorage. */
   isResolveEnabled(): boolean {
     try {
-      const stored = localStorage.getItem(STORAGE_KEYS.SPOTIFY_QUEUE_CROSS_PROVIDER);
+      const stored = readLocalStorageRaw(STORAGE_KEYS.SPOTIFY_QUEUE_CROSS_PROVIDER);
       if (stored === null) return true; // default on
       return JSON.parse(stored);
     } catch (err) {

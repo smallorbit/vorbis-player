@@ -32,6 +32,7 @@ import { STORAGE_KEYS } from '@/constants/storage';
 import { shuffleArray } from '@/utils/shuffleArray';
 import { logQueue } from '@/lib/debugLog';
 import { logCaughtError } from '@/utils/logCaughtError';
+import { readLocalStorageRaw, writeLocalStorageJson } from '@/utils/persistedStorage';
 
 export interface QueueSnapshot {
   tracks: MediaTrack[];
@@ -43,9 +44,10 @@ export interface QueueSnapshot {
 export type AddTracksPosition = 'end' | 'next';
 
 function readPersistedShuffle(): boolean {
+  const raw = readLocalStorageRaw(STORAGE_KEYS.SHUFFLE_ENABLED);
+  if (!raw) return false;
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEYS.SHUFFLE_ENABLED);
-    return raw ? JSON.parse(raw) === true : false;
+    return JSON.parse(raw) === true;
   } catch (err) {
     logCaughtError('queueStore.readPersistedShuffle', err);
     return false;
@@ -53,11 +55,7 @@ function readPersistedShuffle(): boolean {
 }
 
 function persistShuffle(enabled: boolean): void {
-  try {
-    window.localStorage.setItem(STORAGE_KEYS.SHUFFLE_ENABLED, JSON.stringify(enabled));
-  } catch (err) {
-    logCaughtError('queueStore.persistShuffle', err);
-  }
+  writeLocalStorageJson(STORAGE_KEYS.SHUFFLE_ENABLED, enabled);
 }
 
 let snapshot: QueueSnapshot = {

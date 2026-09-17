@@ -3,6 +3,7 @@ import { renderHook, act } from '@testing-library/react';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import { PROVIDER_RECONNECTED_EVENT } from '@/constants/events';
 import { queueStore } from '@/stores/queueStore';
+import { playbackStore } from '@/stores/playbackStore';
 
 const mockPrepareTrack = vi.fn();
 const mockPlayTrack = vi.fn().mockResolvedValue(undefined);
@@ -57,6 +58,7 @@ describe('useProviderPlayback — PROVIDER_RECONNECTED_EVENT re-prime', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     queueStore.__resetForTests();
+    playbackStore.__resetForTests();
   });
 
   afterEach(() => {
@@ -90,10 +92,11 @@ describe('useProviderPlayback — PROVIDER_RECONNECTED_EVENT re-prime', () => {
     expect(mockPrepareTrack).toHaveBeenCalledWith(currentTrack, { positionMs: 45_000 });
   });
 
-  it('falls back to positionMs=0 when the snapshot trackId does not match', () => {
+  it('falls back to the live PlaybackStore cursor when the snapshot trackId does not match', () => {
     // #given
     const currentTrack = makeMediaTrack({ id: 'sp-1', provider: 'spotify' });
     queueStore.replaceQueue([currentTrack], { currentIndex: 0 });
+    playbackStore.primeRestoredPlayback(12_000);
 
     mockLoadSession.mockReturnValue({
       collectionId: 'c1',
@@ -113,14 +116,34 @@ describe('useProviderPlayback — PROVIDER_RECONNECTED_EVENT re-prime', () => {
     });
 
     // #then
-    expect(mockPrepareTrack).toHaveBeenCalledWith(currentTrack, { positionMs: 0 });
+    expect(mockPrepareTrack).toHaveBeenCalledWith(currentTrack, { positionMs: 12_000 });
   });
 
-  it('falls back to positionMs=0 when no snapshot is persisted', () => {
+  it('falls back to the live PlaybackStore cursor when no snapshot is persisted', () => {
+    // #given — hydrate clears the session after restore; the live cursor is still mid-track
+    const currentTrack = makeMediaTrack({ id: 'sp-1', provider: 'spotify' });
+    queueStore.replaceQueue([currentTrack], { currentIndex: 0 });
+    playbackStore.primeRestoredPlayback(45_000);
+
+    mockLoadSession.mockReturnValue(null);
+
+    renderHook(() => useProviderPlayback({}));
+
+    // #when
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent(PROVIDER_RECONNECTED_EVENT, { detail: { providerId: 'spotify' } }),
+      );
+    });
+
+    // #then
+    expect(mockPrepareTrack).toHaveBeenCalledWith(currentTrack, { positionMs: 45_000 });
+  });
+
+  it('falls back to positionMs=0 when neither session nor live cursor has a position', () => {
     // #given
     const currentTrack = makeMediaTrack({ id: 'sp-1', provider: 'spotify' });
     queueStore.replaceQueue([currentTrack], { currentIndex: 0 });
-
     mockLoadSession.mockReturnValue(null);
 
     renderHook(() => useProviderPlayback({}));
