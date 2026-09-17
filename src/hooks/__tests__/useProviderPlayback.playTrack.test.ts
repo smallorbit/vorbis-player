@@ -1,4 +1,3 @@
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import type { MediaTrack, ProviderId } from '@/types/domain';
@@ -44,6 +43,7 @@ vi.mock('@/services/sessionPersistence', () => ({
 }));
 
 import { useProviderPlayback } from '../useProviderPlayback';
+import { queueStore } from '@/stores/queueStore';
 
 function makeTrack(id = 'track-1', provider: ProviderId = 'spotify' as ProviderId): MediaTrack {
   return {
@@ -66,11 +66,11 @@ describe('useProviderPlayback — onQueueChanged capability gate', () => {
   it('calls onQueueChanged when hasNativeQueueSync is true', async () => {
     // #given — provider declares hasNativeQueueSync
     const track = makeTrack();
-    const mediaTracksRef: React.MutableRefObject<MediaTrack[]> = { current: [track] };
+    queueStore.replaceQueue([track], { currentIndex: 0 });
     mockRegistryGet.mockReturnValue(makeDescriptor({ hasNativeQueueSync: true }));
 
     const { result } = renderHook(() =>
-      useProviderPlayback({ setCurrentTrackIndex: vi.fn(), mediaTracksRef }),
+      useProviderPlayback({}),
     );
 
     // #when
@@ -86,11 +86,11 @@ describe('useProviderPlayback — onQueueChanged capability gate', () => {
   it('does NOT call onQueueChanged when hasNativeQueueSync is false', async () => {
     // #given — provider does not declare hasNativeQueueSync
     const track = makeTrack();
-    const mediaTracksRef: React.MutableRefObject<MediaTrack[]> = { current: [track] };
+    queueStore.replaceQueue([track], { currentIndex: 0 });
     mockRegistryGet.mockReturnValue(makeDescriptor({ hasNativeQueueSync: false }));
 
     const { result } = renderHook(() =>
-      useProviderPlayback({ setCurrentTrackIndex: vi.fn(), mediaTracksRef }),
+      useProviderPlayback({}),
     );
 
     // #when
@@ -105,11 +105,11 @@ describe('useProviderPlayback — onQueueChanged capability gate', () => {
   it('does NOT call onQueueChanged when hasNativeQueueSync is absent', async () => {
     // #given — provider omits hasNativeQueueSync entirely
     const track = makeTrack();
-    const mediaTracksRef: React.MutableRefObject<MediaTrack[]> = { current: [track] };
+    queueStore.replaceQueue([track], { currentIndex: 0 });
     mockRegistryGet.mockReturnValue(makeDescriptor({}));
 
     const { result } = renderHook(() =>
-      useProviderPlayback({ setCurrentTrackIndex: vi.fn(), mediaTracksRef }),
+      useProviderPlayback({}),
     );
 
     // #when

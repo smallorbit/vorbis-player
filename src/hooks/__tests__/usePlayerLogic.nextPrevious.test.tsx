@@ -58,6 +58,7 @@ const makeMockDescriptor = (id: ProviderId) => ({
     isAuthenticated: vi.fn().mockReturnValue(true),
     beginLogin: vi.fn(),
     logout: vi.fn(),
+    handleCallback: vi.fn().mockResolvedValue(false),
   },
   playback: {
     initialize: vi.fn().mockResolvedValue(undefined),
@@ -133,7 +134,10 @@ vi.mock('@/providers/registry', () => ({
       if (id === 'dropbox') return dropboxDescriptor;
       return activeDescriptor;
     }),
-    getAll: vi.fn(() => []),
+    // playbackStore.attach() fans out over getAll() — the descriptors must be
+    // registered here for their subscribe() to feed the store's pipeline.
+    getAll: vi.fn(() => [spotifyDescriptor, dropboxDescriptor]),
+    has: vi.fn((id: ProviderId) => id === 'spotify' || id === 'dropbox'),
     register: vi.fn(),
   },
 }));
@@ -170,7 +174,7 @@ async function setupPausedQueue(startIndex = 1) {
   const session = makeSession({ trackIndex: startIndex, trackId: ['track-a', 'track-b', 'track-c'][startIndex] });
   const { result } = renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
   await act(async () => {
-    await result.current.handlers.handleHydrate(session);
+    await result.current.handlers.restoreSession(session, { autoplay: false });
   });
   // After hydrate, queue is loaded but isPlaying is false (paused).
   playTrackSpy.mockClear();

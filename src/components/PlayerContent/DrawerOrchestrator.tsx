@@ -8,7 +8,8 @@ import { useProviderContext } from '@/contexts/ProviderContext';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import { LIBRARY_REFRESH_EVENT } from '@/hooks/useLibrarySync';
 import { providerRegistry } from '@/providers/registry';
-import type { MediaTrack, ProviderId } from '@/types/domain';
+import { queueStore } from '@/stores/queueStore';
+import type { ProviderId } from '@/types/domain';
 import type { RadioState, RadioProgress } from '@/types/radio';
 import QueueSkeleton from '@/components/QueueSkeleton';
 
@@ -65,7 +66,6 @@ interface DrawerOrchestratorProps {
   isMobile: boolean;
   radioActive?: boolean | undefined;
   radioState?: RadioState | undefined;
-  mediaTracksRef?: React.RefObject<MediaTrack[]> | undefined;
   radioProgress?: RadioProgress | null | undefined;
   onDismissRadioProgress?: (() => void) | undefined;
   onOpenQueueFromToast: () => void;
@@ -80,7 +80,6 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
   isMobile,
   radioActive,
   radioState,
-  mediaTracksRef,
   radioProgress,
   onDismissRadioProgress,
   onOpenQueueFromToast,
@@ -112,10 +111,10 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
       const descriptor = providerRegistry.get(provider);
       if (!descriptor?.savePlaylist || !descriptor.auth.isAuthenticated()) return false;
 
-      const mediaTracks = mediaTracksRef?.current;
-      if (!mediaTracks || mediaTracks.length === 0) return false;
+      const queueTracks = queueStore.getTracks();
+      if (queueTracks.length === 0) return false;
 
-      const result = await descriptor.savePlaylist(name, mediaTracks);
+      const result = await descriptor.savePlaylist(name, queueTracks);
       if (!result) return false;
 
       setShowSaveQueueDialog(false);
@@ -126,7 +125,7 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
       console.error('[SaveQueue] Failed to save:', err);
       return false;
     }
-  }, [mediaTracksRef]);
+  }, []);
 
   useEffect(() => {
     if (!radioProgress || !onDismissRadioProgress) {

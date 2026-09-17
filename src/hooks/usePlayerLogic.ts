@@ -4,6 +4,7 @@ import { useVisualEffectsToggle } from '@/contexts/visualEffects';
 import { useColorContext } from '@/contexts/ColorContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { useSpotifyPlaylistManager } from '@/providers/spotify/useSpotifyPlaylistManager';
+import { useNewestWins } from '@/hooks/useNewestWins';
 import { useProviderPlayback } from '@/hooks/useProviderPlayback';
 import { useAutoAdvance } from '@/hooks/useAutoAdvance';
 import { useAccentColor } from '@/hooks/useAccentColor';
@@ -14,6 +15,9 @@ import type { SessionSnapshot } from '@/services/sessionPersistence';
 import type { TrackOperations } from '@/types/trackOperations';
 import { providerRegistry } from '@/providers/registry';
 import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
+import { playbackStore } from '@/stores/playbackStore';
+import { queueStore } from '@/stores/queueStore';
+import { usePlaybackState } from '@/hooks/usePlaybackState';
 import { logQueue } from '@/lib/debugLog';
 import { logCaughtError } from '@/utils/logCaughtError';
 import { useQueueThumbnailLoader } from '@/hooks/useQueueThumbnailLoader';
@@ -21,19 +25,27 @@ import { useQueueDurationLoader } from '@/hooks/useQueueDurationLoader';
 import { trkSummary } from './playerLogicUtils';
 import { useQueueManagement } from './useQueueManagement';
 import { useCollectionLoader } from './useCollectionLoader';
-import { usePlaybackSubscription } from './usePlaybackSubscription';
 import { useQueueBundlePrefetch } from './useQueueBundlePrefetch';
 import { useRadioSession } from './useRadioSession';
 import { useRecentlyPlayedCollections } from './useRecentlyPlayedCollections';
 import type { RadioProgress } from '@/types/radio';
 
-export interface HydrateResult {
+export interface RestoreSessionResult {
   /** Track the player landed on, or null when the whole queue was unplayable. */
   track: MediaTrack | null;
   /** True when the saved track was unplayable and a later track in the queue was used instead. */
   skipped: boolean;
-  /** True when no track in the queue could be prepared; the player was reset to the library. */
+  /** True when no track in the queue could be restored; the player was reset to the library. */
   totalFailure: boolean;
+}
+
+export interface RestoreSessionOptions {
+  /**
+   * true — start playback of the restored track immediately (Resume card).
+   * false — prime the player paused at the saved position; the next
+   * handlePlay starts it (landing-page hydrate).
+   */
+  autoplay: boolean;
 }
 
 export function usePlayerLogic() {
@@ -45,10 +57,7 @@ export function usePlayerLogic() {
     tracks,
     isLoading,
     error,
-    shuffleEnabled,
     selection,
-    setTracks,
-    setOriginalTracks,
     setIsLoading,
     setError,
     setSelection,
@@ -57,7 +66,6 @@ export function usePlayerLogic() {
   const {
     currentTrack,
     currentTrackIndex,
-    setCurrentTrackIndex,
     setShowQueue,
   } = useCurrentTrackContext();
 
@@ -72,33 +80,26 @@ export function usePlayerLogic() {
   const { activeDescriptor, setActiveProviderId, getDescriptor, connectedProviderIds } = useProviderContext();
   const { isUnifiedLikedActive } = useUnifiedLikedTracks();
 
-  // MediaTrack[] mirror of `tracks` for index-based playback across all providers
-  const mediaTracksRef = useRef(tracks);
-  mediaTracksRef.current = tracks;
-
   const trackOps: TrackOperations = useMemo(() => ({
-    setTracks, setOriginalTracks, setCurrentTrackIndex,
-    setSelection, setError, setIsLoading, mediaTracksRef,
-  }), [setTracks, setOriginalTracks, setCurrentTrackIndex, setSelection, setError, setIsLoading]);
+    setSelection, setError, setIsLoading,
+  }), [setSelection, setError, setIsLoading]);
 
-  // Refs so the provider subscription handler always sees the latest values
-  // without needing them in the effect's dependency array (which would cause
-  // the subscription to tear down and recreate on every track change, triggering
-  // a getState() call that can briefly reset currentTrackIndex to the old track).
-  const tracksRef = useRef(tracks);
-  tracksRef.current = tracks;
-  const currentTrackIndexRef = useRef(currentTrackIndex);
-  currentTrackIndexRef.current = currentTrackIndex;
-  const expectedTrackIdRef = useRef<string | null>(null);
-  // Holds the target index + position when handleHydrate restores a session without autoplay.
+  // Holds the target index + position when restoreSession hydrates without autoplay.
   // The next handlePlay consumes this to start playback at the saved offset; other control paths
   // (next/previous/new collection) clear it so a stale hydrate can't hijack a fresh user action.
   const hydratedPendingPlayRef = useRef<{ index: number; positionMs?: number } | null>(null);
 
-  // Playback state from provider events (local — not shared via context)
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackPosition, setPlaybackPosition] = useState(0);
+  // Playback state lives in playbackStore, fed by the single provider fan-out.
+  const { isPlaying, positionMs: playbackPosition } = usePlaybackState();
   const [authExpired, setAuthExpired] = useState<ProviderId | null>(null);
+
+  // Keep the resolver's last-resort fallback in sync with the active provider,
+  // and (re)attach the store's fan-out subscription — reattaching on active
+  // provider change re-primes state from whichever provider now drives.
+  useEffect(() => {
+    playbackStore.setActiveProviderFallback(activeDescriptor?.id ?? null);
+  }, [activeDescriptor]);
+  useEffect(() => playbackStore.attach(), [activeDescriptor]);
 
   // Library full-screen visibility (local UI state) — currentView is canonical.
   type PlayerView = 'player' | 'library';
@@ -113,15 +114,9 @@ export function usePlayerLogic() {
   }, []);
 
   const providerPlayback = useProviderPlayback({
-    setCurrentTrackIndex,
-    activeDescriptor,
-    mediaTracksRef,
-    currentTrackIndexRef,
     onAuthExpired: handleAuthExpired,
-    expectedTrackIdRef,
   });
   const providerPlayTrack = providerPlayback.playTrack;
-  const drivingProviderRef = providerPlayback.currentPlaybackProviderRef;
 
   // Any call into playTrack represents a concrete playback action, which supersedes
   // a pending hydrate. Wrap the underlying playTrack so downstream consumers don't
@@ -134,16 +129,6 @@ export function usePlayerLogic() {
     hydratedPendingPlayRef.current = null;
     return providerPlayTrack(index, skipOnError, options);
   }, [providerPlayTrack]);
-
-  /** Resolve provider currently driving playback; falls back to active provider when unknown. */
-  const getDrivingProviderId = useCallback((): ProviderId | null => (
-    drivingProviderRef.current ?? activeDescriptor?.id ?? null
-  ), [activeDescriptor, drivingProviderRef]);
-
-  const getDrivingProviderDescriptor = useCallback(() => {
-    const drivingProviderId = getDrivingProviderId();
-    return drivingProviderId ? providerRegistry.get(drivingProviderId) : undefined;
-  }, [getDrivingProviderId]);
 
   const { radioState, startRadio, stopRadio: stopRadioBase, isRadioAvailable } = useRadio();
 
@@ -160,9 +145,7 @@ export function usePlayerLogic() {
     getDescriptor,
     setActiveProviderId,
     connectedProviderIds,
-    shuffleEnabled,
     isUnifiedLikedActive,
-    drivingProviderRef,
     playTrack,
     spotifyHandlePlaylistSelect,
     stopRadioBase,
@@ -170,13 +153,13 @@ export function usePlayerLogic() {
     record,
   });
 
-  useAutoAdvance({ tracks, currentTrackIndex, playTrack, enabled: true, currentPlaybackProviderRef: drivingProviderRef });
+  useAutoAdvance({ playTrack, enabled: true });
 
   // Progressively load missing thumbnails for Dropbox tracks in the queue
-  useQueueThumbnailLoader(tracks, setTracks);
+  useQueueThumbnailLoader(tracks);
 
   // Progressively discover missing durations for Dropbox tracks in the queue
-  useQueueDurationLoader(tracks, setTracks);
+  useQueueDurationLoader(tracks);
 
   // Auto-extract accent color from album artwork; respects overrides in ColorContext
   useAccentColor(currentTrack, accentColorOverrides, setAccentColor, setAccentColorOverrides);
@@ -196,19 +179,6 @@ export function usePlayerLogic() {
     handleAuthRedirect();
   }, [setError]);
 
-  // Subscribe to playback state from all relevant providers
-  usePlaybackSubscription({
-    activeDescriptor,
-    drivingProviderRef,
-    tracksRef,
-    currentTrackIndexRef,
-    expectedTrackIdRef,
-    setIsPlaying,
-    setPlaybackPosition,
-    setCurrentTrackIndex,
-    setTracks,
-  });
-
   // Warm the lazy QueueDrawer/QueueBottomSheet bundles on first playback so the
   // user-initiated "Up Next" open is instant. Fires once per session.
   useQueueBundlePrefetch(isPlaying);
@@ -218,7 +188,7 @@ export function usePlayerLogic() {
   // even when playTrack's adapter call lands during a transition that would
   // otherwise leave the driving provider in its prior paused state.
   const ensurePlaybackResumed = useCallback(async () => {
-    const drivingDescriptor = getDrivingProviderDescriptor();
+    const drivingDescriptor = playbackStore.getDrivingDescriptor();
     if (!drivingDescriptor) return;
     try {
       await drivingDescriptor.playback.resume();
@@ -226,43 +196,45 @@ export function usePlayerLogic() {
       // Autoplay policy or network errors are handled by the playback adapter
       logCaughtError('usePlayerLogic.ensurePlaybackResumed', err);
     }
-  }, [getDrivingProviderDescriptor]);
+  }, []);
 
   const handleNext = useCallback(async () => {
-    if (tracks.length === 0) return;
-    if (currentTrackIndexRef.current >= tracks.length - 1) {
-      logQueue('handleNext — at end of queue (%d/%d), stopping', currentTrackIndexRef.current, tracks.length);
+    const queueTracks = queueStore.getTracks();
+    const queueIndex = queueStore.getCurrentIndex();
+    if (queueTracks.length === 0) return;
+    if (queueIndex >= queueTracks.length - 1) {
+      logQueue('handleNext — at end of queue (%d/%d), stopping', queueIndex, queueTracks.length);
       return;
     }
-    const nextIndex = currentTrackIndexRef.current + 1;
+    const nextIndex = queueIndex + 1;
     logQueue(
-      'handleNext — %d → %d, target=%s, queueLen=%d, mediaLen=%d',
-      currentTrackIndexRef.current,
+      'handleNext — %d → %d, target=%s, queueLen=%d',
+      queueIndex,
       nextIndex,
-      trkSummary(tracksRef.current[nextIndex]),
-      tracks.length,
-      mediaTracksRef.current.length,
+      trkSummary(queueTracks[nextIndex]),
+      queueTracks.length,
     );
-    setCurrentTrackIndex(nextIndex);
+    queueStore.setCurrentIndex(nextIndex);
     await playTrack(nextIndex, true);
     await ensurePlaybackResumed();
-  }, [tracks.length, playTrack, setCurrentTrackIndex, ensurePlaybackResumed]);
+  }, [playTrack, ensurePlaybackResumed]);
 
   const handlePrevious = useCallback(async () => {
-    if (tracks.length === 0) return;
-    const newIndex = Math.max(0, currentTrackIndexRef.current - 1);
+    const queueTracks = queueStore.getTracks();
+    const queueIndex = queueStore.getCurrentIndex();
+    if (queueTracks.length === 0) return;
+    const newIndex = Math.max(0, queueIndex - 1);
     logQueue(
-      'handlePrevious — %d → %d, target=%s, queueLen=%d, mediaLen=%d',
-      currentTrackIndexRef.current,
+      'handlePrevious — %d → %d, target=%s, queueLen=%d',
+      queueIndex,
       newIndex,
-      trkSummary(tracksRef.current[newIndex]),
-      tracks.length,
-      mediaTracksRef.current.length,
+      trkSummary(queueTracks[newIndex]),
+      queueTracks.length,
     );
-    setCurrentTrackIndex(newIndex);
+    queueStore.setCurrentIndex(newIndex);
     await playTrack(newIndex, true);
     await ensurePlaybackResumed();
-  }, [tracks.length, playTrack, setCurrentTrackIndex, ensurePlaybackResumed]);
+  }, [playTrack, ensurePlaybackResumed]);
 
   const handlePlay = useCallback(async () => {
     const pending = hydratedPendingPlayRef.current;
@@ -280,29 +252,26 @@ export function usePlayerLogic() {
       );
       return;
     }
-    const drivingId = getDrivingProviderId();
     logQueue(
       'handlePlay — drivingProvider=%s, index=%d, track=%s',
-      drivingId,
-      currentTrackIndexRef.current,
-      trkSummary(tracksRef.current[currentTrackIndexRef.current]),
+      playbackStore.resolveDrivingProviderId(),
+      queueStore.getCurrentIndex(),
+      trkSummary(queueStore.getCurrentTrack()),
     );
     try {
-      const drivingDescriptor = getDrivingProviderDescriptor();
+      const drivingDescriptor = playbackStore.getDrivingDescriptor();
       if (!drivingDescriptor) return;
       await drivingDescriptor.playback.resume();
     } catch (err) {
       // Autoplay policy or network errors are handled by the playback adapter
       logCaughtError('usePlayerLogic.handlePlay', err);
     }
-  }, [playTrack, getDrivingProviderId, getDrivingProviderDescriptor]);
+  }, [playTrack]);
 
   const handlePause = useCallback(() => {
-    const drivingId = getDrivingProviderId();
-    logQueue('handlePause — drivingProvider=%s, index=%d', drivingId, currentTrackIndexRef.current);
-    const drivingDescriptor = getDrivingProviderDescriptor();
-    drivingDescriptor?.playback.pause();
-  }, [getDrivingProviderId, getDrivingProviderDescriptor]);
+    logQueue('handlePause — drivingProvider=%s, index=%d', playbackStore.resolveDrivingProviderId(), queueStore.getCurrentIndex());
+    playbackStore.getDrivingDescriptor()?.playback.pause();
+  }, []);
 
   const handleOpenLibrary = useCallback(() => {
     setCurrentView('library');
@@ -332,36 +301,50 @@ export function usePlayerLogic() {
     handlePause();
     stopRadio();
     setSelection(null);
-    setTracks([]);
-    setCurrentTrackIndex(0);
-    mediaTracksRef.current = [];
-    expectedTrackIdRef.current = null;
+    queueStore.clear();
+    playbackStore.clearTransition();
     setShowQueue(false);
     setIsSettingsOpen(false);
-  }, [handlePause, stopRadio, setSelection, setTracks, setCurrentTrackIndex, setShowQueue, setIsSettingsOpen]);
+  }, [handlePause, stopRadio, setSelection, setShowQueue, setIsSettingsOpen]);
 
-  const handleHydrate = useCallback(async (session: SessionSnapshot): Promise<HydrateResult> => {
+  // Newest-wins guard for session restore: overlapping invocations (a
+  // double-clicked Resume card, or Resume racing the idle auto-hydrate)
+  // iterate playability candidates asynchronously and write to the shared
+  // queue/playback stores — only the newest call may commit.
+  const restoreGuard = useNewestWins();
+
+  /**
+   * The single session-restore path, shared by the landing page's hydrate
+   * flow (autoplay: false — prime the player, wait for the user's play
+   * press) and the Resume card (autoplay: true — start playing now). Both
+   * get the same candidate-iteration playability fallback: starting at the
+   * saved track, skip candidates whose provider is missing/unauthenticated
+   * or that fail the playability probe, bounded by one full pass over the
+   * queue. Only the first candidate gets the saved position; fallbacks
+   * start at zero.
+   *
+   * A superseded invocation resolves to the no-op result ({ track: null,
+   * totalFailure: false }) — callers surface nothing for it.
+   */
+  const restoreSession = useCallback(async (
+    session: SessionSnapshot,
+    { autoplay }: RestoreSessionOptions,
+  ): Promise<RestoreSessionResult> => {
     if (!session.queueTracks?.length) {
       return { track: null, skipped: false, totalFailure: false };
     }
+    const token = restoreGuard.begin();
     const { queueTracks, trackId, trackIndex, selection: savedSelection, playbackPosition: savedPositionMs } = session;
 
     const fallbackIdx = Math.max(0, Math.min(trackIndex, queueTracks.length - 1));
     const matchedIdx = trackId ? queueTracks.findIndex(t => t.id === trackId) : -1;
     const startIdx = matchedIdx >= 0 ? matchedIdx : fallbackIdx;
 
-    setTracks(queueTracks);
-    setOriginalTracks(queueTracks);
+    queueStore.replaceQueue(queueTracks);
     setSelection(savedSelection);
-    mediaTracksRef.current = queueTracks;
 
     const savedPositionIsValid = savedPositionMs !== undefined && savedPositionMs > 0;
 
-    // Iterate through the queue starting at the saved index. If a candidate's
-    // provider is missing/unauthenticated or prepareTrack throws, advance to the
-    // next track and retry — bounded by queueTracks.length to avoid infinite
-    // loops on a fully-broken queue. Only the first candidate gets the saved
-    // position; subsequent fallbacks start at zero.
     for (let offset = 0; offset < queueTracks.length; offset += 1) {
       const candidateIdx = (startIdx + offset) % queueTracks.length;
       const candidateTrack = queueTracks[candidateIdx];
@@ -373,7 +356,7 @@ export function usePlayerLogic() {
 
       if (!providerId || !descriptor || !providerAuthed) {
         logQueue(
-          'handleHydrate skip — index=%d, track=%s, reason=%s',
+          'restoreSession skip — index=%d, track=%s, reason=%s',
           candidateIdx,
           trkSummary(candidateTrack),
           !providerId ? 'no-provider' : !descriptor ? 'no-descriptor' : 'unauthenticated',
@@ -389,26 +372,57 @@ export function usePlayerLogic() {
       // never advance against real provider failures like a market-restricted
       // Spotify track or a moved Dropbox file.
       if (descriptor.playback.probePlayable) {
+        let playable: boolean;
         try {
-          const playable = await descriptor.playback.probePlayable(candidateTrack);
-          if (!playable) {
-            logQueue(
-              'handleHydrate probePlayable=false on index=%d, track=%s',
-              candidateIdx,
-              trkSummary(candidateTrack),
-            );
-            continue;
-          }
+          playable = await descriptor.playback.probePlayable(candidateTrack);
         } catch (error) {
           if (error instanceof AuthExpiredError) {
-            logQueue('handleHydrate probePlayable AuthExpiredError on index=%d, provider=%s', candidateIdx, providerId);
+            logQueue('restoreSession probePlayable AuthExpiredError on index=%d, provider=%s', candidateIdx, providerId);
           } else {
-            logQueue('handleHydrate probePlayable threw on index=%d: %o', candidateIdx, error);
+            logQueue('restoreSession probePlayable threw on index=%d: %o', candidateIdx, error);
           }
+          if (token.isStale()) break;
+          continue;
+        }
+        // A newer restoreSession began while the probe was in flight — this
+        // invocation must not touch the stores.
+        if (token.isStale()) {
+          logQueue('restoreSession superseded during probePlayable on index=%d', candidateIdx);
+          return { track: null, skipped: false, totalFailure: false };
+        }
+        if (!playable) {
+          logQueue(
+            'restoreSession probePlayable=false on index=%d, track=%s',
+            candidateIdx,
+            trkSummary(candidateTrack),
+          );
           continue;
         }
       }
 
+      if (autoplay) {
+        // Resume: start playback of the restored candidate now. playTrack
+        // owns the transition guard, driving-provider handoff, and index
+        // commit; the guard is raised here too so a stale provider event
+        // cannot flip the just-restored index before playTrack runs.
+        queueStore.setCurrentIndex(candidateIdx);
+        playbackStore.beginTransition(candidateTrack.id);
+
+        logQueue(
+          'restoreSession(autoplay) — index=%d, track=%s, positionMs=%s, provider=%s, skipped=%s',
+          candidateIdx,
+          trkSummary(candidateTrack),
+          positionMs ?? 'NONE',
+          providerId,
+          offset > 0 ? 'YES' : 'NO',
+        );
+
+        await playTrack(candidateIdx, false, positionMs ? { positionMs } : undefined);
+        return { track: candidateTrack, skipped: offset > 0, totalFailure: false };
+      }
+
+      // Hydrate: prime the player paused at the saved position; the next
+      // handlePlay consumes the stashed pending play.
       try {
         descriptor.playback.prepareTrack?.(
           candidateTrack,
@@ -416,27 +430,26 @@ export function usePlayerLogic() {
         );
       } catch (error) {
         if (error instanceof AuthExpiredError) {
-          logQueue('handleHydrate AuthExpiredError on index=%d, provider=%s', candidateIdx, providerId);
+          logQueue('restoreSession AuthExpiredError on index=%d, provider=%s', candidateIdx, providerId);
         } else if (error instanceof UnavailableTrackError) {
-          logQueue('handleHydrate UnavailableTrackError on index=%d: %s', candidateIdx, error.message);
+          logQueue('restoreSession UnavailableTrackError on index=%d: %s', candidateIdx, error.message);
         } else {
-          logQueue('handleHydrate prepareTrack threw on index=%d: %o', candidateIdx, error);
+          logQueue('restoreSession prepareTrack threw on index=%d: %o', candidateIdx, error);
         }
         continue;
       }
 
-      setCurrentTrackIndex(candidateIdx);
-      expectedTrackIdRef.current = candidateTrack.id;
-      drivingProviderRef.current = providerId;
-      setPlaybackPosition(positionMs ?? 0);
-      setIsPlaying(false);
+      queueStore.setCurrentIndex(candidateIdx);
+      playbackStore.beginTransition(candidateTrack.id);
+      playbackStore.setDrivingProvider(providerId);
+      playbackStore.primeRestoredPlayback(positionMs ?? 0);
       hydratedPendingPlayRef.current = {
         index: candidateIdx,
         ...(positionMs !== undefined && { positionMs }),
       };
 
       logQueue(
-        'handleHydrate — index=%d, track=%s, positionMs=%s, provider=%s, skipped=%s',
+        'restoreSession(hydrate) — index=%d, track=%s, positionMs=%s, provider=%s, skipped=%s',
         candidateIdx,
         trkSummary(candidateTrack),
         positionMs ?? 'NONE',
@@ -447,34 +460,31 @@ export function usePlayerLogic() {
       return { track: candidateTrack, skipped: offset > 0, totalFailure: false };
     }
 
-    // No track could be prepared — drop the queue and let the caller clear the
-    // saved session via onHydrateFailed (AudioPlayer owns the session state).
-    logQueue('handleHydrate — total failure, resetting to library');
+    // Superseded mid-iteration — the newer invocation owns the outcome.
+    if (token.isStale()) {
+      return { track: null, skipped: false, totalFailure: false };
+    }
+
+    // No track could be restored — drop the queue and let the caller clear the
+    // saved session (AudioPlayer owns the session state).
+    logQueue('restoreSession — total failure, resetting to library');
     hydratedPendingPlayRef.current = null;
     handleBackToLibrary();
     return { track: null, skipped: false, totalFailure: true };
   }, [
-    setTracks,
-    setOriginalTracks,
+    restoreGuard,
     setSelection,
-    setCurrentTrackIndex,
-    mediaTracksRef,
     activeDescriptor,
-    drivingProviderRef,
+    playTrack,
     handleBackToLibrary,
   ]);
 
   // Initialize queue management handlers
   const { handleAddToQueue, queueTracksDirectly, insertTracksNext, insertCollectionNext, handleRemoveFromQueue, handleReorderQueue } = useQueueManagement({
-    trackOps,
-    tracks,
-    currentTrackIndex,
-    shuffleEnabled,
     loadCollection,
     handleBackToLibrary,
     activeDescriptor,
     getDescriptor,
-    getDrivingProviderDescriptor,
   });
 
   const dismissRadioProgress = useCallback(() => setRadioProgress(null), []);
@@ -498,7 +508,7 @@ export function usePlayerLogic() {
       handleStartRadio,
       handleRemoveFromQueue,
       handleReorderQueue,
-      handleHydrate,
+      restoreSession,
       setCurrentView,
     }),
     [
@@ -519,7 +529,7 @@ export function usePlayerLogic() {
       handleStartRadio,
       handleRemoveFromQueue,
       handleReorderQueue,
-      handleHydrate,
+      restoreSession,
       setCurrentView,
     ]
   );
@@ -545,10 +555,5 @@ export function usePlayerLogic() {
       radioProgress,
       dismissRadioProgress,
     },
-    mediaTracksRef,
-    setTracks,
-    setOriginalTracks,
-    currentPlaybackProviderRef: drivingProviderRef,
-    expectedTrackIdRef,
   };
 }

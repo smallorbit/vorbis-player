@@ -43,7 +43,6 @@ interface PlayerContentProps {
   radioState?: RadioState | undefined;
   isRadioAvailable?: boolean | undefined;
   radioActive?: boolean | undefined;
-  mediaTracksRef?: React.RefObject<MediaTrack[]> | undefined;
   radioProgress?: RadioProgress | null | undefined;
   onDismissRadioProgress?: (() => void) | undefined;
 }
@@ -57,7 +56,6 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
   radioState,
   isRadioAvailable,
   radioActive,
-  mediaTracksRef,
   radioProgress,
   onDismissRadioProgress,
 }) => {
@@ -268,7 +266,6 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
         isMobile={isMobile}
         radioActive={radioActive}
         radioState={radioState}
-        mediaTracksRef={mediaTracksRef}
         radioProgress={radioProgress}
         onDismissRadioProgress={onDismissRadioProgress}
         onOpenQueueFromToast={handleOpenQueueFromToast}

@@ -1,8 +1,8 @@
-import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import { PROVIDER_RECONNECTED_EVENT } from '@/constants/events';
+import { queueStore } from '@/stores/queueStore';
 
 const mockPrepareTrack = vi.fn();
 const mockPlayTrack = vi.fn().mockResolvedValue(undefined);
@@ -54,10 +54,9 @@ function makeMediaTrack(overrides?: Partial<MediaTrack>): MediaTrack {
 }
 
 describe('useProviderPlayback — PROVIDER_RECONNECTED_EVENT re-prime', () => {
-  const setCurrentTrackIndex = vi.fn();
-
   beforeEach(() => {
     vi.clearAllMocks();
+    queueStore.__resetForTests();
   });
 
   afterEach(() => {
@@ -67,8 +66,7 @@ describe('useProviderPlayback — PROVIDER_RECONNECTED_EVENT re-prime', () => {
   it('calls prepareTrack with the persisted playbackPosition when the snapshot trackId matches', () => {
     // #given — current track is a spotify track, snapshot points at the same id
     const currentTrack = makeMediaTrack({ id: 'sp-1', provider: 'spotify' });
-    const mediaTracksRef: React.MutableRefObject<MediaTrack[]> = { current: [currentTrack] };
-    const currentTrackIndexRef: React.MutableRefObject<number> = { current: 0 };
+    queueStore.replaceQueue([currentTrack], { currentIndex: 0 });
 
     mockLoadSession.mockReturnValue({
       collectionId: 'c1',
@@ -78,9 +76,7 @@ describe('useProviderPlayback — PROVIDER_RECONNECTED_EVENT re-prime', () => {
       playbackPosition: 45_000,
     });
 
-    renderHook(() =>
-      useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef, currentTrackIndexRef })
-    );
+    renderHook(() => useProviderPlayback({}));
 
     // #when — dispatch the reconnect event for spotify
     act(() => {
@@ -97,8 +93,7 @@ describe('useProviderPlayback — PROVIDER_RECONNECTED_EVENT re-prime', () => {
   it('falls back to positionMs=0 when the snapshot trackId does not match', () => {
     // #given
     const currentTrack = makeMediaTrack({ id: 'sp-1', provider: 'spotify' });
-    const mediaTracksRef: React.MutableRefObject<MediaTrack[]> = { current: [currentTrack] };
-    const currentTrackIndexRef: React.MutableRefObject<number> = { current: 0 };
+    queueStore.replaceQueue([currentTrack], { currentIndex: 0 });
 
     mockLoadSession.mockReturnValue({
       collectionId: 'c1',
@@ -108,9 +103,7 @@ describe('useProviderPlayback — PROVIDER_RECONNECTED_EVENT re-prime', () => {
       playbackPosition: 45_000,
     });
 
-    renderHook(() =>
-      useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef, currentTrackIndexRef })
-    );
+    renderHook(() => useProviderPlayback({}));
 
     // #when
     act(() => {
@@ -126,14 +119,11 @@ describe('useProviderPlayback — PROVIDER_RECONNECTED_EVENT re-prime', () => {
   it('falls back to positionMs=0 when no snapshot is persisted', () => {
     // #given
     const currentTrack = makeMediaTrack({ id: 'sp-1', provider: 'spotify' });
-    const mediaTracksRef: React.MutableRefObject<MediaTrack[]> = { current: [currentTrack] };
-    const currentTrackIndexRef: React.MutableRefObject<number> = { current: 0 };
+    queueStore.replaceQueue([currentTrack], { currentIndex: 0 });
 
     mockLoadSession.mockReturnValue(null);
 
-    renderHook(() =>
-      useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef, currentTrackIndexRef })
-    );
+    renderHook(() => useProviderPlayback({}));
 
     // #when
     act(() => {
@@ -149,14 +139,11 @@ describe('useProviderPlayback — PROVIDER_RECONNECTED_EVENT re-prime', () => {
   it('does NOT call prepareTrack when the reconnected provider is not the current track provider', () => {
     // #given — current track is spotify, but dropbox just reconnected
     const currentTrack = makeMediaTrack({ id: 'sp-1', provider: 'spotify' });
-    const mediaTracksRef: React.MutableRefObject<MediaTrack[]> = { current: [currentTrack] };
-    const currentTrackIndexRef: React.MutableRefObject<number> = { current: 0 };
+    queueStore.replaceQueue([currentTrack], { currentIndex: 0 });
 
     mockLoadSession.mockReturnValue(null);
 
-    renderHook(() =>
-      useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef, currentTrackIndexRef })
-    );
+    renderHook(() => useProviderPlayback({}));
 
     // #when
     act(() => {
@@ -171,12 +158,8 @@ describe('useProviderPlayback — PROVIDER_RECONNECTED_EVENT re-prime', () => {
 
   it('does NOT call prepareTrack when there is no current track', () => {
     // #given — empty queue
-    const mediaTracksRef: React.MutableRefObject<MediaTrack[]> = { current: [] };
-    const currentTrackIndexRef: React.MutableRefObject<number> = { current: -1 };
 
-    renderHook(() =>
-      useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef, currentTrackIndexRef })
-    );
+    renderHook(() => useProviderPlayback({}));
 
     // #when
     act(() => {

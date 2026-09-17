@@ -100,6 +100,15 @@ Object.defineProperty(global, 'crypto', {
 global.btoa = vi.fn((str) => Buffer.from(str, 'binary').toString('base64'));
 global.atob = vi.fn((b64) => Buffer.from(b64, 'base64').toString('binary'));
 
+// Module-level stores persist across tests in the same file — reset so every
+// test starts with pristine queue + playback state.
+beforeEach(async () => {
+  const { queueStore } = await import('@/stores/queueStore');
+  const { playbackStore } = await import('@/stores/playbackStore');
+  queueStore.__resetForTests();
+  playbackStore.__resetForTests();
+});
+
 // Clean up after each test
 afterEach(() => {
   vi.clearAllMocks();

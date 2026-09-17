@@ -1,11 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import type { MediaTrack, PlaybackState, ProviderId } from '@/types/domain';
 import { makeMediaTrack } from '@/test/fixtures';
 
 // The seek guard (#1671) rejects stale pre-seek position emits that would drag
-// the timeline cursor back after a seek. Drive the hook's playback subscription
-// directly and assert what the cursor (currentPosition) does.
+// the timeline cursor back after a seek. The guard lives in playbackStore's
+// event pipeline; usePlaybackControls reads the store via usePlaybackState.
+// Drive the store's public pipeline — attach() fans out over the (mocked)
+// provider registry, whose subscribe() hands us the pipeline listener — and
+// assert what the hook's cursor (currentPosition) does.
 
 let listeners: Array<(state: PlaybackState | null) => void> = [];
 const seek = vi.fn().mockResolvedValue(undefined);
@@ -24,15 +27,15 @@ const descriptor = {
   },
 };
 
-vi.mock('@/contexts/ProviderContext', () => ({
-  useProviderContext: () => ({ activeDescriptor: descriptor }),
-}));
 vi.mock('@/providers/registry', () => ({
-  providerRegistry: { get: vi.fn(() => descriptor) },
+  providerRegistry: {
+    get: vi.fn(() => descriptor),
+    getAll: vi.fn(() => [descriptor]),
+  },
 }));
-vi.mock('@/lib/debugLog', () => ({ logSeek: vi.fn() }));
 
 import { usePlaybackControls } from '../usePlaybackControls';
+import { playbackStore } from '@/stores/playbackStore';
 
 function state(positionMs: number, isPlaying = true): PlaybackState {
   return {
@@ -68,9 +71,18 @@ function render() {
 }
 
 describe('usePlaybackControls seek guard (#1671)', () => {
+  let detach: () => void;
+
   beforeEach(() => {
+    // #given — the store's fan-out is attached and Spotify is driving playback
     listeners = [];
     seek.mockClear();
+    detach = playbackStore.attach();
+    playbackStore.setDrivingProvider('spotify');
+  });
+
+  afterEach(() => {
+    detach();
   });
 
   it('accepts position emits normally when no seek is pending', () => {

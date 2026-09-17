@@ -40,7 +40,7 @@ When no track is loaded, `PlayerStateRenderer` (`src/components/PlayerStateRende
 |---|---|
 | `welcomeSeen === false` | `WelcomeScreen` (supersedes all other inputs) |
 | valid `lastSession` + `qapEnabled` | `QuickAccessPanel` (with Resume hero) |
-| valid `lastSession` + `!qapEnabled` | player hydrated via `handleHydrate` (paused) |
+| valid `lastSession` + `!qapEnabled` | player hydrated via `restoreSession(session, { autoplay: false })` (paused) |
 | no/stale session + `qapEnabled` | `QuickAccessPanel` |
 | no/stale session + `!qapEnabled` | `LibraryRoute` |
 
@@ -56,18 +56,18 @@ QAP is opt-in via the "Quick Access Panel" On/Off control in the Settings dialog
 
 ## Hydrate without autoplay
 
-`handleHydrate(session): Promise<HydrateResult>` in `usePlayerLogic` (`src/hooks/usePlayerLogic.ts`) restores `tracks` / `originalTracks` / `mediaTracksRef` / `currentTrackIndex` / `selection`, sets the seek bar to `savedPositionMs`, and calls `prepareTrack(track, { positionMs })` on the driving provider — but does NOT call `play()`. A `hydratedPendingPlayRef = { index, positionMs }` records the target so the next user-initiated `handlePlay` starts from the saved offset. Any call into `playTrack` (next/previous/new collection) clears the ref.
+`restoreSession(session, { autoplay: false }): Promise<RestoreSessionResult>` in `usePlayerLogic` (`src/hooks/usePlayerLogic.ts`) is the hydrate flavor of the single session-restore path. It replaces the queue (`queueStore.replaceQueue(queueTracks)`), restores `selection`, sets the seek bar to the saved position (`playbackStore.primeRestoredPlayback` — paused snapshot), raises the transition guard, sets the driving provider, and calls `prepareTrack(track, { positionMs })` on the track's provider — but does NOT call `play()`. A `hydratedPendingPlayRef = { index, positionMs }` records the target so the next user-initiated `handlePlay` starts from the saved offset. Any call into `playTrack` (next/previous/new collection) clears the ref.
 
-- `HydrateResult` shape: `{ track: MediaTrack | null, skipped: boolean, totalFailure: boolean }`.
+- `RestoreSessionResult` shape: `{ track: MediaTrack | null, skipped: boolean, totalFailure: boolean }`.
 - **prepareTrack is emit-only** — both adapters emit a `PlaybackState` event with `positionMs` + `durationMs` so the seek bar reflects the saved position before any user action. No audio actually starts.
   - Spotify (`stageTrackPaused`): calls `ensurePlaybackReady` which transfers Spotify Connect to this device with `play: false`. Does NOT call `/me/player/play` — that API starts audio and Spotify's eventual consistency makes a subsequent `pause()` race against the just-started playback, leaking audio on fresh tabs.
   - Dropbox: sets `audio.src` to the stream URL and seeks to `positionMs`. Does NOT call `audio.play()`.
-- **probePlayable iterator** — before calling `prepareTrack`, `handleHydrate` optionally calls `descriptor.playback.probePlayable(track): Promise<boolean>` (defined on `PlaybackProvider` in `src/types/providers.ts`). Returns `false` for known-unplayable tracks (Spotify market-restricted / 404, Dropbox file moved); throws `AuthExpiredError` for transient auth failures. If `probePlayable` returns false or throws, the iterator skips to the next track in the queue. The iterator is bounded by `queueTracks.length` to prevent infinite loops.
+- **Candidate iterator** — starting at the saved track, `restoreSession` skips candidates whose provider is missing or unauthenticated, then (where available) calls `descriptor.playback.probePlayable(track): Promise<boolean>` (defined on `PlaybackProvider` in `src/types/providers.ts`). It returns `false` for known-unplayable tracks (Spotify market-restricted / 404, Dropbox file moved) and throws `AuthExpiredError` for transient auth failures. If `probePlayable` returns false or throws, the iterator falls forward to the next track in the queue, bounded by one full pass (`queueTracks.length`) to prevent infinite loops. Only the first candidate gets the saved position; fallbacks start at zero.
 - **Partial-skip toast** — when `skipped === true` (saved track was unplayable, a later track was used): `"Couldn't resume previous track — starting from next in queue."`.
-- **Total-failure path** — when no track in the queue could be prepared: `handleHydrate` calls `handleBackToLibrary` and returns `totalFailure: true`. `AudioPlayer.handleHydrateFailed` then calls `useSessionPersistence.resetLastSession()` (clears both localStorage AND the cached React `lastSession` state) and surfaces `"Couldn't resume your last session."`. `PlayerStateRenderer` on `totalFailure` flips `libraryOverride = true` so the user routes to the library immediately.
+- **Total-failure path** — when no track in the queue could be restored: `restoreSession` calls `handleBackToLibrary` and returns `totalFailure: true`. `AudioPlayer` (via `PlayerStateRenderer`'s `onHydrateFailed` callback) then calls `useSessionPersistence.resetLastSession()` (clears both localStorage AND the cached React `lastSession` state) and surfaces `"Couldn't resume your last session."`. `PlayerStateRenderer` on `totalFailure` flips `libraryOverride = true` so the user routes to the library immediately.
 - **Resume toast** — `ResumeToast` surfaces on normal hydrate with `"Resuming '<Track>' — press play to continue."`. Auto-dismisses on next/previous/open-library/open-queue.
-- `PlayerStateRenderer` routes to the hydrate loading card; on mount fires `onHydrate(session)` exactly once via `hydrateFiredRef`.
-- Distinct from `handleResume` (in `AudioPlayer.tsx`), which autoplays from the saved position.
+- `PlayerStateRenderer` routes to the hydrate loading card; on mount fires `onHydrate(session)` exactly once via `hydrateFiredRef` (wired in `AudioPlayer` to `restoreSession(session, { autoplay: false })`).
+- The Resume card's `handleResume` (in `AudioPlayer.tsx`) shares the same path with `restoreSession(session, { autoplay: true })`, which starts playback of the restored candidate immediately.
 
 ## Zen mode
 

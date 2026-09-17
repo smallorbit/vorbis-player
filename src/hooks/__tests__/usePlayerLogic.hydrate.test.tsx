@@ -1,5 +1,5 @@
 /**
- * Tests for usePlayerLogic.handleHydrate — restores session state without autoplay.
+ * Tests for usePlayerLogic.restoreSession (hydrate path) — restores session state without autoplay.
  */
 
 import React from 'react';
@@ -155,7 +155,7 @@ function makeSession(overrides?: Partial<SessionSnapshot>): SessionSnapshot {
   };
 }
 
-describe('usePlayerLogic — handleHydrate', () => {
+describe('usePlayerLogic — restoreSession (hydrate)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     playTrackSpy.mockClear();
@@ -169,7 +169,7 @@ describe('usePlayerLogic — handleHydrate', () => {
 
     // #when
     await act(async () => {
-      await result.current.handlers.handleHydrate(session);
+      await result.current.handlers.restoreSession(session, { autoplay: false });
     });
 
     // #then
@@ -193,7 +193,7 @@ describe('usePlayerLogic — handleHydrate', () => {
 
     // #when
     await act(async () => {
-      await result.current.handlers.handleHydrate(session);
+      await result.current.handlers.restoreSession(session, { autoplay: false });
     });
 
     // #then
@@ -210,7 +210,7 @@ describe('usePlayerLogic — handleHydrate', () => {
 
     // #when
     await act(async () => {
-      await result.current.handlers.handleHydrate(session);
+      await result.current.handlers.restoreSession(session, { autoplay: false });
     });
 
     // #then
@@ -227,7 +227,7 @@ describe('usePlayerLogic — handleHydrate', () => {
 
     // #when
     await act(async () => {
-      await result.current.handlers.handleHydrate(session);
+      await result.current.handlers.restoreSession(session, { autoplay: false });
     });
 
     // #then
@@ -240,7 +240,7 @@ describe('usePlayerLogic — handleHydrate', () => {
     const { result } = renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
 
     await act(async () => {
-      await result.current.handlers.handleHydrate(session);
+      await result.current.handlers.restoreSession(session, { autoplay: false });
     });
     playTrackSpy.mockClear();
 
@@ -263,7 +263,7 @@ describe('usePlayerLogic — handleHydrate', () => {
     const { result } = renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
 
     await act(async () => {
-      await result.current.handlers.handleHydrate(session);
+      await result.current.handlers.restoreSession(session, { autoplay: false });
       await result.current.handlers.handlePlay();
     });
     playTrackSpy.mockClear();
@@ -285,7 +285,7 @@ describe('usePlayerLogic — handleHydrate', () => {
 
     // #when
     await act(async () => {
-      await result.current.handlers.handleHydrate(session);
+      await result.current.handlers.restoreSession(session, { autoplay: false });
     });
 
     // #then
@@ -301,7 +301,7 @@ describe('usePlayerLogic — handleHydrate', () => {
     const { result } = renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
 
     await act(async () => {
-      await result.current.handlers.handleHydrate(session);
+      await result.current.handlers.restoreSession(session, { autoplay: false });
     });
     playTrackSpy.mockClear();
 

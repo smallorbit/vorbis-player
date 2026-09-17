@@ -6,12 +6,12 @@ export function trkSummary(t: { id: string; name: string; provider?: string } | 
   return `[${t.provider ?? '?'}] "${t.name}" (${t.id.slice(0, 8)})`;
 }
 
-export function queueSnapshot(label: string, tracks: { id: string; name: string; provider?: string }[], mediaLen: number, idx: number) {
+export function queueSnapshot(label: string, tracks: { id: string; name: string; provider?: string }[], queueLen: number, idx: number) {
   logQueue(
-    '%s — %d tracks, mediaTracksRef=%d, index=%d, current=%s',
+    '%s — %d tracks, queueLen=%d, index=%d, current=%s',
     label,
     tracks.length,
-    mediaLen,
+    queueLen,
     idx,
     trkSummary(tracks[idx]),
   );
