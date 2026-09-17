@@ -43,11 +43,18 @@ export const useProviderPlayback = ({
       if (!descriptor?.playback.prepareTrack) return;
 
       const snapshot = loadSession();
-      const resolvedPosition =
+      // Prefer the persisted session position when it matches the current
+      // track. Hydrate clears the session after restore (`resetLastSession`),
+      // and the debounced re-save often never lands while position ticks keep
+      // resetting the timer — so fall back to the live PlaybackStore cursor
+      // rather than snapping to 0:00 on re-auth.
+      const fromSession =
         snapshot?.trackId === currentTrack.id &&
         typeof snapshot.playbackPosition === 'number'
           ? snapshot.playbackPosition
-          : 0;
+          : null;
+      const livePositionMs = playbackStore.getSnapshot().positionMs;
+      const resolvedPosition = fromSession ?? (livePositionMs > 0 ? livePositionMs : 0);
 
       try {
         descriptor.playback.prepareTrack(currentTrack, { positionMs: resolvedPosition });
