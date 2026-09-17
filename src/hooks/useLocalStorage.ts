@@ -7,8 +7,9 @@ import {
 } from '@/utils/persistedStorage';
 
 export const useLocalStorage = <T>(key: string, initialValue: T): [T, (value: T | ((val: T) => T)) => void] => {
+  // Capture the mount-time default only. Reset-on-remove must not adopt a
+  // freshly allocated object/literal from a later render.
   const initialValueRef = useRef(initialValue);
-  initialValueRef.current = initialValue;
 
   const [storedValue, setStoredValue] = useState<T>(() => {
     try {

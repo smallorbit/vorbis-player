@@ -79,19 +79,21 @@ describe('persistedStorage', () => {
     vi.mocked(window.localStorage.setItem).mockImplementation(() => {
       throw new DOMException('QuotaExceededError');
     });
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const onChange = vi.fn();
     window.addEventListener(LOCAL_STORAGE_CHANGE_EVENT, onChange);
 
     // #when
     writeLocalStorageRaw('test-key', 'value');
 
-    // #then
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('test-key'), expect.anything());
+    // #then — broadcast is intentional even on write failure (same-tab consistency)
     expect(onChange).toHaveBeenCalledOnce();
+    const event = onChange.mock.calls[0]?.[0];
+    expect(event).toBeInstanceOf(CustomEvent);
+    if (event instanceof CustomEvent) {
+      expect(event.detail).toEqual({ key: 'test-key', newValue: 'value' });
+    }
 
     window.removeEventListener(LOCAL_STORAGE_CHANGE_EVENT, onChange);
-    warnSpy.mockRestore();
   });
 
   it('isLocalStorageChangeDetail rejects malformed payloads', () => {

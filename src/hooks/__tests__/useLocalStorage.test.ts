@@ -75,12 +75,11 @@ describe('useLocalStorage', () => {
     warnSpy.mockRestore();
   });
 
-  it('warns and still updates React state when localStorage.setItem throws', () => {
+  it('still updates React state when localStorage.setItem throws', () => {
     // #given
     vi.mocked(window.localStorage.setItem).mockImplementation(() => {
       throw new DOMException('QuotaExceededError');
     });
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { result } = renderHook(() => useLocalStorage('test-key', 'original'));
 
     // #when
@@ -88,11 +87,28 @@ describe('useLocalStorage', () => {
       result.current[1]('new-value');
     });
 
-    // #then
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('test-key'), expect.anything());
+    // #then — in-memory state follows the write intent; failure is logged via logCaughtError
     expect(result.current[0]).toBe('new-value');
+  });
 
-    warnSpy.mockRestore();
+  it('resets to the mount-time initial value even if a later render passes a new default', () => {
+    // #given
+    const { result, rerender } = renderHook(
+      ({ initial }: { initial: string }) => useLocalStorage('test-key', initial),
+      { initialProps: { initial: 'mount-default' } },
+    );
+    act(() => {
+      result.current[1]('updated');
+    });
+    rerender({ initial: 'later-default' });
+
+    // #when
+    act(() => {
+      removeLocalStorageKey('test-key');
+    });
+
+    // #then
+    expect(result.current[0]).toBe('mount-default');
   });
 
   it('syncs state from a StorageEvent fired by another tab', () => {

@@ -1,4 +1,5 @@
 import { LOCAL_STORAGE_CHANGE_EVENT } from '@/constants/events';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 export interface LocalStorageChangeDetail {
   key: string;
@@ -24,7 +25,7 @@ export function readLocalStorageRaw(key: string): string | null {
   try {
     return window.localStorage.getItem(key);
   } catch (error) {
-    console.warn(`Failed to read "${key}" from localStorage:`, error);
+    logCaughtError(`persistedStorage.read(${key})`, error);
     return null;
   }
 }
@@ -33,7 +34,9 @@ export function writeLocalStorageRaw(key: string, value: string): void {
   try {
     window.localStorage.setItem(key, value);
   } catch (error) {
-    console.warn(`Failed to write "${key}" to localStorage:`, error);
+    // Still broadcast so same-tab listeners stay consistent with the writer's
+    // in-memory intent (quota / private-mode failures).
+    logCaughtError(`persistedStorage.write(${key})`, error);
   }
   dispatchLocalStorageChange(key, value);
 }
@@ -46,7 +49,7 @@ export function removeLocalStorageKey(key: string): void {
   try {
     window.localStorage.removeItem(key);
   } catch (error) {
-    console.warn(`Failed to remove "${key}" from localStorage:`, error);
+    logCaughtError(`persistedStorage.remove(${key})`, error);
   }
   dispatchLocalStorageChange(key, null);
 }
