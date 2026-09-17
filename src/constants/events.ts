@@ -23,3 +23,17 @@ export const SESSION_EXPIRED_EVENT = 'vorbis-session-expired';
  * Event `detail` is `{ providerId: ProviderId }`.
  */
 export const PROVIDER_RECONNECTED_EVENT = 'vorbis-provider-reconnected';
+
+/**
+ * Dispatched on `window` after a same-tab localStorage write or remove that
+ * went through `src/utils/persistedStorage.ts`. Native `storage` events do
+ * not fire in the tab that wrote, so multi-mounted `useLocalStorage`
+ * instances and non-hook writers (preferences sync, settings clear) use
+ * this instead.
+ *
+ * Listeners re-apply `detail.newValue`. `newValue === null` means the key
+ * was removed and hook state should reset to its initial value.
+ *
+ * Event `detail` is `{ key: string, newValue: string | null }`.
+ */
+export const LOCAL_STORAGE_CHANGE_EVENT = 'vorbis-local-storage-change';

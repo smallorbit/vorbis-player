@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import type { VisualizerStyle } from '@/types/visualizer';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { STORAGE_KEYS } from '@/constants/storage';
+import { readLocalStorageRaw } from '@/utils/persistedStorage';
 
 interface VisualizerContextValue {
   backgroundVisualizerEnabled: boolean;
@@ -36,7 +37,7 @@ export function VisualizerProvider({ children }: { children: React.ReactNode }) 
 
   // One-time migration: rename legacy visualizer style values
   useEffect(() => {
-    const raw = localStorage.getItem(STORAGE_KEYS.BG_VISUALIZER_STYLE);
+    const raw = readLocalStorageRaw(STORAGE_KEYS.BG_VISUALIZER_STYLE);
     if (raw === 'particles' || raw === 'geometric') {
       setBackgroundVisualizerStyle('fireflies');
     } else if (raw === 'trail') {

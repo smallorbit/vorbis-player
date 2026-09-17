@@ -7,6 +7,7 @@ import { useQapEnabled } from '@/hooks/useQapEnabled';
 import { clearCacheWithOptions } from '@/services/cache/libraryCache';
 import { clearAllPins } from '@/services/settings/pinnedItemsStorage';
 import { STORAGE_KEYS } from '@/constants/storage';
+import { removeLocalStorageKey } from '@/utils/persistedStorage';
 import { STATUS_RESET_DELAY_MS } from '@/constants/statusTiming';
 
 import { Switch } from '@/components/ui/switch';
@@ -80,8 +81,8 @@ export const AdvancedSection: React.FC = () => {
       await clearAllPins();
     }
     if (clearAccentColors) {
-      localStorage.removeItem(STORAGE_KEYS.ACCENT_COLOR_OVERRIDES);
-      localStorage.removeItem(STORAGE_KEYS.CUSTOM_ACCENT_COLORS);
+      removeLocalStorageKey(STORAGE_KEYS.ACCENT_COLOR_OVERRIDES);
+      removeLocalStorageKey(STORAGE_KEYS.CUSTOM_ACCENT_COLORS);
     }
     if (clearPins || clearAccentColors) {
       const { resetPreferencesSync } = await import('@/providers/preferencesSync');
