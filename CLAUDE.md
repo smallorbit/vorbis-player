@@ -18,6 +18,7 @@ Deep-dive references — load on demand:
 | Multi-provider model, toggle behavior, radio, Spotify/Dropbox internals | `docs/architecture/providers.md` |
 | Playback flow + queue mutation flow | `docs/architecture/playback.md` |
 | shadcn/ui integration, theme bridge, canonical patterns, z-index | `docs/architecture/shadcn.md` |
+| Architecture v2 initiative status + next issue (agent handoff) | `docs/architecture/v2-handoff.md` |
 
 User-facing docs live in `docs/features/` and `docs/providers/`. Troubleshooting (provider issues, layout pitfalls, debug logging) is in `docs/troubleshooting.md`.
 
