@@ -111,7 +111,7 @@ export const MusicSourcesSection = memo(() => {
 
       openLoginPopup(descriptor, (providerId) => toggleProvider(providerId));
     },
-    [openLoginPopup, toggleProvider],
+    [openLoginPopup, registry, toggleProvider],
   );
 
   useEffect(() => () => clearPendingPopup(), [clearPendingPopup]);
