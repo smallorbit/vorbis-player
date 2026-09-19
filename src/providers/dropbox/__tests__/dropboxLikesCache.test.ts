@@ -2,11 +2,17 @@ import 'fake-indexeddb/auto';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { MediaTrack } from '@/types/domain';
 
-vi.mock('../dropboxArtCache', () => ({
+vi.mock('../dropboxIdb', () => ({
   getDb: vi.fn(),
+  dropboxIdbHandle: {
+    getDb: vi.fn(),
+    evictForQuota: vi.fn().mockResolvedValue(undefined),
+    recoverFromCorruption: vi.fn().mockResolvedValue(undefined),
+  },
+  closeDropboxCache: vi.fn(),
 }));
 
-import { getDb } from '../dropboxArtCache';
+import { getDb } from '../dropboxIdb';
 import {
   getLikedTracks,
   getLikedCount,

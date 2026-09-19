@@ -2,11 +2,17 @@ import 'fake-indexeddb/auto';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { MediaCollection } from '@/types/domain';
 
-vi.mock('../dropboxArtCache', () => ({
+vi.mock('../dropboxIdb', () => ({
   getDb: vi.fn(),
+  dropboxIdbHandle: {
+    getDb: vi.fn(),
+    evictForQuota: vi.fn().mockResolvedValue(undefined),
+    recoverFromCorruption: vi.fn().mockResolvedValue(undefined),
+  },
+  closeDropboxCache: vi.fn(),
 }));
 
-import { getDb } from '../dropboxArtCache';
+import { dropboxIdbHandle, getDb } from '../dropboxIdb';
 import {
   getCachedCatalog,
   putCatalogCache,
@@ -48,6 +54,7 @@ let testDb: IDBDatabase;
 beforeEach(async () => {
   testDb = await openTestDb();
   vi.mocked(getDb).mockResolvedValue(testDb);
+  vi.mocked(dropboxIdbHandle.getDb).mockReturnValue(testDb);
 });
 
 describe('dropboxCatalogCache', () => {

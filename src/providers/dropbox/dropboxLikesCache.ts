@@ -1,6 +1,6 @@
 import type { MediaTrack } from '@/types/domain';
 import { logCaughtError } from '@/utils/logCaughtError';
-import { getDb } from './dropboxArtCache';
+import { getDb } from './dropboxIdb';
 
 const STORE = 'likes';
 

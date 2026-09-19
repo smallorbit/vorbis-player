@@ -1,6 +1,7 @@
 import type { MediaCollection } from '@/types/domain';
+import { runWithDegradationPolicy } from '@/services/idb';
 import { logCaughtError } from '@/utils/logCaughtError';
-import { getDb } from './dropboxArtCache';
+import { dropboxIdbHandle, getDb } from './dropboxIdb';
 
 const STORE = 'catalog';
 const KEY = 'collections';
@@ -43,31 +44,50 @@ export async function getCachedCatalog(): Promise<{
   });
 }
 
-export async function putCatalogCache(collections: MediaCollection[]): Promise<void> {
+async function runCatalogWrite(
+  label: string,
+  operation: (database: IDBDatabase) => Promise<void>,
+): Promise<void> {
   const database = await getDb();
   if (!database) return;
-  try {
-    const entry: CachedCatalog = { key: KEY, collections, cachedAt: Date.now() };
-    const tx = database.transaction(STORE, 'readwrite');
-    tx.objectStore(STORE).put(entry);
-  } catch (err) {
-    // fire-and-forget
-    logCaughtError('dropboxCatalogCache.putCatalogCache', err);
+
+  const result = await runWithDegradationPolicy(
+    {
+      label: `dropboxCatalogCache.${label}`,
+      evictForQuota: () => dropboxIdbHandle.evictForQuota(),
+      recoverFromCorruption: () => dropboxIdbHandle.recoverFromCorruption(),
+    },
+    async () => {
+      const live = dropboxIdbHandle.getDb();
+      if (!live) throw new Error('Dropbox IDB unavailable');
+      await operation(live);
+    },
+  );
+
+  if (!result.ok) {
+    logCaughtError(`dropboxCatalogCache.${label}.exhausted`, result.error);
   }
 }
 
+export async function putCatalogCache(collections: MediaCollection[]): Promise<void> {
+  const entry: CachedCatalog = { key: KEY, collections, cachedAt: Date.now() };
+  await runCatalogWrite('putCatalogCache', (database) =>
+    new Promise<void>((resolve, reject) => {
+      const tx = database.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).put(entry);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    }),
+  );
+}
+
 export async function clearCatalogCache(): Promise<void> {
-  const database = await getDb();
-  if (!database) return;
-  return new Promise((resolve) => {
-    try {
+  await runCatalogWrite('clearCatalogCache', (database) =>
+    new Promise<void>((resolve, reject) => {
       const tx = database.transaction(STORE, 'readwrite');
       tx.objectStore(STORE).clear();
       tx.oncomplete = () => resolve();
-      tx.onerror = () => resolve();
-    } catch (err) {
-      logCaughtError('dropboxCatalogCache.clearCatalogCache', err);
-      resolve();
-    }
-  });
+      tx.onerror = () => reject(tx.error);
+    }),
+  );
 }
