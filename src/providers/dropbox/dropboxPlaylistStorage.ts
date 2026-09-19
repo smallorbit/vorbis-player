@@ -9,16 +9,11 @@ import { logLibrary } from '@/lib/debugLog';
 import { buildAlbumCoverMap, selectMosaicCovers } from '@/utils/mosaicSelection';
 import { logCaughtError } from '@/utils/logCaughtError';
 import { contentApiRequest } from './dropboxContentApiClient';
-
-// ── Helpers ──────────────────────────────────────────────────────────
-
-/** Escape non-ASCII characters for use in HTTP headers (Dropbox-API-Arg). */
-function jsonToHttpHeader(json: string): string {
-  return json.replace(/[\u0080-\uffff]/g, (ch) => {
-    const code = ch.charCodeAt(0);
-    return `\\u${code.toString(16).padStart(4, '0')}`;
-  });
-}
+import {
+  downloadRemoteJson,
+  uploadRemoteJson,
+  jsonToHttpHeader,
+} from './remoteJsonFileStore';
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -46,6 +41,7 @@ interface PlaylistFile {
 // ── Constants ────────────────────────────────────────────────────────
 
 const PLAYLISTS_FOLDER = '/.vorbis/playlists';
+const LOG_LABEL = 'DropboxPlaylistStorage';
 
 // ── Folder management ────────────────────────────────────────────────
 
@@ -125,6 +121,17 @@ function savedTrackToMediaTrack(track: SavedTrack): MediaTrack {
   };
 }
 
+function playlistTransport(auth: DropboxAuthAdapter, path: string) {
+  return {
+    auth,
+    path,
+    expectedVersion: 1 as const,
+    logLabel: LOG_LABEL,
+    encodeApiArg: jsonToHttpHeader,
+    ensureFolder: ensurePlaylistsFolder,
+  };
+}
+
 // ── Public API ───────────────────────────────────────────────────────
 
 /**
@@ -136,9 +143,6 @@ export async function saveQueueAsPlaylist(
   name: string,
   mediaTracks: MediaTrack[],
 ): Promise<string | null> {
-  const folderReady = await ensurePlaylistsFolder(auth);
-  if (!folderReady) return null;
-
   const sanitized = sanitizeFilename(name);
   if (!sanitized) return null;
 
@@ -163,31 +167,8 @@ export async function saveQueueAsPlaylist(
     tracks: mediaTracks.map(mediaTrackToSavedTrack),
   };
 
-  const apiArg = jsonToHttpHeader(
-    JSON.stringify({ path: filePath, mode: 'overwrite' }),
-  );
-  const body = JSON.stringify(data);
-
-  const response = await contentApiRequest(auth, (token) =>
-    fetch('https://content.dropboxapi.com/2/files/upload', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Dropbox-API-Arg': apiArg,
-        'Content-Type': 'application/octet-stream',
-      },
-      body,
-    }),
-  );
-
-  if (!response) return null;
-
-  if (!response.ok) {
-    console.warn('[DropboxPlaylistStorage] Upload failed:', response.status);
-    return null;
-  }
-
-  return filePath;
+  const success = await uploadRemoteJson(playlistTransport(auth, filePath), data);
+  return success ? filePath : null;
 }
 
 /**
@@ -305,27 +286,7 @@ async function loadPlaylistFile(
   auth: DropboxAuthAdapter,
   playlistPath: string,
 ): Promise<PlaylistFile | null> {
-  const apiArg = jsonToHttpHeader(JSON.stringify({ path: playlistPath }));
-
-  const response = await contentApiRequest(auth, (token) =>
-    fetch('https://content.dropboxapi.com/2/files/download', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Dropbox-API-Arg': apiArg,
-      },
-    }),
-  );
-
-  if (!response || !response.ok) return null;
-
-  try {
-    const data: PlaylistFile = await response.json();
-    return data.version === 1 ? data : null;
-  } catch (err) {
-    logCaughtError('dropboxPlaylistStorage.loadPlaylistFile', err);
-    return null;
-  }
+  return downloadRemoteJson<PlaylistFile>(playlistTransport(auth, playlistPath));
 }
 
 /**
@@ -341,4 +302,3 @@ export async function loadPlaylistTracks(
 
   return data.tracks.map(savedTrackToMediaTrack);
 }
-
