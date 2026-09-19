@@ -8,7 +8,6 @@
 
 import type { ProviderId } from '@/types/domain';
 import { LEGACY_SPOTIFY_STORAGE_KEYS, STORAGE_KEYS } from '@/constants/storage';
-import { migrateLegacySpotifyStorageKeys } from '@/constants/migrateSpotifyStorageKeys';
 import { removeLocalStorageKey, readLocalStorageRaw } from '@/utils/persistedStorage';
 import { logCaughtError } from '@/utils/logCaughtError';
 import { clearLikedCountSnapshot } from '@/services/cache/likedCountSnapshot';
@@ -62,10 +61,6 @@ export function remainingProviderLocalStorageKeys(providerId: ProviderId): strin
  * Safe to call more than once; storage clears are idempotent.
  */
 export async function purgeProviderPersistedData(providerId: ProviderId): Promise<void> {
-  if (providerId === 'spotify') {
-    migrateLegacySpotifyStorageKeys();
-  }
-
   for (const key of PROVIDER_PURGE_LOCAL_STORAGE_KEYS[providerId]) {
     removeLocalStorageKey(key);
   }
