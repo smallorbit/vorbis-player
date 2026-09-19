@@ -23,6 +23,12 @@ import { PlayerSizingProvider } from '@/contexts/PlayerSizingContext';
 import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { LIKED_SONGS_NAME } from '@/constants/playlist';
+import {
+  PROVIDER_DISCONNECTED_EVENT,
+  PROVIDER_SESSION_FALLTHROUGH_EVENT,
+  onAppEvent,
+} from '@/constants/events';
+import { NOTIFICATION_DISMISS_MS } from '@/constants/timing';
 import { useSessionPersistence } from '@/hooks/useSessionPersistence';
 import { decodeLegacySelection } from '@/services/sessionPersistence';
 import { playbackStore } from '@/stores/playbackStore';
@@ -329,25 +335,27 @@ const AudioPlayerComponent = () => {
     withResumeDismiss,
   ]);
 
-  const { chosenProviderId, activeDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification, disconnectToast, dismissDisconnectToast } = useProviderContext();
+  const { chosenProviderId, activeDescriptor, connectedProviderIds } = useProviderContext();
+
+  // Provider session toasts live in the UI layer (F29) — ProviderContext emits
+  // structured events; toast copy is rendered here.
+  useEffect(() => {
+    return onAppEvent(PROVIDER_SESSION_FALLTHROUGH_EVENT, (detail) => {
+      toast(
+        `${detail.expiredProviderName} session expired — switched to ${detail.fallbackProviderName}. Re-enable in Settings.`,
+        { id: FALLTHROUGH_TOAST_ID, duration: NOTIFICATION_DISMISS_MS },
+      );
+    });
+  }, []);
 
   useEffect(() => {
-    if (!fallthroughNotification) return;
-    toast(fallthroughNotification, {
-      id: FALLTHROUGH_TOAST_ID,
-      onDismiss: dismissFallthroughNotification,
-      onAutoClose: dismissFallthroughNotification,
+    return onAppEvent(PROVIDER_DISCONNECTED_EVENT, (detail) => {
+      toast(`${detail.providerName} disconnected — session expired.`, {
+        id: DISCONNECT_TOAST_ID,
+        duration: NOTIFICATION_DISMISS_MS,
+      });
     });
-  }, [fallthroughNotification, dismissFallthroughNotification]);
-
-  useEffect(() => {
-    if (!disconnectToast) return;
-    toast(disconnectToast, {
-      id: DISCONNECT_TOAST_ID,
-      onDismiss: dismissDisconnectToast,
-      onAutoClose: dismissDisconnectToast,
-    });
-  }, [disconnectToast, dismissDisconnectToast]);
+  }, []);
 
   // Setup is needed when no provider has been chosen yet and none are connected,
   // or when the active provider isn't authenticated and no other enabled provider is either.

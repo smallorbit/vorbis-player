@@ -21,6 +21,21 @@ function normalizePinIds(ids: string[]): string[] {
   return ids.map(id => id.startsWith('dbplaylist:') ? id.slice('dbplaylist:'.length) : id);
 }
 
+function togglePinId(
+  prev: string[],
+  id: string,
+  otherTypeIds: string[],
+): string[] {
+  if (prev.includes(id)) {
+    return prev.filter(pid => pid !== id);
+  }
+  const atCap =
+    countUserPins(prev) + countUserPins(otherTypeIds) >= MAX_PINS &&
+    !SPECIAL_PIN_IDS.has(id);
+  if (atCap) return prev;
+  return [...prev, id];
+}
+
 interface PinnedItemsContextValue {
   pinnedPlaylistIds: string[];
   pinnedAlbumIds: string[];
@@ -78,23 +93,25 @@ export function PinnedItemsProvider({ children }: { children: React.ReactNode })
     [pinnedAlbumIds]
   );
 
+  // Persist + push outside setState updaters so StrictMode's double-invoke
+  // cannot fire async side effects twice for a single user gesture (F84).
   const togglePinPlaylist = useCallback((id: string) => {
-    setPinnedPlaylistIds(prev => {
-      const next = prev.includes(id) ? prev.filter(pid => pid !== id) : countUserPins(prev) + countUserPins(pinnedAlbumIds) >= MAX_PINS && !SPECIAL_PIN_IDS.has(id) ? prev : [...prev, id];
-      setPins(UNIFIED_PROVIDER, 'playlists', next).catch(err => console.warn('[PinnedItemsContext] pin write failed:', err));
-      schedulePreferencesPush();
-      return next;
-    });
-  }, [pinnedAlbumIds]);
+    const next = togglePinId(pinnedPlaylistIds, id, pinnedAlbumIds);
+    setPinnedPlaylistIds(next);
+    void setPins(UNIFIED_PROVIDER, 'playlists', next).catch(err =>
+      console.warn('[PinnedItemsContext] pin write failed:', err),
+    );
+    schedulePreferencesPush();
+  }, [pinnedPlaylistIds, pinnedAlbumIds]);
 
   const togglePinAlbum = useCallback((id: string) => {
-    setPinnedAlbumIds(prev => {
-      const next = prev.includes(id) ? prev.filter(pid => pid !== id) : countUserPins(pinnedPlaylistIds) + countUserPins(prev) >= MAX_PINS && !SPECIAL_PIN_IDS.has(id) ? prev : [...prev, id];
-      setPins(UNIFIED_PROVIDER, 'albums', next).catch(err => console.warn('[PinnedItemsContext] pin write failed:', err));
-      schedulePreferencesPush();
-      return next;
-    });
-  }, [pinnedPlaylistIds]);
+    const next = togglePinId(pinnedAlbumIds, id, pinnedPlaylistIds);
+    setPinnedAlbumIds(next);
+    void setPins(UNIFIED_PROVIDER, 'albums', next).catch(err =>
+      console.warn('[PinnedItemsContext] pin write failed:', err),
+    );
+    schedulePreferencesPush();
+  }, [pinnedAlbumIds, pinnedPlaylistIds]);
 
   const totalUserPinned = countUserPins(pinnedPlaylistIds) + countUserPins(pinnedAlbumIds);
   const canPinMorePlaylists = totalUserPinned < MAX_PINS;
