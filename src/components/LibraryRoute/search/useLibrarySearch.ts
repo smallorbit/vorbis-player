@@ -1,16 +1,11 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { STORAGE_KEYS } from '@/constants/storage';
 import type { ProviderId } from '@/types/domain';
 import { toggleInArray } from '@/utils/toggleInArray';
 
 export type LibraryKindFilter = 'playlist' | 'album';
 export type LibrarySort = 'recent' | 'name-asc' | 'name-desc';
-
-const STORAGE_KEYS = {
-  providerFilter: 'vorbis-player-library-route-provider-filter',
-  kindFilter: 'vorbis-player-library-route-kind-filter',
-  sort: 'vorbis-player-library-route-sort',
-} as const;
 
 const DEFAULT_KIND_FILTER: LibraryKindFilter[] = [];
 const DEFAULT_PROVIDER_FILTER: ProviderId[] = [];
@@ -35,14 +30,14 @@ export interface LibrarySearchState {
 export function useLibrarySearch(initialQuery?: string): LibrarySearchState {
   const [query, setQuery] = useState(initialQuery ?? '');
   const [providerFilter, setProviderFilter] = useLocalStorage<ProviderId[]>(
-    STORAGE_KEYS.providerFilter,
+    STORAGE_KEYS.LIBRARY_ROUTE_PROVIDER_FILTER,
     DEFAULT_PROVIDER_FILTER,
   );
   const [kindFilter, setKindFilter] = useLocalStorage<LibraryKindFilter[]>(
-    STORAGE_KEYS.kindFilter,
+    STORAGE_KEYS.LIBRARY_ROUTE_KIND_FILTER,
     DEFAULT_KIND_FILTER,
   );
-  const [sort, setSort] = useLocalStorage<LibrarySort>(STORAGE_KEYS.sort, DEFAULT_SORT);
+  const [sort, setSort] = useLocalStorage<LibrarySort>(STORAGE_KEYS.LIBRARY_ROUTE_SORT, DEFAULT_SORT);
 
   const toggleProvider = useCallback(
     (id: ProviderId) => {

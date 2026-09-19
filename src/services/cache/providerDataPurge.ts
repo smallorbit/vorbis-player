@@ -7,7 +7,7 @@
  */
 
 import type { ProviderId } from '@/types/domain';
-import { STORAGE_KEYS } from '@/constants/storage';
+import { LEGACY_SPOTIFY_STORAGE_KEYS, STORAGE_KEYS } from '@/constants/storage';
 import { removeLocalStorageKey, readLocalStorageRaw } from '@/utils/persistedStorage';
 import { logCaughtError } from '@/utils/logCaughtError';
 import { clearLikedCountSnapshot } from '@/services/cache/likedCountSnapshot';
@@ -27,13 +27,17 @@ export const SPOTIFY_PROCESSED_CODE_SESSION_KEY = 'spotify_processed_code';
 /**
  * Enumerable localStorage keys owned by each provider. Logout MUST leave none
  * of these set. App-global prefs (volume, visualizers, …) are intentionally
- * absent. Spotify queue-sync toggles are user prefs, not account data — left
- * for #1706 if product wants them in the purge set.
+ * absent. Spotify queue-sync toggles are user prefs, not account data — kept.
+ *
+ * Legacy unprefixed Spotify keys are included so a logout that races migration
+ * (or an interrupted migrate) cannot leave `spotify_token` behind.
  */
 export const PROVIDER_PURGE_LOCAL_STORAGE_KEYS: Record<ProviderId, readonly string[]> = {
   spotify: [
     STORAGE_KEYS.SPOTIFY_TOKEN,
     STORAGE_KEYS.SPOTIFY_CODE_VERIFIER,
+    LEGACY_SPOTIFY_STORAGE_KEYS.TOKEN,
+    LEGACY_SPOTIFY_STORAGE_KEYS.CODE_VERIFIER,
   ],
   dropbox: [
     STORAGE_KEYS.DROPBOX_TOKEN,

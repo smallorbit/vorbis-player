@@ -140,3 +140,21 @@ Window CustomEvents owned by the app SHALL be registered in `constants/events.ts
 - **WHEN** a feature needs a new window CustomEvent
 - **THEN** its name and detail type are added to `AppEventMap` in `constants/events.ts`
 - **AND** providers do not import event name constants from hooks modules
+
+### Requirement: Prefixed Storage Key Registry
+
+Every durable localStorage key and shared IndexedDB database name owned by the app SHALL be registered in `constants/storage.ts` as `STORAGE_KEYS` and SHALL use the `vorbis-player-` prefix. Production modules SHALL import `STORAGE_KEYS` rather than hardcoding `vorbis-player-*` string literals. Writers SHALL go through `persistedStorage` helpers so same-tab listeners stay in sync.
+
+Unprefixed legacy Spotify auth keys (`spotify_token`, `spotify_code_verifier`) SHALL be migrated once to the prefixed keys on load and included in the Spotify logout purge set until no longer present on disk.
+
+#### Scenario: Spotify tokens use the prefix
+
+- **WHEN** Spotify auth reads or writes its token or PKCE verifier
+- **THEN** the keys are `vorbis-player-spotify-token` and `vorbis-player-spotify-code-verifier`
+- **AND** a leftover unprefixed `spotify_token` / `spotify_code_verifier` is migrated or purged
+
+#### Scenario: New keys go through the registry
+
+- **WHEN** a feature needs a new localStorage key
+- **THEN** the key string is added to `STORAGE_KEYS` under the `vorbis-player-` prefix
+- **AND** call sites reference `STORAGE_KEYS.*` rather than a hardcoded literal

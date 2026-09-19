@@ -7,6 +7,7 @@
 import { STORE_NAMES, settingsGet, settingsPut, settingsClearStore } from './settingsDb';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { PINS_CHANGED_EVENT, dispatchAppEvent } from '@/constants/events';
+import { readLocalStorageRaw, removeLocalStorageKey } from '@/utils/persistedStorage';
 
 export const MAX_PINS = 12;
 
@@ -64,15 +65,15 @@ export async function migratePinsFromLocalStorage(): Promise<void> {
   migrationDone = true;
   try {
     // Step 1: localStorage → IDB (legacy)
-    const playlistsRaw = localStorage.getItem(STORAGE_KEYS.PINNED_PLAYLISTS);
-    const albumsRaw = localStorage.getItem(STORAGE_KEYS.PINNED_ALBUMS);
+    const playlistsRaw = readLocalStorageRaw(STORAGE_KEYS.PINNED_PLAYLISTS);
+    const albumsRaw = readLocalStorageRaw(STORAGE_KEYS.PINNED_ALBUMS);
 
     if (playlistsRaw) {
       const ids = JSON.parse(playlistsRaw) as string[];
       if (Array.isArray(ids) && ids.length > 0) {
         await setPins('spotify', 'playlists', ids);
       }
-      localStorage.removeItem(STORAGE_KEYS.PINNED_PLAYLISTS);
+      removeLocalStorageKey(STORAGE_KEYS.PINNED_PLAYLISTS);
     }
 
     if (albumsRaw) {
@@ -80,7 +81,7 @@ export async function migratePinsFromLocalStorage(): Promise<void> {
       if (Array.isArray(ids) && ids.length > 0) {
         await setPins('spotify', 'albums', ids);
       }
-      localStorage.removeItem(STORAGE_KEYS.PINNED_ALBUMS);
+      removeLocalStorageKey(STORAGE_KEYS.PINNED_ALBUMS);
     }
 
     // Step 2: Merge per-provider pins into unified namespace

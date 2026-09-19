@@ -5,8 +5,9 @@
  */
 
 import { createIdbDatabase, type IdbDatabaseHandle, type KVStore } from '@/services/idb';
+import { STORAGE_KEYS } from '@/constants/storage';
 
-const DB_NAME = 'vorbis-player-library';
+const DB_NAME = STORAGE_KEYS.LIBRARY;
 
 // v2: stores hold neutral domain shapes (MediaCollection / MediaTrack) with
 // out-of-line keys of the form "{provider}:{id}" (collections) or a

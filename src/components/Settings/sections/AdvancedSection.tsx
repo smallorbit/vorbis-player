@@ -38,7 +38,7 @@ import {
  * Neutral shadcn palette only — no `var(--accent-color)` references. Each
  * control reads / writes a hook + storage key:
  *
- *   - Quick Access Panel ↔ `useQapEnabled()` ↔ `vorbis-player-qap-enabled`
+ *   - Quick Access Panel ↔ `useQapEnabled()` ↔ `STORAGE_KEYS.QAP_ENABLED`
  *   - Performance Profiler ↔ `useProfilingContext()` ↔ `STORAGE_KEYS.PROFILING`
  *   - Visualizer Debug ↔ `useVisualizerDebug()` (in-memory; toggling has no
  *     localStorage side-effect by design)

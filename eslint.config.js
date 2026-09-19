@@ -37,22 +37,17 @@ export default tseslint.config(
     },
   },
   {
+    // #1700 raw-localStorage ban + #1706 prefix-literal ban. Combined in one
+    // block so flat-config does not let a later no-restricted-syntax override
+    // the earlier selectors.
     files: ['src/**/*.{ts,tsx}'],
     ignores: [
       'src/**/__tests__/**',
       'src/test/**',
       // The helper is the only production module allowed to touch localStorage.
       'src/utils/persistedStorage.ts',
-      // Remaining raw writers are not useLocalStorage-backed (auth/session/
-      // debug/migration). Fold them in as later WS3 issues close those seams.
-      // spotify/auth.ts moved to persistedStorage in #1704.
-      'src/providers/dropbox/dropboxAuthAdapter.ts',
-      'src/services/sessionPersistence.ts',
-      'src/services/settings/pinnedItemsStorage.ts',
-      'src/services/cache/likedCountSnapshot.ts',
-      'src/contexts/ProfilingContext.tsx',
-      'src/contexts/VisualizerDebugContext.tsx',
-      'src/components/DebugOverlay.tsx',
+      // Canonical home of every vorbis-player-* string literal.
+      'src/constants/storage.ts',
     ],
     rules: {
       'no-restricted-syntax': [
@@ -66,6 +61,16 @@ export default tseslint.config(
           selector: 'MemberExpression[object.object.name="window"][object.property.name="localStorage"]',
           message:
             'Use persistedStorage helpers (readLocalStorageRaw / writeLocalStorageJson / removeLocalStorageKey) so same-tab listeners stay in sync.',
+        },
+        {
+          selector: 'Literal[value=/^vorbis-player-/]',
+          message:
+            'Use STORAGE_KEYS from @/constants/storage instead of hardcoding vorbis-player- keys.',
+        },
+        {
+          selector: 'TemplateLiteral[quasis.length=1][quasis.0.value.raw=/^vorbis-player-/]',
+          message:
+            'Use STORAGE_KEYS from @/constants/storage instead of hardcoding vorbis-player- keys.',
         },
       ],
     },

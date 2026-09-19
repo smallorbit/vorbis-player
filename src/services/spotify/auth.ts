@@ -1,6 +1,7 @@
 import type { TokenData } from './types';
 import { SESSION_EXPIRED_EVENT, dispatchAppEvent } from '@/constants/events';
 import { STORAGE_KEYS } from '@/constants/storage';
+import { migrateLegacySpotifyStorageKeys } from '@/constants/migrateSpotifyStorageKeys';
 import { purgeProviderPersistedData } from '@/services/cache/providerDataPurge';
 import { logCaughtError } from '@/utils/logCaughtError';
 import {
@@ -49,6 +50,7 @@ class SpotifyAuth {
   }
 
   private loadTokenFromStorage(): void {
+    migrateLegacySpotifyStorageKeys();
     const stored = readLocalStorageRaw(STORAGE_KEYS.SPOTIFY_TOKEN);
     if (!stored) return;
 

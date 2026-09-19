@@ -2,8 +2,8 @@ import { useCallback } from 'react';
 import type { CollectionRef } from '@/types/domain';
 import { collectionRefToKey } from '@/types/domain';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { STORAGE_KEYS } from '@/constants/storage';
 
-const STORAGE_KEY = 'vorbis-player-recently-played';
 const MAX_ENTRIES = 5;
 
 export interface RecentlyPlayedEntry {
@@ -19,7 +19,7 @@ interface UseRecentlyPlayedCollectionsResult {
 }
 
 export function useRecentlyPlayedCollections(): UseRecentlyPlayedCollectionsResult {
-  const [history, setHistory] = useLocalStorage<RecentlyPlayedEntry[]>(STORAGE_KEY, []);
+  const [history, setHistory] = useLocalStorage<RecentlyPlayedEntry[]>(STORAGE_KEYS.RECENTLY_PLAYED, []);
 
   const record = useCallback(
     (ref: CollectionRef, name: string, imageUrl?: string | null) => {

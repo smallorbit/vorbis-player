@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { logCaughtError } from '@/utils/logCaughtError';
+import { readLocalStorageRaw, writeLocalStorageRaw } from '@/utils/persistedStorage';
 
 interface RenderStats {
   renderCount: number; mountCount: number; updateCount: number;
@@ -184,7 +185,7 @@ const ProfilingContext = createContext<ProfilingContextValue | null>(null);
 function getInitialEnabled(): boolean {
   if (!HAS_WINDOW) return false;
   if (new URLSearchParams(window.location.search).get('profile') === 'true') return true;
-  return localStorage.getItem(STORAGE_KEYS.PROFILING) === 'true';
+  return readLocalStorageRaw(STORAGE_KEYS.PROFILING) === 'true';
 }
 
 export function ProfilingProvider({ children }: { children: React.ReactNode }) {
@@ -194,7 +195,7 @@ export function ProfilingProvider({ children }: { children: React.ReactNode }) {
   const toggle = useCallback(() => {
     setEnabled((prev) => {
       const next = !prev;
-      if (HAS_WINDOW) localStorage.setItem(STORAGE_KEYS.PROFILING, String(next));
+      if (HAS_WINDOW) writeLocalStorageRaw(STORAGE_KEYS.PROFILING, String(next));
       if (next && !collectorRef.current) collectorRef.current = new MetricsCollector();
       if (!next && collectorRef.current) collectorRef.current.destroy();
       return next;
@@ -237,5 +238,5 @@ export function useProfilingContext(): ProfilingContextValue {
 export function isProfilingEnabled(): boolean {
   if (!HAS_WINDOW) return false;
   if (new URLSearchParams(window.location.search).get('profile') === 'true') return true;
-  return localStorage.getItem(STORAGE_KEYS.PROFILING) === 'true';
+  return readLocalStorageRaw(STORAGE_KEYS.PROFILING) === 'true';
 }

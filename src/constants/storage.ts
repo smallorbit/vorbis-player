@@ -1,3 +1,14 @@
+/**
+ * Canonical localStorage / IndexedDB name registry.
+ *
+ * All `vorbis-player-` prefixed string literals in production `src/` MUST live
+ * here. ESLint bans hardcoded `vorbis-player-*` literals elsewhere (see
+ * `eslint.config.js`). Writers go through `persistedStorage` helpers so
+ * same-tab listeners stay in sync.
+ */
+
+export const STORAGE_PREFIX = 'vorbis-player-' as const;
+
 export const STORAGE_KEYS = {
   // Provider configuration
   ACTIVE_PROVIDER: 'vorbis-player-active-provider',
@@ -7,6 +18,7 @@ export const STORAGE_KEYS = {
   VOLUME: 'vorbis-player-volume',
   MUTED: 'vorbis-player-muted',
   SHUFFLE_ENABLED: 'vorbis-player-shuffle-enabled',
+  LAST_SESSION: 'vorbis-player-last-session',
 
   // Visual effects
   VISUAL_EFFECTS_ENABLED: 'vorbis-player-visual-effects-enabled',
@@ -35,10 +47,14 @@ export const STORAGE_KEYS = {
   ALBUM_FILTERS: 'vorbis-player-album-filters',
   PINNED_PLAYLISTS: 'vorbis-player-pinned-playlists',
   PINNED_ALBUMS: 'vorbis-player-pinned-albums',
+  RECENTLY_PLAYED: 'vorbis-player-recently-played',
+  LIBRARY_ROUTE_PROVIDER_FILTER: 'vorbis-player-library-route-provider-filter',
+  LIBRARY_ROUTE_KIND_FILTER: 'vorbis-player-library-route-kind-filter',
+  LIBRARY_ROUTE_SORT: 'vorbis-player-library-route-sort',
 
-  // Spotify authentication (legacy key strings — do not rename without migration)
-  SPOTIFY_TOKEN: 'spotify_token',
-  SPOTIFY_CODE_VERIFIER: 'spotify_code_verifier',
+  // Spotify authentication
+  SPOTIFY_TOKEN: 'vorbis-player-spotify-token',
+  SPOTIFY_CODE_VERIFIER: 'vorbis-player-spotify-code-verifier',
 
   // Dropbox authentication and sync
   DROPBOX_TOKEN: 'vorbis-player-dropbox-token',
@@ -54,14 +70,29 @@ export const STORAGE_KEYS = {
   SPOTIFY_QUEUE_SYNC: 'vorbis-player-spotify-queue-sync-enabled',
   SPOTIFY_QUEUE_CROSS_PROVIDER: 'vorbis-player-spotify-queue-resolve-cross-provider',
 
-  // Cache
+  // Cache / IndexedDB database names (also used as IDB `name`)
   LIKED_COUNT_SNAPSHOTS: 'vorbis-player-liked-count-snapshots',
   LIBRARY: 'vorbis-player-library',
   SETTINGS: 'vorbis-player-settings',
+
+  // UI prefs
+  QAP_ENABLED: 'vorbis-player-qap-enabled',
+  WELCOME_SEEN: 'vorbis-player-welcome-seen',
 
   // Debug and development
   PROFILING: 'vorbis-player-profiling',
   DEBUG_OVERLAY: 'vorbis-player-debug-overlay',
   VISUALIZER_DEBUG_OVERRIDES: 'vorbis-player-visualizer-debug-overrides',
   DEVBUG_ENABLED: 'vorbis-player-devbug',
+} as const;
+
+export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
+
+/**
+ * Pre-#1706 unprefixed Spotify keys. Read once for migration / purge leftovers,
+ * then removed. Do not write these.
+ */
+export const LEGACY_SPOTIFY_STORAGE_KEYS = {
+  TOKEN: 'spotify_token',
+  CODE_VERIFIER: 'spotify_code_verifier',
 } as const;

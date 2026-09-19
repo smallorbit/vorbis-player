@@ -14,6 +14,11 @@ import {
 import { getLikesSync } from './dropboxLikesSync';
 import { getPreferencesSync } from './dropboxPreferencesSync';
 import { purgeProviderPersistedData } from '@/services/cache/providerDataPurge';
+import {
+  readLocalStorageRaw,
+  removeLocalStorageKey,
+  writeLocalStorageRaw,
+} from '@/utils/persistedStorage';
 
 function notifyDropboxSessionExpired(): void {
   dispatchAppEvent(DROPBOX_AUTH_ERROR_EVENT);
@@ -63,9 +68,9 @@ export class DropboxAuthAdapter implements AuthProvider {
   private refreshInFlight: Promise<string | null> | null = null;
 
   constructor() {
-    this.accessToken = localStorage.getItem(STORAGE_KEYS.DROPBOX_TOKEN);
-    this.refreshToken = localStorage.getItem(STORAGE_KEYS.DROPBOX_REFRESH_TOKEN);
-    const stored = localStorage.getItem(STORAGE_KEYS.DROPBOX_TOKEN_EXPIRY);
+    this.accessToken = readLocalStorageRaw(STORAGE_KEYS.DROPBOX_TOKEN);
+    this.refreshToken = readLocalStorageRaw(STORAGE_KEYS.DROPBOX_REFRESH_TOKEN);
+    const stored = readLocalStorageRaw(STORAGE_KEYS.DROPBOX_TOKEN_EXPIRY);
     this.tokenExpiresAt = stored ? parseInt(stored, 10) : null;
   }
 
@@ -78,9 +83,9 @@ export class DropboxAuthAdapter implements AuthProvider {
 
   /** Re-read tokens from localStorage (e.g. written by a popup tab). */
   private syncFromStorage(): void {
-    this.accessToken = localStorage.getItem(STORAGE_KEYS.DROPBOX_TOKEN);
-    this.refreshToken = localStorage.getItem(STORAGE_KEYS.DROPBOX_REFRESH_TOKEN);
-    const stored = localStorage.getItem(STORAGE_KEYS.DROPBOX_TOKEN_EXPIRY);
+    this.accessToken = readLocalStorageRaw(STORAGE_KEYS.DROPBOX_TOKEN);
+    this.refreshToken = readLocalStorageRaw(STORAGE_KEYS.DROPBOX_REFRESH_TOKEN);
+    const stored = readLocalStorageRaw(STORAGE_KEYS.DROPBOX_TOKEN_EXPIRY);
     this.tokenExpiresAt = stored ? parseInt(stored, 10) : null;
   }
 
@@ -98,10 +103,10 @@ export class DropboxAuthAdapter implements AuthProvider {
     }
 
     const codeVerifier = generateRandomString(64);
-    localStorage.setItem(STORAGE_KEYS.DROPBOX_CODE_VERIFIER, codeVerifier);
+    writeLocalStorageRaw(STORAGE_KEYS.DROPBOX_CODE_VERIFIER, codeVerifier);
 
     const state = generateRandomString(32);
-    localStorage.setItem(STORAGE_KEYS.DROPBOX_OAUTH_STATE, state);
+    writeLocalStorageRaw(STORAGE_KEYS.DROPBOX_OAUTH_STATE, state);
 
     const challengeBuffer = await sha256(codeVerifier);
     const codeChallenge = base64urlEncode(challengeBuffer);
@@ -147,13 +152,13 @@ export class DropboxAuthAdapter implements AuthProvider {
       return false;
     }
 
-    const expectedState = localStorage.getItem(STORAGE_KEYS.DROPBOX_OAUTH_STATE);
-    localStorage.removeItem(STORAGE_KEYS.DROPBOX_OAUTH_STATE);
+    const expectedState = readLocalStorageRaw(STORAGE_KEYS.DROPBOX_OAUTH_STATE);
+    removeLocalStorageKey(STORAGE_KEYS.DROPBOX_OAUTH_STATE);
     if (!expectedState || returnedState !== expectedState) {
       throw new Error('OAuth state mismatch — possible CSRF attack');
     }
 
-    const codeVerifier = localStorage.getItem(STORAGE_KEYS.DROPBOX_CODE_VERIFIER);
+    const codeVerifier = readLocalStorageRaw(STORAGE_KEYS.DROPBOX_CODE_VERIFIER);
     if (!codeVerifier) {
       throw new Error('Missing code verifier for Dropbox PKCE');
     }
@@ -186,14 +191,14 @@ export class DropboxAuthAdapter implements AuthProvider {
       ? Date.now() + data.expires_in * 1000
       : null;
 
-    localStorage.setItem(STORAGE_KEYS.DROPBOX_TOKEN, data.access_token);
+    writeLocalStorageRaw(STORAGE_KEYS.DROPBOX_TOKEN, data.access_token);
     if (data.refresh_token) {
-      localStorage.setItem(STORAGE_KEYS.DROPBOX_REFRESH_TOKEN, data.refresh_token);
+      writeLocalStorageRaw(STORAGE_KEYS.DROPBOX_REFRESH_TOKEN, data.refresh_token);
     }
     if (this.tokenExpiresAt !== null) {
-      localStorage.setItem(STORAGE_KEYS.DROPBOX_TOKEN_EXPIRY, String(this.tokenExpiresAt));
+      writeLocalStorageRaw(STORAGE_KEYS.DROPBOX_TOKEN_EXPIRY, String(this.tokenExpiresAt));
     }
-    localStorage.removeItem(STORAGE_KEYS.DROPBOX_CODE_VERIFIER);
+    removeLocalStorageKey(STORAGE_KEYS.DROPBOX_CODE_VERIFIER);
 
     // Kick provider-owned syncs now that a fresh token is in place. Fire and
     // forget: login success must not depend on sync availability.
@@ -211,8 +216,8 @@ export class DropboxAuthAdapter implements AuthProvider {
   private clearAccessToken(): void {
     this.accessToken = null;
     this.tokenExpiresAt = null;
-    localStorage.removeItem(STORAGE_KEYS.DROPBOX_TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.DROPBOX_TOKEN_EXPIRY);
+    removeLocalStorageKey(STORAGE_KEYS.DROPBOX_TOKEN);
+    removeLocalStorageKey(STORAGE_KEYS.DROPBOX_TOKEN_EXPIRY);
   }
 
   async logout(): Promise<void> {
@@ -285,9 +290,9 @@ export class DropboxAuthAdapter implements AuthProvider {
       ? Date.now() + data.expires_in * 1000
       : null;
 
-    localStorage.setItem(STORAGE_KEYS.DROPBOX_TOKEN, data.access_token);
+    writeLocalStorageRaw(STORAGE_KEYS.DROPBOX_TOKEN, data.access_token);
     if (this.tokenExpiresAt !== null) {
-      localStorage.setItem(STORAGE_KEYS.DROPBOX_TOKEN_EXPIRY, String(this.tokenExpiresAt));
+      writeLocalStorageRaw(STORAGE_KEYS.DROPBOX_TOKEN_EXPIRY, String(this.tokenExpiresAt));
     }
     return data.access_token;
   }

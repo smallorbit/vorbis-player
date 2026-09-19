@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { theme } from '@/styles/theme';
-import { logCaughtError } from '@/utils/logCaughtError';
+import { readLocalStorageRaw, writeLocalStorageRaw } from '@/utils/persistedStorage';
 
 interface LogEntry {
   time: string;
@@ -16,11 +16,11 @@ const TAP_WINDOW_MS = 2000;
 function isDebugEnabled(): boolean {
   if (typeof window === 'undefined') return false;
   if (new URLSearchParams(window.location.search).get('debug') === 'true') return true;
-  try { return localStorage.getItem(STORAGE_KEYS.DEBUG_OVERLAY) === 'true'; } catch (err) { logCaughtError('DebugOverlay.isDebugEnabled', err); return false; }
+  return readLocalStorageRaw(STORAGE_KEYS.DEBUG_OVERLAY) === 'true';
 }
 
 function setDebugEnabled(enabled: boolean) {
-  try { localStorage.setItem(STORAGE_KEYS.DEBUG_OVERLAY, String(enabled)); } catch (err) { /* noop */ logCaughtError('DebugOverlay.setDebugEnabled', err); }
+  writeLocalStorageRaw(STORAGE_KEYS.DEBUG_OVERLAY, String(enabled));
 }
 
 export function useDebugActivator() {

@@ -1,7 +1,8 @@
 import { chromium } from '@playwright/test';
 import readline from 'node:readline';
 
-const SPOTIFY_TOKEN_KEY = 'spotify_token';
+const SPOTIFY_TOKEN_KEY = 'vorbis-player-spotify-token';
+const LEGACY_SPOTIFY_TOKEN_KEY = 'spotify_token';
 
 function waitForEnter(prompt: string): Promise<void> {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -32,7 +33,9 @@ export async function getSpotifyAccessToken(opts: {
 
     await waitForEnter('  Press Enter when you are logged in and the player is ready... ');
 
-    const stored = await page.evaluate((key: string) => localStorage.getItem(key), SPOTIFY_TOKEN_KEY);
+    const stored =
+      (await page.evaluate((key: string) => localStorage.getItem(key), SPOTIFY_TOKEN_KEY)) ??
+      (await page.evaluate((key: string) => localStorage.getItem(key), LEGACY_SPOTIFY_TOKEN_KEY));
 
     if (!stored) {
       throw new Error('No Spotify token found in localStorage. Did you complete the login?');

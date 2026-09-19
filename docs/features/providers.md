@@ -352,7 +352,7 @@ The Spotify Web Playback SDK (`https://sdk.scdn.co/spotify-player.js`) is NOT lo
 ### Token Refresh
 
 `SpotifyAuth` (`src/services/spotify/auth.ts`):
-- Token stored in localStorage as `spotify_token` (JSON with `access_token`, `refresh_token`, `expires_at`)
+- Token stored in localStorage as `STORAGE_KEYS.SPOTIFY_TOKEN` (`vorbis-player-spotify-token`; JSON with `access_token`, `refresh_token`, `expires_at`). Pre-#1706 unprefixed `spotify_token` is migrated on load.
 - `ensureValidToken()` proactively refreshes when within 5 minutes of expiry (`TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000`)
 - On startup, if the access token is expired but a refresh token exists, the token data is kept so `ensureValidToken()` can refresh on first API call
 - `SpotifyPlaybackAdapter.prepareTrack()` pre-warms the auth token for the next track

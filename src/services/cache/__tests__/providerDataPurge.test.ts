@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { STORAGE_KEYS } from '@/constants/storage';
+import { STORAGE_KEYS, LEGACY_SPOTIFY_STORAGE_KEYS } from '@/constants/storage';
 import { writeLocalStorageRaw, writeLocalStorageJson } from '@/utils/persistedStorage';
 import {
   purgeProviderPersistedData,
@@ -86,10 +86,12 @@ describe('purgeProviderPersistedData', () => {
   });
 
   it('enumerates Spotify and Dropbox purge keys from STORAGE_KEYS', () => {
-    // #then — registry is the logout contract's enumerable set
+    // #then — registry is the logout contract's enumerable set (legacy keys included for #1706)
     expect(PROVIDER_PURGE_LOCAL_STORAGE_KEYS.spotify).toEqual([
       STORAGE_KEYS.SPOTIFY_TOKEN,
       STORAGE_KEYS.SPOTIFY_CODE_VERIFIER,
+      LEGACY_SPOTIFY_STORAGE_KEYS.TOKEN,
+      LEGACY_SPOTIFY_STORAGE_KEYS.CODE_VERIFIER,
     ]);
     expect(PROVIDER_PURGE_LOCAL_STORAGE_KEYS.dropbox).toContain(STORAGE_KEYS.DROPBOX_TOKEN);
     expect(PROVIDER_PURGE_LOCAL_STORAGE_KEYS.dropbox).toContain(
@@ -129,6 +131,20 @@ describe('purgeProviderPersistedData', () => {
       expect(getLikedSongsCountCache()).toBeNull();
       expect((await getAllPlaylists()).map((c) => c.id)).toEqual(['db-pl']);
       expect(await getTrackList({ provider: 'spotify', kind: 'liked' })).toBeUndefined();
+    });
+
+    it('also clears leftover unprefixed Spotify auth keys', async () => {
+      // #given — pre-#1706 keys still on disk
+      writeLocalStorageRaw(LEGACY_SPOTIFY_STORAGE_KEYS.TOKEN, JSON.stringify({ access_token: 'old' }));
+      writeLocalStorageRaw(LEGACY_SPOTIFY_STORAGE_KEYS.CODE_VERIFIER, 'old-verifier');
+
+      // #when
+      await purgeProviderPersistedData('spotify');
+
+      // #then
+      expect(localStorage.getItem(LEGACY_SPOTIFY_STORAGE_KEYS.TOKEN)).toBeNull();
+      expect(localStorage.getItem(LEGACY_SPOTIFY_STORAGE_KEYS.CODE_VERIFIER)).toBeNull();
+      expect(remainingProviderLocalStorageKeys('spotify')).toEqual([]);
     });
   });
 
