@@ -64,7 +64,7 @@ describe('DropboxAuthAdapter', () => {
     expect(await auth.handleCallback(url)).toBe(false);
   });
 
-  it('logout clears stored tokens', () => {
+  it('logout clears stored tokens', async () => {
     // #given
     store['vorbis-player-dropbox-token'] = 'test';
     store['vorbis-player-dropbox-refresh-token'] = 'refresh';
@@ -72,7 +72,7 @@ describe('DropboxAuthAdapter', () => {
     expect(auth.isAuthenticated()).toBe(true);
 
     // #when
-    auth.logout();
+    await auth.logout();
 
     // #then
     expect(auth.isAuthenticated()).toBe(false);

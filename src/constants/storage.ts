@@ -36,6 +36,10 @@ export const STORAGE_KEYS = {
   PINNED_PLAYLISTS: 'vorbis-player-pinned-playlists',
   PINNED_ALBUMS: 'vorbis-player-pinned-albums',
 
+  // Spotify authentication (legacy key strings — do not rename without migration)
+  SPOTIFY_TOKEN: 'spotify_token',
+  SPOTIFY_CODE_VERIFIER: 'spotify_code_verifier',
+
   // Dropbox authentication and sync
   DROPBOX_TOKEN: 'vorbis-player-dropbox-token',
   DROPBOX_REFRESH_TOKEN: 'vorbis-player-dropbox-refresh-token',

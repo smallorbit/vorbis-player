@@ -1,5 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+const mockPurgeProviderPersistedData = vi.hoisted(() =>
+  vi.fn().mockResolvedValue(undefined),
+);
+
+vi.mock('@/services/cache/providerDataPurge', () => ({
+  purgeProviderPersistedData: mockPurgeProviderPersistedData,
+  PROVIDER_PURGE_LOCAL_STORAGE_KEYS: {
+    spotify: ['spotify_token', 'spotify_code_verifier'],
+    dropbox: [],
+  },
+  remainingProviderLocalStorageKeys: () => [],
+  SPOTIFY_PROCESSED_CODE_SESSION_KEY: 'spotify_processed_code',
+}));
+
 function mockFetchResponse(body: unknown, status = 200, headers?: Record<string, string>) {
   return vi.mocked(global.fetch).mockResolvedValueOnce({
     ok: status >= 200 && status < 300,
@@ -13,6 +27,8 @@ function mockFetchResponse(body: unknown, status = 200, headers?: Record<string,
 
 async function freshAuth() {
   vi.resetModules();
+  mockPurgeProviderPersistedData.mockClear();
+  mockPurgeProviderPersistedData.mockResolvedValue(undefined);
   const mod = await import('@/services/spotify');
   return mod.spotifyAuth;
 }
@@ -422,6 +438,23 @@ describe('SpotifyAuth', () => {
       dispatchSpy.mockRestore();
     });
 
+    it('runs the full Spotify data-purge contract on session expiry', async () => {
+      // #given
+      const token = {
+        access_token: 'old-token',
+        refresh_token: 'my-refresh',
+        expires_at: Date.now() + 30 * 60 * 1000,
+      };
+      vi.mocked(localStorage.getItem).mockReturnValue(JSON.stringify(token));
+      const auth = await freshAuth();
+
+      // #when
+      auth.reportUnauthorized();
+
+      // #then — same purge path as AuthProvider.logout (Dropbox parity)
+      expect(mockPurgeProviderPersistedData).toHaveBeenCalledExactlyOnceWith('spotify');
+    });
+
     it('does not double-dispatch when called twice in the same session', async () => {
       // #given — token present, then reportUnauthorized twice (simulates
       // performRefresh 400/401 → reportUnauthorized → executeWithAuthRetry
@@ -444,6 +477,7 @@ describe('SpotifyAuth', () => {
         call => (call[0] as Event).type === 'vorbis-session-expired',
       );
       expect(sessionExpiredEvents).toHaveLength(1);
+      expect(mockPurgeProviderPersistedData).toHaveBeenCalledOnce();
       dispatchSpy.mockRestore();
     });
   });

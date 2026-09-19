@@ -45,7 +45,7 @@ export default tseslint.config(
       'src/utils/persistedStorage.ts',
       // Remaining raw writers are not useLocalStorage-backed (auth/session/
       // debug/migration). Fold them in as later WS3 issues close those seams.
-      'src/services/spotify/auth.ts',
+      // spotify/auth.ts moved to persistedStorage in #1704.
       'src/providers/dropbox/dropboxAuthAdapter.ts',
       'src/services/sessionPersistence.ts',
       'src/services/settings/pinnedItemsStorage.ts',

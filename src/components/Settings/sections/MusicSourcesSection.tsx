@@ -111,7 +111,7 @@ export const MusicSourcesSection = memo(() => {
 
       openLoginPopup(descriptor, (providerId) => toggleProvider(providerId));
     },
-    [openLoginPopup, toggleProvider],
+    [openLoginPopup, registry, toggleProvider],
   );
 
   useEffect(() => () => clearPendingPopup(), [clearPendingPopup]);
@@ -124,7 +124,7 @@ export const MusicSourcesSection = memo(() => {
 
     queueStore.removeTracksByProvider(id);
 
-    descriptor?.auth.logout();
+    void descriptor?.auth.logout();
     toggleProvider(id);
   }, [
     registry,
@@ -145,7 +145,7 @@ export const MusicSourcesSection = memo(() => {
         performDisconnect(descriptor.id);
       }
     },
-    [tracks, performDisconnect],
+    [tracks, performDisconnect, registry],
   );
 
   if (providers.length < 2) return null;
