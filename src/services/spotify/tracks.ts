@@ -233,9 +233,8 @@ async function modifyTrackSaved(trackId: string, save: boolean): Promise<void> {
   invalidateTrackSavedCache(trackId);
   trackSavedCache.set(trackId, { value: save, timestamp: Date.now() });
 
-  // Also invalidate liked songs caches since the list changed
-  setLikedSongsCache(null);
-  setLikedSongsCountCache(null);
+  // Also invalidate liked songs caches (memory + IndexedDB) since the list changed
+  await invalidateLikedSongsCaches();
 }
 
 export async function saveTrack(trackId: string): Promise<void> {
@@ -246,7 +245,16 @@ export async function unsaveTrack(trackId: string): Promise<void> {
   return modifyTrackSaved(trackId, false);
 }
 
-export function invalidateLikedSongsCaches(): void {
+/**
+ * Clear in-memory liked-songs caches and the IndexedDB track list so the next
+ * `getLikedSongs` fetch hits the network instead of a stale 24h IDB entry (F5).
+ */
+export async function invalidateLikedSongsCaches(): Promise<void> {
   setLikedSongsCache(null);
   setLikedSongsCountCache(null);
+  try {
+    await libraryCache.removeTrackList(LIKED_SONGS_REF);
+  } catch (err) {
+    logCaughtError('spotify.tracks.invalidateLikedSongsCaches.idbRemove', err);
+  }
 }

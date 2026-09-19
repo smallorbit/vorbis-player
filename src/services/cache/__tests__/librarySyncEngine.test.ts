@@ -13,7 +13,7 @@ vi.mock('../../spotify', () => ({
   getAllUserPlaylists: vi.fn(),
   getAllUserAlbums: vi.fn(),
   getUserLibraryInterleaved: vi.fn(),
-  invalidateLikedSongsCaches: vi.fn(),
+  invalidateLikedSongsCaches: vi.fn().mockResolvedValue(undefined),
   spotifyAuth: {
     isAuthenticated: vi.fn(() => true),
     ensureValidToken: vi.fn(() => Promise.resolve('mock-token')),

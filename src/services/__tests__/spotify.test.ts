@@ -4,6 +4,7 @@ import * as libraryCache from '@/services/cache/libraryCache';
 vi.mock('@/services/cache/libraryCache', () => ({
   getTrackList: vi.fn().mockResolvedValue(undefined),
   putTrackList: vi.fn().mockResolvedValue(undefined),
+  removeTrackList: vi.fn().mockResolvedValue(undefined),
 }));
 
 function mockFetchResponse(body: unknown, status = 200, headers?: Record<string, string>) {
@@ -43,6 +44,7 @@ describe('Spotify API', () => {
     vi.mocked(localStorage.removeItem).mockImplementation(() => {});
     vi.mocked(libraryCache.getTrackList).mockResolvedValue(undefined);
     vi.mocked(libraryCache.putTrackList).mockResolvedValue(undefined);
+    vi.mocked(libraryCache.removeTrackList).mockResolvedValue(undefined);
   });
 
   describe('rate limiting', () => {
@@ -324,6 +326,21 @@ describe('Spotify API', () => {
       expect(body.ids).toEqual(['track-456']);
     });
 
+    it('saveTrack removes the IndexedDB liked-songs track list', async () => {
+      // #given — F5: save must invalidate the 24h IDB liked list, not only memory cache
+      const mod = await freshSpotify();
+      mockFetchResponse(undefined, 200);
+
+      // #when
+      await mod.saveTrack('track-456');
+
+      // #then
+      expect(libraryCache.removeTrackList).toHaveBeenCalledWith({
+        provider: 'spotify',
+        kind: 'liked',
+      });
+    });
+
     it('unsaveTrack makes DELETE request', async () => {
       // #given
       const mod = await freshSpotify();
@@ -336,6 +353,90 @@ describe('Spotify API', () => {
       const [url, options] = vi.mocked(global.fetch).mock.calls[0];
       expect(url).toBe('https://api.spotify.com/v1/me/tracks');
       expect(options?.method).toBe('DELETE');
+    });
+
+    it('unsaveTrack removes the IndexedDB liked-songs track list', async () => {
+      // #given
+      const mod = await freshSpotify();
+      mockFetchResponse(undefined, 200);
+
+      // #when
+      await mod.unsaveTrack('track-789');
+
+      // #then
+      expect(libraryCache.removeTrackList).toHaveBeenCalledWith({
+        provider: 'spotify',
+        kind: 'liked',
+      });
+    });
+
+    it('invalidateLikedSongsCaches clears memory and IndexedDB liked list', async () => {
+      // #given
+      const mod = await freshSpotify();
+
+      // #when
+      await mod.invalidateLikedSongsCaches();
+
+      // #then
+      expect(libraryCache.removeTrackList).toHaveBeenCalledWith({
+        provider: 'spotify',
+        kind: 'liked',
+      });
+    });
+
+    it('getLikedSongs refetches from the network after IDB invalidation', async () => {
+      // #given — seed a fresh IDB liked list, then invalidate via save
+      const mod = await freshSpotify();
+      const staleTrack = {
+        id: 'stale-1',
+        provider: 'spotify' as const,
+        playbackRef: { provider: 'spotify' as const, ref: 'spotify:track:stale-1' },
+        name: 'Stale Track',
+        artists: 'Artist',
+        album: 'Album',
+        durationMs: 1000,
+        externalUrl: 'https://open.spotify.com/track/stale-1',
+        genres: [] as string[],
+      };
+      vi.mocked(libraryCache.getTrackList).mockResolvedValue({
+        key: 'spotify:liked:',
+        tracks: [staleTrack],
+        timestamp: Date.now(),
+      });
+
+      const before = await mod.getLikedSongs();
+      expect(before).toEqual([staleTrack]);
+      expect(global.fetch).not.toHaveBeenCalled();
+
+      mockFetchResponse(undefined, 200);
+      await mod.saveTrack('track-new');
+      vi.mocked(libraryCache.getTrackList).mockResolvedValue(undefined);
+
+      mockFetchResponse({
+        items: [
+          {
+            added_at: '2024-01-01T00:00:00Z',
+            track: {
+              id: 'fresh-1',
+              name: 'Fresh Track',
+              type: 'track',
+              artists: [{ name: 'Artist' }],
+              album: { name: 'Album', images: [] },
+              duration_ms: 2000,
+              uri: 'spotify:track:fresh-1',
+            },
+          },
+        ],
+        next: null,
+      });
+
+      // #when
+      const after = await mod.getLikedSongs();
+
+      // #then — network was hit; stale IDB entry was not reused
+      expect(global.fetch).toHaveBeenCalled();
+      expect(after).toHaveLength(1);
+      expect(after[0]?.id).toBe('fresh-1');
     });
 
     it('saveTrack rejects on API error', async () => {

@@ -58,7 +58,7 @@ export async function applyChanges(
   }
 
   if (changes.likedSongsChanged) {
-    invalidateLikedSongsCaches();
+    await invalidateLikedSongsCaches();
     await cache.putMeta('likedSongs', {
       lastValidated: Date.now(),
       totalCount: changes.newLikedSongsCount,
