@@ -378,16 +378,78 @@ describe('DropboxAuthAdapter', () => {
   });
 
   describe('logout', () => {
-    it('clears the oauth state from localStorage', () => {
+    it('clears the oauth state from localStorage', async () => {
       // #given
       const adapter = new DropboxAuthAdapter();
       localStorage.setItem('vorbis-player-dropbox-oauth-state', 'leftover-state');
 
       // #when
-      adapter.logout();
+      await adapter.logout();
 
       // #then
       expect(localStorage.getItem('vorbis-player-dropbox-oauth-state')).toBeNull();
+    });
+
+    it('leaves zero Dropbox-scoped persisted keys and deletes Dropbox IndexedDB', async () => {
+      // #given
+      const { STORAGE_KEYS } = await import('@/constants/storage');
+      const { PROVIDER_PURGE_LOCAL_STORAGE_KEYS, remainingProviderLocalStorageKeys } =
+        await import('@/services/cache/providerDataPurge');
+      const { dropboxIdbHandle } = await import('../dropboxIdb');
+      const {
+        initCache,
+        clearAll,
+        putPlaylist,
+        getAllPlaylists,
+      } = await import('@/services/cache/libraryCache');
+
+      for (const key of PROVIDER_PURGE_LOCAL_STORAGE_KEYS.dropbox) {
+        localStorage.setItem(key, `seed-${key}`);
+      }
+      localStorage.setItem(STORAGE_KEYS.VOLUME, '33');
+
+      await initCache();
+      await clearAll();
+      await putPlaylist({
+        id: 'db-pl',
+        provider: 'dropbox',
+        kind: 'playlist',
+        name: 'DB',
+        genres: [],
+      });
+      await putPlaylist({
+        id: 'sp-pl',
+        provider: 'spotify',
+        kind: 'playlist',
+        name: 'SP',
+        genres: [],
+      });
+
+      await dropboxIdbHandle.deleteDatabase();
+      await dropboxIdbHandle.init();
+      const art = dropboxIdbHandle.getStore<{ path: string; dataUrl: string; cachedAt: number }>('art');
+      await art.put('/a.jpg', { path: '/a.jpg', dataUrl: 'data:x', cachedAt: Date.now() });
+
+      const adapter = new DropboxAuthAdapter();
+      // Seed in-memory auth so isAuthenticated flips after logout
+      localStorage.setItem(STORAGE_KEYS.DROPBOX_TOKEN, 'tok');
+      localStorage.setItem(STORAGE_KEYS.DROPBOX_REFRESH_TOKEN, 'ref');
+
+      // #when
+      await adapter.logout();
+
+      // #then
+      expect(remainingProviderLocalStorageKeys('dropbox')).toEqual([]);
+      expect(localStorage.getItem(STORAGE_KEYS.VOLUME)).toBe('33');
+      expect(adapter.isAuthenticated()).toBe(false);
+      expect((await getAllPlaylists()).map((c) => c.id)).toEqual(['sp-pl']);
+      expect(dropboxIdbHandle.getDb()).toBeNull();
+      await dropboxIdbHandle.init();
+      const artAfter = dropboxIdbHandle.getStore<{ path: string }>('art');
+      expect(await artAfter.get('/a.jpg')).toBeUndefined();
+
+      await clearAll();
+      await dropboxIdbHandle.deleteDatabase();
     });
   });
 });

@@ -7,11 +7,9 @@ import type { AuthProvider } from '@/types/providers';
 import type { ProviderId } from '@/types/domain';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { SESSION_EXPIRED_EVENT } from '@/constants/events';
-import { resetPlaylistsFolderCache } from './dropboxPlaylistStorage';
 import { getLikesSync } from './dropboxLikesSync';
 import { getPreferencesSync } from './dropboxPreferencesSync';
-import { clearProviderData } from '@/services/cache/libraryCache';
-import { clearLikedCountSnapshot } from '@/services/cache/likedCountSnapshot';
+import { purgeProviderPersistedData } from '@/services/cache/providerDataPurge';
 
 export const DROPBOX_AUTH_ERROR_EVENT = 'vorbis-dropbox-auth-error';
 
@@ -218,15 +216,12 @@ export class DropboxAuthAdapter implements AuthProvider {
     localStorage.removeItem(STORAGE_KEYS.DROPBOX_TOKEN_EXPIRY);
   }
 
-  logout(): void {
-    this.clearAccessToken();
+  async logout(): Promise<void> {
+    // Flip in-memory auth immediately; purge owns all persisted keys/DBs.
+    this.accessToken = null;
     this.refreshToken = null;
-    localStorage.removeItem(STORAGE_KEYS.DROPBOX_REFRESH_TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.DROPBOX_CODE_VERIFIER);
-    localStorage.removeItem(STORAGE_KEYS.DROPBOX_OAUTH_STATE);
-    resetPlaylistsFolderCache();
-    clearLikedCountSnapshot('dropbox');
-    void clearProviderData('dropbox');
+    this.tokenExpiresAt = null;
+    await purgeProviderPersistedData('dropbox');
   }
 
   /**
@@ -236,7 +231,7 @@ export class DropboxAuthAdapter implements AuthProvider {
   reportUnauthorized(): void {
     if (!this.accessToken && !this.refreshToken) return;
     console.warn('[DropboxAuth] Persistent 401 after token refresh — logging out');
-    this.logout();
+    void this.logout();
     notifyDropboxSessionExpired();
   }
 
@@ -277,7 +272,7 @@ export class DropboxAuthAdapter implements AuthProvider {
     if (!response.ok) {
       console.warn('[DropboxAuth] Token refresh failed:', response.status);
       if (response.status === 400 || response.status === 401) {
-        this.logout();
+        void this.logout();
         notifyDropboxSessionExpired();
       } else {
         this.clearAccessToken();

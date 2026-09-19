@@ -58,7 +58,16 @@ export interface AuthProvider {
   beginLogin(options?: { popup?: boolean }): Promise<void>;
   /** Handle OAuth callback (e.g. parse URL and exchange code). */
   handleCallback(url: URL): Promise<boolean>;
-  logout(): void;
+  /**
+   * End the auth session and purge all provider-scoped persisted data
+   * (auth tokens, OAuth leftovers, provider IndexedDB databases, this
+   * provider's library-cache rows, liked-count snapshot entry, and
+   * provider-owned sync bookkeeping).
+   *
+   * Completes asynchronously when IndexedDB must be deleted; callers may
+   * void-fire. Tests and disconnect flows that assert emptiness MUST await.
+   */
+  logout(): void | Promise<void>;
   /**
    * Called when the provider encounters an unrecoverable auth failure during
    * playback. Implementations should log out and dispatch SESSION_EXPIRED_EVENT.

@@ -124,7 +124,7 @@ export const MusicSourcesSection = memo(() => {
 
     queueStore.removeTracksByProvider(id);
 
-    descriptor?.auth.logout();
+    void descriptor?.auth.logout();
     toggleProvider(id);
   }, [
     registry,

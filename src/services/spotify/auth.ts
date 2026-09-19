@@ -1,6 +1,13 @@
 import type { TokenData } from './types';
 import { SESSION_EXPIRED_EVENT } from '@/constants/events';
+import { STORAGE_KEYS } from '@/constants/storage';
 import { logCaughtError } from '@/utils/logCaughtError';
+import {
+  readLocalStorageRaw,
+  removeLocalStorageKey,
+  writeLocalStorageJson,
+  writeLocalStorageRaw,
+} from '@/utils/persistedStorage';
 
 const SPOTIFY_CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
 
@@ -41,32 +48,32 @@ class SpotifyAuth {
   }
 
   private loadTokenFromStorage(): void {
-    const stored = localStorage.getItem('spotify_token');
+    const stored = readLocalStorageRaw(STORAGE_KEYS.SPOTIFY_TOKEN);
     if (!stored) return;
 
     try {
-      const tokenData = JSON.parse(stored);
+      const tokenData = JSON.parse(stored) as TokenData;
       if (tokenData.expires_at && Date.now() > tokenData.expires_at) {
         if (tokenData.refresh_token) {
           // Access token expired but refresh token is still valid.
           // Keep the data so ensureValidToken() can refresh on first API call.
           this.tokenData = tokenData;
         } else {
-          localStorage.removeItem('spotify_token');
+          removeLocalStorageKey(STORAGE_KEYS.SPOTIFY_TOKEN);
         }
         return;
       }
       this.tokenData = tokenData;
     } catch (err) {
       logCaughtError('spotify.auth.loadTokenFromStorage', err);
-      localStorage.removeItem('spotify_token');
+      removeLocalStorageKey(STORAGE_KEYS.SPOTIFY_TOKEN);
     }
   }
 
   private saveTokenToStorage(tokenData: TokenData): void {
     this.tokenData = tokenData;
     this.sessionExpiredNotified = false;
-    localStorage.setItem('spotify_token', JSON.stringify(tokenData));
+    writeLocalStorageJson(STORAGE_KEYS.SPOTIFY_TOKEN, tokenData);
   }
 
   private base64UrlEncode(bytes: Uint8Array): string {
@@ -95,7 +102,7 @@ class SpotifyAuth {
     const codeVerifier = this.generateCodeVerifier();
     const codeChallenge = await this.generateCodeChallenge(codeVerifier);
 
-    localStorage.setItem('spotify_code_verifier', codeVerifier);
+    writeLocalStorageRaw(STORAGE_KEYS.SPOTIFY_CODE_VERIFIER, codeVerifier);
 
     const params = new URLSearchParams({
       client_id: SPOTIFY_CLIENT_ID,
@@ -114,7 +121,7 @@ class SpotifyAuth {
       throw new Error('VITE_SPOTIFY_CLIENT_ID is not defined.');
     }
 
-    const codeVerifier = localStorage.getItem('spotify_code_verifier');
+    const codeVerifier = readLocalStorageRaw(STORAGE_KEYS.SPOTIFY_CODE_VERIFIER);
     if (!codeVerifier) {
       throw new Error('Code verifier not found. Please restart the authentication flow.');
     }
@@ -143,7 +150,7 @@ class SpotifyAuth {
       expires_at: Date.now() + data.expires_in * 1000,
     });
 
-    localStorage.removeItem('spotify_code_verifier');
+    removeLocalStorageKey(STORAGE_KEYS.SPOTIFY_CODE_VERIFIER);
   }
 
   public async refreshAccessToken(): Promise<void> {
@@ -244,8 +251,10 @@ class SpotifyAuth {
 
   public logout(): void {
     this.tokenData = null;
-    localStorage.removeItem('spotify_token');
-    localStorage.removeItem('spotify_code_verifier');
+    // Token keys are also in PROVIDER_PURGE_LOCAL_STORAGE_KEYS; clearing here
+    // keeps direct spotifyAuth.logout() callers (OAuth error paths) safe.
+    removeLocalStorageKey(STORAGE_KEYS.SPOTIFY_TOKEN);
+    removeLocalStorageKey(STORAGE_KEYS.SPOTIFY_CODE_VERIFIER);
   }
 
   public async handleRedirect(): Promise<void> {

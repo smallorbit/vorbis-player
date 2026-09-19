@@ -172,6 +172,14 @@ export function getPreferencesSync(): DropboxPreferencesSyncService | null {
   return preferencesSyncInstance;
 }
 
+/** Tear down the preferences sync singleton (logout purge). */
+export function destroyPreferencesSync(): void {
+  if (preferencesSyncInstance) {
+    preferencesSyncInstance.destroy();
+    preferencesSyncInstance = null;
+  }
+}
+
 /**
  * Clear the local sync timestamp so the next initialSync() pulls from remote.
  * Call this when pins or accent colors are cleared locally.

@@ -235,3 +235,11 @@ export function initLikesSync(auth: DropboxAuthAdapter): DropboxLikesSyncService
 export function getLikesSync(): DropboxLikesSyncService | null {
   return syncInstance;
 }
+
+/** Tear down the likes sync singleton (logout purge). */
+export function destroyLikesSync(): void {
+  if (syncInstance) {
+    syncInstance.destroy();
+    syncInstance = null;
+  }
+}

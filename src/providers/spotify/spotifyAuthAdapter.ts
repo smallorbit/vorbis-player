@@ -6,9 +6,7 @@
 import type { AuthProvider } from '@/types/providers';
 import type { ProviderId } from '@/types/domain';
 import { spotifyAuth } from '@/services/spotify';
-import { clearLikedCountSnapshot } from '@/services/cache/likedCountSnapshot';
-import { clearAllSpotifyInMemoryCaches } from '@/services/spotify/cache';
-import { clearProviderData } from '@/services/cache/libraryCache';
+import { purgeProviderPersistedData } from '@/services/cache/providerDataPurge';
 import { logCaughtError } from '@/utils/logCaughtError';
 
 export class SpotifyAuthAdapter implements AuthProvider {
@@ -60,11 +58,10 @@ export class SpotifyAuthAdapter implements AuthProvider {
     return true;
   }
 
-  logout(): void {
+  async logout(): Promise<void> {
+    // Clear in-memory token first so isAuthenticated() flips immediately.
     spotifyAuth.logout();
-    clearLikedCountSnapshot('spotify');
-    clearAllSpotifyInMemoryCaches();
-    void clearProviderData('spotify');
+    await purgeProviderPersistedData('spotify');
   }
 
   reportUnauthorized(): void {

@@ -90,3 +90,26 @@ When a provider's session becomes unrecoverable during normal use, the app SHALL
 
 - **WHEN** a provider reports an unrecoverable authentication failure during normal use
 - **THEN** the provider is logged out automatically and a "session expired" notification is shown
+
+### Requirement: Provider Logout Purges Persisted Data
+
+`AuthProvider.logout` SHALL remove all provider-scoped persisted data for that provider so a later login on the same device cannot read the previous account's tokens, caches, or IndexedDB stores. App-global preferences (volume, visual effects, enabled-provider set ownership by the disconnect caller, etc.) SHALL NOT be wiped by a single-provider logout.
+
+Logout MAY complete IndexedDB deletion asynchronously; observers that require an empty store (tests, strict disconnect verification) MUST await the returned promise when one is provided.
+
+#### Scenario: Spotify logout leaves no Spotify-scoped storage
+
+- **WHEN** the Spotify provider is logged out
+- **THEN** Spotify auth tokens and OAuth leftovers are removed from localStorage
+- **AND** Spotify in-memory API caches are cleared
+- **AND** Spotify rows are removed from the shared library IndexedDB cache
+- **AND** the Spotify liked-count snapshot entry is removed
+
+#### Scenario: Dropbox logout leaves no Dropbox-scoped storage
+
+- **WHEN** the Dropbox provider is logged out
+- **THEN** Dropbox auth tokens and OAuth leftovers are removed from localStorage
+- **AND** Dropbox preferences-sync bookkeeping keys are removed
+- **AND** the Dropbox IndexedDB database is deleted
+- **AND** Dropbox rows are removed from the shared library IndexedDB cache
+- **AND** the Dropbox liked-count snapshot entry is removed
