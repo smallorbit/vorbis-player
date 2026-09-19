@@ -122,3 +122,21 @@ Logout MAY complete IndexedDB deletion asynchronously; observers that require an
 - **AND** the Dropbox IndexedDB database is deleted
 - **AND** Dropbox rows are removed from the shared library IndexedDB cache
 - **AND** the Dropbox liked-count snapshot entry is removed
+
+### Requirement: Typed App Event Registry
+
+Window CustomEvents owned by the app SHALL be registered in `constants/events.ts` as an `AppEventMap` with typed `detail` payloads. Dispatch and subscribe SHALL go through `dispatchAppEvent` / `onAppEvent`, which own the single sanctioned `detail` cast. Call sites SHALL NOT mint ad-hoc event name strings or cast `CustomEvent` details for registry events.
+
+`AUTH_COMPLETE_EVENT` is a popup→opener `postMessage` type and is intentionally outside `AppEventMap`.
+
+#### Scenario: Session expiry carries a typed provider id
+
+- **WHEN** a provider reports an unrecoverable session
+- **THEN** `SESSION_EXPIRED_EVENT` is dispatched with `{ providerId }` via `dispatchAppEvent`
+- **AND** listeners receive the typed detail without casting
+
+#### Scenario: Event names live in one module
+
+- **WHEN** a feature needs a new window CustomEvent
+- **THEN** its name and detail type are added to `AppEventMap` in `constants/events.ts`
+- **AND** providers do not import event name constants from hooks modules

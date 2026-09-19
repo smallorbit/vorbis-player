@@ -3,6 +3,7 @@ import type { MediaTrack, PlaybackSelection } from '@/types/domain';
 import { isProfilingEnabled } from '@/contexts/ProfilingContext';
 import { queueStore } from '@/stores/queueStore';
 import { shouldUseMockProvider } from '@/providers/mock/shouldUseMockProvider';
+import { MOCK_RESET_EVENT, MOCK_SET_QUEUE_EVENT, onAppEvent } from '@/constants/events';
 
 // --- TrackListContext ---
 //
@@ -94,20 +95,15 @@ export function TrackProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!shouldUseMockProvider()) return;
 
-    const handleSetQueue = (e: Event) => {
-      const tracks = (e as CustomEvent<MediaTrack[]>).detail;
+    const unsubSetQueue = onAppEvent(MOCK_SET_QUEUE_EVENT, (tracks) => {
       queueStore.replaceQueue(tracks);
-    };
-
-    const handleReset = () => {
+    });
+    const unsubReset = onAppEvent(MOCK_RESET_EVENT, () => {
       queueStore.clear();
-    };
-
-    window.addEventListener('mock:set-queue', handleSetQueue);
-    window.addEventListener('mock:reset', handleReset);
+    });
     return () => {
-      window.removeEventListener('mock:set-queue', handleSetQueue);
-      window.removeEventListener('mock:reset', handleReset);
+      unsubSetQueue();
+      unsubReset();
     };
   }, []);
 

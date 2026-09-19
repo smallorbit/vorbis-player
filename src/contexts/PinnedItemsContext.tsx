@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useCallback, useMemo, useState, useEffect } from 'react';
-import { getPins, setPins, migratePinsFromLocalStorage, MAX_PINS, UNIFIED_PROVIDER, PINS_CHANGED_EVENT } from '@/services/settings/pinnedItemsStorage';
+import { getPins, setPins, migratePinsFromLocalStorage, MAX_PINS, UNIFIED_PROVIDER } from '@/services/settings/pinnedItemsStorage';
+import { PINS_CHANGED_EVENT, onAppEvent } from '@/constants/events';
 import { schedulePreferencesPush } from '@/providers/preferencesSync';
 import { LIKED_SONGS_ID, ALL_MUSIC_PIN_ID } from '@/constants/playlist';
 
@@ -64,8 +65,7 @@ export function PinnedItemsProvider({ children }: { children: React.ReactNode })
         setPinnedAlbumIds(normalizePinIds(albums));
       }).catch(err => console.warn('[PinnedItemsContext] Failed to reload pins:', err));
     }
-    window.addEventListener(PINS_CHANGED_EVENT, onPinsChanged);
-    return () => window.removeEventListener(PINS_CHANGED_EVENT, onPinsChanged);
+    return onAppEvent(PINS_CHANGED_EVENT, onPinsChanged);
   }, []);
 
   const isPlaylistPinned = useCallback(

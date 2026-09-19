@@ -1,7 +1,7 @@
 import React, { useCallback, useRef, useState } from 'react';
 
 import { useAsyncAction } from '@/hooks/useAsyncAction';
-import { ART_REFRESHED_EVENT } from '@/hooks/useLibrarySync';
+import { ART_REFRESHED_EVENT, dispatchAppEvent } from '@/constants/events';
 import { STATUS_RESET_DELAY_MS } from '@/constants/statusTiming';
 import type { CatalogProvider } from '@/types/providers';
 import { logCaughtError } from '@/utils/logCaughtError';
@@ -37,7 +37,7 @@ export const ProviderDataBlock: React.FC<ProviderDataBlockProps> = ({ providerNa
 
   const refreshArtFn = useCallback(async () => {
     await catalog.refreshArtCache?.();
-    window.dispatchEvent(new CustomEvent(ART_REFRESHED_EVENT));
+    dispatchAppEvent(ART_REFRESHED_EVENT);
   }, [catalog]);
 
   const exportFn = useCallback(async () => {

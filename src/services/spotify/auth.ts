@@ -1,5 +1,5 @@
 import type { TokenData } from './types';
-import { SESSION_EXPIRED_EVENT } from '@/constants/events';
+import { SESSION_EXPIRED_EVENT, dispatchAppEvent } from '@/constants/events';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { purgeProviderPersistedData } from '@/services/cache/providerDataPurge';
 import { logCaughtError } from '@/utils/logCaughtError';
@@ -223,9 +223,7 @@ class SpotifyAuth {
       logCaughtError('spotifyAuth.reportUnauthorized.purge', err);
     });
     if (typeof window === 'undefined') return;
-    window.dispatchEvent(
-      new CustomEvent(SESSION_EXPIRED_EVENT, { detail: { providerId: 'spotify' } }),
-    );
+    dispatchAppEvent(SESSION_EXPIRED_EVENT, { providerId: 'spotify' });
   }
 
   public async ensureValidToken(): Promise<string> {

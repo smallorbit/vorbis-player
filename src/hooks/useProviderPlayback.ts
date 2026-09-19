@@ -7,7 +7,7 @@ import { queueStore } from '@/stores/queueStore';
 import { useNewestWins } from '@/hooks/useNewestWins';
 import { logQueue, logArtRace } from '@/lib/debugLog';
 import { SKIP_ON_ERROR_DELAY_MS } from '@/constants/timing';
-import { PROVIDER_RECONNECTED_EVENT } from '@/constants/events';
+import { PROVIDER_RECONNECTED_EVENT, onAppEvent } from '@/constants/events';
 import { loadSession } from '@/services/sessionPersistence';
 
 interface UseProviderPlaybackProps {
@@ -30,9 +30,8 @@ export const useProviderPlayback = ({
   // so this only fires on genuine `not authenticated → authenticated`
   // transitions. The handler is silent — no auto-play, no queue mutation.
   useEffect(() => {
-    const handler = (event: Event) => {
-      const detail = (event as CustomEvent<{ providerId: ProviderId }>).detail;
-      const providerId = detail?.providerId;
+    return onAppEvent(PROVIDER_RECONNECTED_EVENT, (detail) => {
+      const providerId = detail.providerId;
       if (!providerId) return;
 
       const currentTrack = queueStore.getCurrentTrack();
@@ -61,10 +60,7 @@ export const useProviderPlayback = ({
       } catch (error) {
         logQueue('PROVIDER_RECONNECTED re-prime failed: %o', error);
       }
-    };
-
-    window.addEventListener(PROVIDER_RECONNECTED_EVENT, handler);
-    return () => window.removeEventListener(PROVIDER_RECONNECTED_EVENT, handler);
+    });
   }, []);
 
   const pausePreviousProvider = useCallback((nextProvider: ProviderId): void => {

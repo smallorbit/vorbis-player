@@ -6,8 +6,14 @@ import type { ProviderDescriptor, ProviderRegistry } from '@/types/providers';
 
 // Ensure real providers are registered before the context is used.
 import '@/providers/registerProviders';
-import { AUTH_STATE_CHANGED_EVENT } from '@/hooks/usePopupAuth';
-import { AUTH_COMPLETE_EVENT, PROVIDER_RECONNECTED_EVENT, SESSION_EXPIRED_EVENT } from '@/constants/events';
+import {
+  AUTH_COMPLETE_EVENT,
+  AUTH_STATE_CHANGED_EVENT,
+  PROVIDER_RECONNECTED_EVENT,
+  SESSION_EXPIRED_EVENT,
+  dispatchAppEvent,
+  onAppEvent,
+} from '@/constants/events';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { NOTIFICATION_DISMISS_MS } from '@/constants/timing';
 
@@ -83,7 +89,7 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const bumpRevision = () => setAuthRevision((prev) => prev + 1);
 
-    window.addEventListener(AUTH_STATE_CHANGED_EVENT, bumpRevision);
+    const unsubAuthState = onAppEvent(AUTH_STATE_CHANGED_EVENT, bumpRevision);
     // Provider-specific auth events (e.g. token revocation detected mid-request)
     // come from descriptors, so any registered provider can participate.
     const providerAuthEvents = providerRegistry.getAll()
@@ -101,7 +107,7 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener('message', handleMessage);
 
     return () => {
-      window.removeEventListener(AUTH_STATE_CHANGED_EVENT, bumpRevision);
+      unsubAuthState();
       for (const eventName of providerAuthEvents) {
         window.removeEventListener(eventName, bumpRevision);
       }
@@ -177,9 +183,7 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
     if (previous === null) return;
     for (const providerId of current) {
       if (previous.has(providerId)) continue;
-      window.dispatchEvent(
-        new CustomEvent(PROVIDER_RECONNECTED_EVENT, { detail: { providerId } }),
-      );
+      dispatchAppEvent(PROVIDER_RECONNECTED_EVENT, { providerId });
     }
   }, [connectedProviderIds]);
 
@@ -216,9 +220,8 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
   }, [allProviderIds]);
 
   useEffect(() => {
-    const handleSessionExpired = (event: Event) => {
-      const detail = (event as CustomEvent<{ providerId: ProviderId }>).detail;
-      const providerId = detail?.providerId;
+    return onAppEvent(SESSION_EXPIRED_EVENT, (detail) => {
+      const providerId = detail.providerId;
       if (!providerId) return;
       const descriptor = providerRegistry.get(providerId);
       const name = descriptor?.name ?? providerId;
@@ -234,10 +237,7 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
           return current.filter(pid => pid !== providerId);
         });
       }
-    };
-
-    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
-    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+    });
   }, []);
 
   // ── Active provider (for playback) ─────────────────────────────────────

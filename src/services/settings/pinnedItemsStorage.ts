@@ -6,14 +6,15 @@
 
 import { STORE_NAMES, settingsGet, settingsPut, settingsClearStore } from './settingsDb';
 import { STORAGE_KEYS } from '@/constants/storage';
+import { PINS_CHANGED_EVENT, dispatchAppEvent } from '@/constants/events';
 
 export const MAX_PINS = 12;
 
-/** Event dispatched when pins are updated externally (e.g. Dropbox sync). */
-export const PINS_CHANGED_EVENT = 'vorbis-pins-changed';
+/** Re-export for callers that import the event name alongside pin helpers. */
+export { PINS_CHANGED_EVENT };
 
 export function notifyPinsChanged(): void {
-  window.dispatchEvent(new Event(PINS_CHANGED_EVENT));
+  dispatchAppEvent(PINS_CHANGED_EVENT);
 }
 
 /** Provider key used for the unified (cross-provider) pin namespace. */

@@ -20,10 +20,6 @@ vi.mock('@/providers/registry', () => ({
   },
 }));
 
-vi.mock('@/hooks/useLibrarySync', () => ({
-  LIBRARY_REFRESH_EVENT: 'vorbis-library-refresh',
-}));
-
 import { useUnifiedLikedTracks, resetUnifiedLikedCache } from '../useUnifiedLikedTracks';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 

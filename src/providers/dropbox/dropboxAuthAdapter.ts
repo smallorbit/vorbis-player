@@ -6,19 +6,18 @@
 import type { AuthProvider } from '@/types/providers';
 import type { ProviderId } from '@/types/domain';
 import { STORAGE_KEYS } from '@/constants/storage';
-import { SESSION_EXPIRED_EVENT } from '@/constants/events';
+import {
+  DROPBOX_AUTH_ERROR_EVENT,
+  SESSION_EXPIRED_EVENT,
+  dispatchAppEvent,
+} from '@/constants/events';
 import { getLikesSync } from './dropboxLikesSync';
 import { getPreferencesSync } from './dropboxPreferencesSync';
 import { purgeProviderPersistedData } from '@/services/cache/providerDataPurge';
 
-export const DROPBOX_AUTH_ERROR_EVENT = 'vorbis-dropbox-auth-error';
-
 function notifyDropboxSessionExpired(): void {
-  if (typeof window === 'undefined') return;
-  window.dispatchEvent(new CustomEvent(DROPBOX_AUTH_ERROR_EVENT));
-  window.dispatchEvent(
-    new CustomEvent(SESSION_EXPIRED_EVENT, { detail: { providerId: 'dropbox' } }),
-  );
+  dispatchAppEvent(DROPBOX_AUTH_ERROR_EVENT);
+  dispatchAppEvent(SESSION_EXPIRED_EVENT, { providerId: 'dropbox' });
 }
 
 function getDropboxClientId(): string {

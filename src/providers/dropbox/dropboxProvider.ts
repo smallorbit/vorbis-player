@@ -7,15 +7,18 @@
 
 import type { ProviderRegistration } from '@/types/providers';
 import { theme } from '@/styles/theme';
-import { DropboxAuthAdapter, DROPBOX_AUTH_ERROR_EVENT } from './dropboxAuthAdapter';
+import { DropboxAuthAdapter } from './dropboxAuthAdapter';
 import { DropboxCatalogAdapter } from './dropboxCatalogAdapter';
 import { DropboxPlaybackAdapter } from './dropboxPlaybackAdapter';
 import { providerRegistry } from '@/providers/registry';
 import { initLikesSync } from './dropboxLikesSync';
-import { LIKES_CHANGED_EVENT } from './dropboxLikesCache';
 import { initPreferencesSync, getPreferencesSync, clearPreferencesSyncTimestamp } from './dropboxPreferencesSync';
 import { saveQueueAsPlaylist } from './dropboxPlaylistStorage';
 import { DropboxIcon } from './DropboxIcon';
+import {
+  DROPBOX_AUTH_ERROR_EVENT,
+  DROPBOX_LIKES_CHANGED_EVENT,
+} from '@/constants/events';
 
 const DROPBOX_CLIENT_ID = import.meta.env.VITE_DROPBOX_CLIENT_ID ?? '';
 
@@ -44,7 +47,7 @@ if (DROPBOX_CLIENT_ID) {
     name: 'Dropbox',
     color: theme.colors.dropbox,
     icon: DropboxIcon,
-    likesChangedEvent: LIKES_CHANGED_EVENT,
+    likesChangedEvent: DROPBOX_LIKES_CHANGED_EVENT,
     authStateChangedEvent: DROPBOX_AUTH_ERROR_EVENT,
     preferencesSync: {
       schedulePush: () => getPreferencesSync()?.schedulePush(),

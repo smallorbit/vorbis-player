@@ -15,7 +15,6 @@ describe('dropboxProvider conditional registration', () => {
       DropboxAuthAdapter: vi.fn().mockImplementation(() => ({
         isAuthenticated: vi.fn().mockReturnValue(false),
       })),
-      DROPBOX_AUTH_ERROR_EVENT: 'dropbox-auth-error',
     }));
     vi.doMock('@/providers/dropbox/dropboxCatalogAdapter', () => ({
       DropboxCatalogAdapter: vi.fn().mockImplementation(() => ({})),
@@ -36,9 +35,6 @@ describe('dropboxProvider conditional registration', () => {
     }));
     vi.doMock('@/providers/dropbox/DropboxIcon', () => ({
       DropboxIcon: vi.fn(),
-    }));
-    vi.doMock('@/providers/dropbox/dropboxLikesCache', () => ({
-      LIKES_CHANGED_EVENT: 'dropbox-likes-changed',
     }));
 
     await import('@/providers/dropbox/dropboxProvider');
