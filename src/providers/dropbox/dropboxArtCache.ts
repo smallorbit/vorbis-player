@@ -1,16 +1,20 @@
 /**
- * Persistent cache for Dropbox album art images.
+ * Persistent cache for Dropbox album art images (and sibling stores on the same DB).
  * Stores image data URLs in IndexedDB so art loads instantly across sessions
  * without hitting the Dropbox API.
+ *
+ * Lifecycle + degradation policy come from the shared IndexedDB foundation
+ * (`src/services/idb`) — see #1702 / F35.
  */
 
 import { logCaughtError } from '@/utils/logCaughtError';
+import { closeDropboxCache, getDb, runDropboxWrite } from './dropboxIdb';
 
-const DB_NAME = 'vorbis-dropbox-art';
-const DB_VERSION = 7;
 const STORE = 'art';
 const ART_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const ALBUM_ART_KEY_PREFIX = 'album:';
+
+export { closeDropboxCache, getDb };
 
 interface CachedArt {
   path: string;
@@ -18,53 +22,22 @@ interface CachedArt {
   cachedAt: number;
 }
 
-let db: IDBDatabase | null = null;
-let dbPromise: Promise<IDBDatabase | null> | null = null;
-
-function openDb(): Promise<IDBDatabase | null> {
-  if (dbPromise) return dbPromise;
-  dbPromise = new Promise((resolve) => {
-    if (typeof indexedDB === 'undefined') {
-      resolve(null);
-      return;
-    }
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onerror = () => resolve(null);
-    req.onblocked = () => resolve(null);
-    req.onsuccess = () => {
-      db = req.result;
-      resolve(db);
-    };
-    req.onupgradeneeded = (e) => {
-      const database = (e.target as IDBOpenDBRequest).result;
-      if (!database.objectStoreNames.contains(STORE)) {
-        database.createObjectStore(STORE, { keyPath: 'path' });
-      }
-      if (!database.objectStoreNames.contains('catalog')) {
-        database.createObjectStore('catalog', { keyPath: 'key' });
-      }
-      if (!database.objectStoreNames.contains('likes')) {
-        database.createObjectStore('likes', { keyPath: 'trackId' });
-      }
-      if (!database.objectStoreNames.contains('durations')) {
-        database.createObjectStore('durations', { keyPath: 'trackId' });
-      }
-      if (!database.objectStoreNames.contains('tags')) {
-        database.createObjectStore('tags', { keyPath: 'trackId' });
-      }
-      if (!database.objectStoreNames.contains('tombstones')) {
-        database.createObjectStore('tombstones', { keyPath: 'trackId' });
-      }
-      if (!database.objectStoreNames.contains('trackDates')) {
-        database.createObjectStore('trackDates', { keyPath: 'albumId' });
-      }
-    };
+function idbPut(database: IDBDatabase, storeName: string, value: unknown): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction(storeName, 'readwrite');
+    tx.objectStore(storeName).put(value);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
   });
-  return dbPromise;
 }
 
-export async function getDb(): Promise<IDBDatabase | null> {
-  return db ?? openDb();
+function idbClear(database: IDBDatabase, storeName: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction(storeName, 'readwrite');
+    tx.objectStore(storeName).clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
 }
 
 export async function getArt(path: string): Promise<string | null> {
@@ -86,20 +59,10 @@ export async function getArt(path: string): Promise<string | null> {
 }
 
 export async function putArt(path: string, dataUrl: string): Promise<void> {
-  const database = await getDb();
-  if (!database) return;
-  return new Promise((resolve) => {
-    try {
-      const entry: CachedArt = { path, dataUrl, cachedAt: Date.now() };
-      const tx = database.transaction(STORE, 'readwrite');
-      tx.objectStore(STORE).put(entry);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => resolve();
-    } catch (err) {
-      logCaughtError('dropboxArtCache.putArt', err);
-      resolve();
-    }
-  });
+  const entry: CachedArt = { path, dataUrl, cachedAt: Date.now() };
+  await runDropboxWrite(`dropboxArtCache.putArt`, [STORE], (database) =>
+    idbPut(database, STORE, entry),
+  );
 }
 
 function albumArtCacheKey(albumPath: string): string {
@@ -117,31 +80,15 @@ export async function putAlbumArt(albumPath: string, dataUrl: string): Promise<v
 }
 
 export async function clearArt(): Promise<void> {
-  const database = await getDb();
-  if (!database) return;
-  return new Promise((resolve) => {
-    try {
-      const tx = database.transaction(STORE, 'readwrite');
-      tx.objectStore(STORE).clear();
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => resolve();
-    } catch (err) {
-      logCaughtError('dropboxArtCache.clearArt', err);
-      resolve();
-    }
-  });
+  await runDropboxWrite(`dropboxArtCache.clearArt`, [STORE], (database) =>
+    idbClear(database, STORE),
+  );
 }
 
 export async function putDurationMs(trackId: string, durationMs: number): Promise<void> {
-  const database = await getDb();
-  if (!database) return;
-  try {
-    const tx = database.transaction('durations', 'readwrite');
-    tx.objectStore('durations').put({ trackId, durationMs });
-  } catch (err) {
-    // fire-and-forget
-    logCaughtError('dropboxArtCache.putDurationMs', err);
-  }
+  await runDropboxWrite(`dropboxArtCache.putDurationMs`, ['durations'], (database) =>
+    idbPut(database, 'durations', { trackId, durationMs }),
+  );
 }
 
 interface CachedTagMetadata {
@@ -152,15 +99,9 @@ interface CachedTagMetadata {
 }
 
 export async function putTagMetadata(trackId: string, tags: Omit<CachedTagMetadata, 'trackId'>): Promise<void> {
-  const database = await getDb();
-  if (!database) return;
-  try {
-    const tx = database.transaction('tags', 'readwrite');
-    tx.objectStore('tags').put({ trackId, ...tags });
-  } catch (err) {
-    // fire-and-forget
-    logCaughtError('dropboxArtCache.putTagMetadata', err);
-  }
+  await runDropboxWrite(`dropboxArtCache.putTagMetadata`, ['tags'], (database) =>
+    idbPut(database, 'tags', { trackId, ...tags }),
+  );
 }
 
 function batchGetFromStore<T>(database: IDBDatabase, storeName: string, ids: string[]): Promise<Map<string, T>> {
@@ -214,15 +155,9 @@ interface CachedTrackDate {
 }
 
 export async function putTrackDate(albumId: string, releaseYear: number): Promise<void> {
-  const database = await getDb();
-  if (!database) return;
-  try {
-    const tx = database.transaction('trackDates', 'readwrite');
-    tx.objectStore('trackDates').put({ albumId, releaseYear });
-  } catch (err) {
-    // fire-and-forget
-    logCaughtError('dropboxArtCache.putTrackDate', err);
-  }
+  await runDropboxWrite(`dropboxArtCache.putTrackDate`, ['trackDates'], (database) =>
+    idbPut(database, 'trackDates', { albumId, releaseYear }),
+  );
 }
 
 export async function getTrackDatesMap(albumIds: string[]): Promise<Map<string, number>> {

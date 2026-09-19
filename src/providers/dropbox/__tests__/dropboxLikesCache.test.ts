@@ -2,11 +2,19 @@ import 'fake-indexeddb/auto';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { MediaTrack } from '@/types/domain';
 
-vi.mock('../dropboxArtCache', () => ({
+vi.mock('../dropboxIdb', () => ({
   getDb: vi.fn(),
+  runDropboxWrite: vi.fn(),
+  dropboxIdbHandle: {
+    getDb: vi.fn(),
+    evictForQuota: vi.fn().mockResolvedValue(undefined),
+    recoverFromCorruption: vi.fn().mockResolvedValue(undefined),
+    reopenConnection: vi.fn().mockResolvedValue(undefined),
+  },
+  closeDropboxCache: vi.fn(),
 }));
 
-import { getDb } from '../dropboxArtCache';
+import { getDb, runDropboxWrite } from '../dropboxIdb';
 import {
   getLikedTracks,
   getLikedCount,
@@ -68,6 +76,12 @@ let testDb: IDBDatabase;
 beforeEach(async () => {
   testDb = await openTestDb();
   vi.mocked(getDb).mockResolvedValue(testDb);
+  vi.mocked(runDropboxWrite).mockImplementation(async (_label, _stores, operation) => {
+    const db = await vi.mocked(getDb)();
+    if (!db) return false;
+    await operation(db);
+    return true;
+  });
 });
 
 describe('dropboxLikesCache', () => {

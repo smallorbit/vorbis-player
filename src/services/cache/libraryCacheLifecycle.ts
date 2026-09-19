@@ -1,9 +1,10 @@
 /**
  * Database lifecycle for the library cache.
  *
- * Owns the singleton IndexedDB connection and the in-memory fallback flag.
- * Exposes the open/upgrade promise.
+ * Thin adapter over the shared IndexedDB foundation (`src/services/idb`).
  */
+
+import { createIdbDatabase, type IdbDatabaseHandle, type KVStore } from '@/services/idb';
 
 const DB_NAME = 'vorbis-player-library';
 
@@ -21,108 +22,76 @@ export const STORE_META = 'meta';
 
 const ALL_STORES = [STORE_PLAYLISTS, STORE_ALBUMS, STORE_TRACK_LISTS, STORE_META] as const;
 
-/**
- * In-memory fallback stores keyed by store name (matches the IDB store names).
- * Values are typed as `unknown` because the consumer-facing `getFallbackMap`
- * API has to serve any store, and IDB itself persists structured-cloneable
- * data without per-store typing.
- */
-type FallbackStores = Record<string, Map<string, unknown>>;
-
-export const fallbackStores: FallbackStores = {
-  [STORE_PLAYLISTS]: new Map(),
-  [STORE_ALBUMS]: new Map(),
-  [STORE_TRACK_LISTS]: new Map(),
-  [STORE_META]: new Map(),
-};
-
-let db: IDBDatabase | null = null;
-let fallbackMode = false;
-let initPromise: Promise<void> | null = null;
+const handle: IdbDatabaseHandle = createIdbDatabase({
+  name: DB_NAME,
+  version: DB_VERSION,
+  logLabel: 'libraryCache',
+  customUpgradeOnly: true,
+  stores: ALL_STORES.map((name) => ({ name, keyMode: { kind: 'outOfLine' as const } })),
+  onUpgrade(database) {
+    // Drop any pre-v2 stores: the record shapes and key scheme changed
+    // incompatibly, and the cache repopulates itself from the providers.
+    for (const storeName of Array.from(database.objectStoreNames)) {
+      database.deleteObjectStore(storeName);
+    }
+    for (const storeName of ALL_STORES) {
+      database.createObjectStore(storeName);
+    }
+  },
+});
 
 export function getDb(): IDBDatabase | null {
-  return db;
+  return handle.getDb();
 }
 
 export function isFallback(): boolean {
-  return fallbackMode;
-}
-
-export function enterFallback(): void {
-  fallbackMode = true;
+  return handle.isFallback();
 }
 
 export function getFallbackMap(storeName: string): Map<string, unknown> {
-  const store = fallbackStores[storeName];
-  if (!store) throw new Error(`[libraryCache] Unknown store: ${storeName}`);
-  return store;
+  return handle.getFallbackMap(storeName);
 }
 
-function openIDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-    request.onerror = () => reject(request.error);
-
-    // Another tab still holds a lower-version connection: `success` will never
-    // fire until it closes. Reject so initCache() falls back to the in-memory
-    // store for this session instead of hanging every cache read forever.
-    request.onblocked = () => reject(new Error('IndexedDB upgrade blocked by another tab'));
-
-    request.onsuccess = () => {
-      const database = request.result;
-      // Close our connection when a newer version wants to upgrade elsewhere,
-      // so this tab never becomes the blocker described above.
-      database.onversionchange = () => database.close();
-      resolve(database);
-    };
-
-    request.onupgradeneeded = (event) => {
-      const database = (event.target as IDBOpenDBRequest).result;
-      // Drop any pre-v2 stores: the record shapes and key scheme changed
-      // incompatibly, and the cache repopulates itself from the providers.
-      for (const storeName of Array.from(database.objectStoreNames)) {
-        database.deleteObjectStore(storeName);
+/**
+ * Live view of the in-memory fallback maps (same Map instances the handle owns).
+ * Proxy so `_testing.fallbackStores[name]` and `Object.values` keep working.
+ */
+export const fallbackStores: Record<string, Map<string, unknown>> = new Proxy(
+  {} as Record<string, Map<string, unknown>>,
+  {
+    get(_target, prop: string | symbol) {
+      if (typeof prop !== 'string') return undefined;
+      return handle.getFallbackMap(prop);
+    },
+    ownKeys() {
+      return [...ALL_STORES];
+    },
+    getOwnPropertyDescriptor(_target, prop) {
+      if (typeof prop === 'string' && (ALL_STORES as readonly string[]).includes(prop)) {
+        return { configurable: true, enumerable: true, value: handle.getFallbackMap(prop) };
       }
-      for (const storeName of ALL_STORES) {
-        database.createObjectStore(storeName);
-      }
-    };
-  });
-}
+      return undefined;
+    },
+  },
+);
 
 /**
  * Initialize the cache. Opens IndexedDB or activates the in-memory fallback.
  * Safe to call multiple times — subsequent calls return the same promise.
  */
 export async function initCache(): Promise<void> {
-  if (initPromise) return initPromise;
-
-  initPromise = (async () => {
-    try {
-      if (typeof indexedDB === 'undefined') {
-        throw new Error('IndexedDB not available');
-      }
-      db = await openIDB();
-    } catch (err) {
-      console.warn('[libraryCache] IndexedDB unavailable, using in-memory fallback:', err);
-      fallbackMode = true;
-      db = null;
-    }
-  })();
-
-  return initPromise;
+  return handle.init();
 }
 
 /** Close the database connection (primarily for testing). */
 export function closeCache(): void {
-  if (db) {
-    db.close();
-    db = null;
-  }
-  fallbackMode = false;
-  initPromise = null;
-  for (const store of Object.values(fallbackStores)) {
-    store.clear();
-  }
+  handle.close();
+}
+
+export function getLibraryStore<T>(storeName: string): KVStore<T> {
+  return handle.getStore<T>(storeName);
+}
+
+export function getLibraryHandle(): IdbDatabaseHandle {
+  return handle;
 }

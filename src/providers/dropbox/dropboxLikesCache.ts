@@ -1,6 +1,6 @@
 import type { MediaTrack } from '@/types/domain';
 import { logCaughtError } from '@/utils/logCaughtError';
-import { getDb } from './dropboxArtCache';
+import { getDb, runDropboxWrite } from './dropboxIdb';
 
 const STORE = 'likes';
 
@@ -22,12 +22,11 @@ export interface LikedEntry {
 const TOMBSTONE_STORE = 'tombstones';
 
 /**
- * Open a transaction on the given store name and run the callback.
- * Returns `fallback` if the database is unavailable or the transaction fails.
+ * Open a readonly transaction. Returns `fallback` if the database is
+ * unavailable or the transaction fails.
  */
-async function withIdbStore<T>(
+async function withIdbRead<T>(
   storeName: string,
-  mode: IDBTransactionMode,
   fallback: T,
   fn: (store: IDBObjectStore, resolve: (value: T) => void) => void,
 ): Promise<T> {
@@ -35,35 +34,68 @@ async function withIdbStore<T>(
   if (!database) return fallback;
   return new Promise((resolve) => {
     try {
-      const tx = database.transaction(storeName, mode);
+      const tx = database.transaction(storeName, 'readonly');
       const store = tx.objectStore(storeName);
       fn(store, resolve);
       tx.onerror = () => resolve(fallback);
     } catch (err) {
-      logCaughtError('dropboxLikesCache.withIdbStore', err);
+      logCaughtError('dropboxLikesCache.withIdbRead', err);
       resolve(fallback);
     }
   });
 }
 
-function withStore<T>(
-  mode: IDBTransactionMode,
+/**
+ * Run a readwrite transaction under the shared Dropbox degradation policy.
+ * Likes/tombstones are not quota-evictable; exhausted writes soft-fail to `fallback`.
+ *
+ * `fn` must settle via `resolve` (typically from `tx.oncomplete`).
+ */
+async function withIdbWrite<T>(
+  storeName: string,
+  label: string,
   fallback: T,
   fn: (store: IDBObjectStore, resolve: (value: T) => void) => void,
 ): Promise<T> {
-  return withIdbStore(STORE, mode, fallback, fn);
+  let value = fallback;
+
+  const ok = await runDropboxWrite(
+    `dropboxLikesCache.${label}`,
+    // Likes/tombstones are marked non-evictable; eviction no-ops for these names.
+    [storeName],
+    async (database) => {
+      value = await new Promise<T>((resolve, reject) => {
+        try {
+          const tx = database.transaction(storeName, 'readwrite');
+          const store = tx.objectStore(storeName);
+          fn(store, resolve);
+          tx.onerror = () => reject(tx.error ?? new Error('IndexedDB transaction failed'));
+        } catch (err) {
+          reject(err);
+        }
+      });
+    },
+  );
+
+  return ok ? value : fallback;
 }
 
-function withTombstoneStore<T>(
-  mode: IDBTransactionMode,
+function withStoreRead<T>(
   fallback: T,
   fn: (store: IDBObjectStore, resolve: (value: T) => void) => void,
 ): Promise<T> {
-  return withIdbStore(TOMBSTONE_STORE, mode, fallback, fn);
+  return withIdbRead(STORE, fallback, fn);
+}
+
+function withTombstoneRead<T>(
+  fallback: T,
+  fn: (store: IDBObjectStore, resolve: (value: T) => void) => void,
+): Promise<T> {
+  return withIdbRead(TOMBSTONE_STORE, fallback, fn);
 }
 
 export async function getLikedTracks(): Promise<MediaTrack[]> {
-  return withStore<MediaTrack[]>('readonly', [], (store, resolve) => {
+  return withStoreRead<MediaTrack[]>([], (store, resolve) => {
     const req = store.getAll();
     req.onsuccess = () => {
       const entries = (req.result as LikedEntry[]) ?? [];
@@ -75,7 +107,7 @@ export async function getLikedTracks(): Promise<MediaTrack[]> {
 }
 
 export async function getLikedCount(): Promise<number> {
-  return withStore('readonly', 0, (store, resolve) => {
+  return withStoreRead(0, (store, resolve) => {
     const req = store.count();
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => resolve(0);
@@ -83,7 +115,7 @@ export async function getLikedCount(): Promise<number> {
 }
 
 export async function isTrackLiked(trackId: string): Promise<boolean> {
-  return withStore('readonly', false, (store, resolve) => {
+  return withStoreRead(false, (store, resolve) => {
     const req = store.get(trackId);
     req.onsuccess = () => resolve(req.result !== undefined);
     req.onerror = () => resolve(false);
@@ -95,7 +127,7 @@ export async function setTrackLiked(
   track: MediaTrack | null,
   liked: boolean,
 ): Promise<void> {
-  await withStore('readwrite', undefined, (store, resolve) => {
+  await withIdbWrite(STORE, 'setTrackLiked', undefined, (store, resolve) => {
     const tx = store.transaction;
     if (liked && track) {
       const entry: LikedEntry = { trackId, track, likedAt: Date.now() };
@@ -103,7 +135,10 @@ export async function setTrackLiked(
     } else {
       store.delete(trackId);
     }
-    tx.oncomplete = () => { notifyLikesChanged(); resolve(undefined); };
+    tx.oncomplete = () => {
+      notifyLikesChanged();
+      resolve(undefined);
+    };
   });
   if (!liked) {
     await addTombstone(trackId);
@@ -111,15 +146,18 @@ export async function setTrackLiked(
 }
 
 export async function clearLikes(): Promise<void> {
-  return withStore('readwrite', undefined, (store, resolve) => {
+  return withIdbWrite(STORE, 'clearLikes', undefined, (store, resolve) => {
     const tx = store.transaction;
     store.clear();
-    tx.oncomplete = () => { notifyLikesChanged(); resolve(undefined); };
+    tx.oncomplete = () => {
+      notifyLikesChanged();
+      resolve(undefined);
+    };
   });
 }
 
 export async function exportLikes(): Promise<string> {
-  return withStore('readonly', '[]', (store, resolve) => {
+  return withStoreRead('[]', (store, resolve) => {
     const req = store.getAll();
     req.onsuccess = () => resolve(JSON.stringify(req.result ?? []));
     req.onerror = () => resolve('[]');
@@ -136,7 +174,7 @@ export async function importLikes(json: string): Promise<number> {
     return 0;
   }
 
-  return withStore('readwrite', 0, (store, resolve) => {
+  return withIdbWrite(STORE, 'importLikes', 0, (store, resolve) => {
     const tx = store.transaction;
     let count = 0;
     for (const entry of entries) {
@@ -145,7 +183,10 @@ export async function importLikes(json: string): Promise<number> {
         count++;
       }
     }
-    tx.oncomplete = () => { notifyLikesChanged(); resolve(count); };
+    tx.oncomplete = () => {
+      notifyLikesChanged();
+      resolve(count);
+    };
   });
 }
 
@@ -159,7 +200,7 @@ export async function refreshLikedTrackMetadata(
 ): Promise<{ updated: number; removed: number }> {
   const freshMap = new Map(freshTracks.map((t) => [t.id, t]));
 
-  return withStore('readwrite', { updated: 0, removed: 0 }, (store, resolve) => {
+  return withIdbWrite(STORE, 'refreshLikedTrackMetadata', { updated: 0, removed: 0 }, (store, resolve) => {
     const tx = store.transaction;
     const req = store.getAll();
     let updated = 0;
@@ -179,14 +220,17 @@ export async function refreshLikedTrackMetadata(
       }
     };
 
-    tx.oncomplete = () => { if (updated > 0 || removed > 0) notifyLikesChanged(); resolve({ updated, removed }); };
+    tx.oncomplete = () => {
+      if (updated > 0 || removed > 0) notifyLikesChanged();
+      resolve({ updated, removed });
+    };
   });
 }
 
 // ── Bulk operations for sync ────────────────────────────────────────
 
 export async function getLikedEntries(): Promise<LikedEntry[]> {
-  return withStore<LikedEntry[]>('readonly', [], (store, resolve) => {
+  return withStoreRead<LikedEntry[]>([], (store, resolve) => {
     const req = store.getAll();
     req.onsuccess = () => resolve((req.result as LikedEntry[]) ?? []);
     req.onerror = () => resolve([]);
@@ -194,7 +238,7 @@ export async function getLikedEntries(): Promise<LikedEntry[]> {
 }
 
 export async function replaceLikes(entries: LikedEntry[]): Promise<void> {
-  return withStore('readwrite', undefined, (store, resolve) => {
+  return withIdbWrite(STORE, 'replaceLikes', undefined, (store, resolve) => {
     const tx = store.transaction;
     store.clear();
     for (const entry of entries) {
@@ -202,7 +246,10 @@ export async function replaceLikes(entries: LikedEntry[]): Promise<void> {
         store.put(entry);
       }
     }
-    tx.oncomplete = () => { notifyLikesChanged(); resolve(undefined); };
+    tx.oncomplete = () => {
+      notifyLikesChanged();
+      resolve(undefined);
+    };
   });
 }
 
@@ -214,7 +261,7 @@ export interface Tombstone {
 }
 
 export async function addTombstone(trackId: string): Promise<void> {
-  return withTombstoneStore('readwrite', undefined, (store, resolve) => {
+  return withIdbWrite(TOMBSTONE_STORE, 'addTombstone', undefined, (store, resolve) => {
     const tx = store.transaction;
     store.put({ trackId, deletedAt: Date.now() });
     tx.oncomplete = () => resolve(undefined);
@@ -222,7 +269,7 @@ export async function addTombstone(trackId: string): Promise<void> {
 }
 
 export async function getTombstones(): Promise<Tombstone[]> {
-  return withTombstoneStore<Tombstone[]>('readonly', [], (store, resolve) => {
+  return withTombstoneRead<Tombstone[]>([], (store, resolve) => {
     const req = store.getAll();
     req.onsuccess = () => resolve((req.result as Tombstone[]) ?? []);
     req.onerror = () => resolve([]);
@@ -230,7 +277,7 @@ export async function getTombstones(): Promise<Tombstone[]> {
 }
 
 export async function clearTombstones(): Promise<void> {
-  return withTombstoneStore('readwrite', undefined, (store, resolve) => {
+  return withIdbWrite(TOMBSTONE_STORE, 'clearTombstones', undefined, (store, resolve) => {
     const tx = store.transaction;
     store.clear();
     tx.oncomplete = () => resolve(undefined);
@@ -238,7 +285,7 @@ export async function clearTombstones(): Promise<void> {
 }
 
 export async function setTombstones(entries: Tombstone[]): Promise<void> {
-  return withTombstoneStore('readwrite', undefined, (store, resolve) => {
+  return withIdbWrite(TOMBSTONE_STORE, 'setTombstones', undefined, (store, resolve) => {
     const tx = store.transaction;
     store.clear();
     for (const entry of entries) {

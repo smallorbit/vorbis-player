@@ -508,73 +508,73 @@ describe('libraryCache', () => {
       return () => spy.mockRestore();
     }
 
-    it('should flip to fallback mode when a put fails at runtime', async () => {
+    it('should not enter permanent fallback when a put soft-fails at runtime', async () => {
       // #given — IDB opens successfully, then readwrite transactions start failing
       await initCache();
       expect(_testing.fallbackMode).toBe(false);
       const restore = mockWriteTransactionFailure(_testing.db!);
 
       // #when — write fails at runtime (IDB was healthy at init)
-      await putPlaylist(makePlaylist('p1', 'Fallback Playlist'));
+      await putPlaylist(makePlaylist('p1', 'Overlay Playlist'));
 
-      // #then — fallback mode is now active
-      expect(_testing.fallbackMode).toBe(true);
+      // #then — whole-DB fallback stays off (still-readable IDB must not be hidden)
+      expect(_testing.fallbackMode).toBe(false);
 
       restore();
     });
 
-    it('should serve the written value from the in-memory map after a runtime put failure', async () => {
-      // #given — IDB opens, then readwrite transactions start throwing
+    it('should serve the soft-failed write from the per-key overlay without hiding IDB rows', async () => {
+      // #given — seed a durable row, then make readwrite transactions throw
       await initCache();
+      await putPlaylist(makePlaylist('keep', 'Keep Me'));
       expect(_testing.fallbackMode).toBe(false);
       const restore = mockWriteTransactionFailure(_testing.db!);
 
-      // #when — write fails at runtime; the value lands in the fallback Map
+      // #when — write fails after degradation retries; value lands in the session overlay
       await putPlaylist(makePlaylist('p1', 'Quota Playlist'));
 
-      // #then — fallback mode flipped and the subsequent read returns the in-memory value,
-      //          not stale IDB data
-      expect(_testing.fallbackMode).toBe(true);
+      // #then — fallback stays off; both the IDB row and the overlay write are visible
+      expect(_testing.fallbackMode).toBe(false);
       const result = await getAllPlaylists();
-      expect(result).toHaveLength(1);
-      expect(result[0]?.name).toBe('Quota Playlist');
+      expect(result.map((p) => p.id).sort()).toEqual(['keep', 'p1']);
+      expect(result.find((p) => p.id === 'p1')?.name).toBe('Quota Playlist');
 
       restore();
     });
 
-    it('should flip to fallback mode when a batch replace fails at runtime', async () => {
+    it('should overlay a soft-failed batch replace without flipping fallback mode', async () => {
       // #given — IDB opens successfully, then readwrite transactions start throwing
       await initCache();
       expect(_testing.fallbackMode).toBe(false);
       const restore = mockWriteTransactionFailure(_testing.db!);
 
-      // #when — replaceProviderPlaylists touches multiple items; the entire batch goes to fallback
+      // #when — replaceProviderPlaylists touches multiple items; soft-fail overlays them
       const batch = [makePlaylist('p2', 'Batch A'), makePlaylist('p3', 'Batch B')];
       await replaceProviderPlaylists('spotify', batch);
 
       // #then
-      expect(_testing.fallbackMode).toBe(true);
+      expect(_testing.fallbackMode).toBe(false);
       const result = await getAllPlaylists();
       expect(result.map((p) => p.id).sort()).toEqual(['p2', 'p3']);
 
       restore();
     });
 
-    it('should keep fallback mode true for all subsequent reads after a write failure', async () => {
-      // #given — IDB opens; one write fails
+    it('should resume durable IDB writes after the failure condition clears', async () => {
+      // #given — IDB opens; one write soft-fails into the overlay
       await initCache();
       const restore = mockWriteTransactionFailure(_testing.db!);
       await putPlaylist(makePlaylist('p1'));
       restore();
-      expect(_testing.fallbackMode).toBe(true);
+      expect(_testing.fallbackMode).toBe(false);
 
-      // #when — subsequent reads and writes (IDB transaction mock removed)
+      // #when — subsequent writes succeed again on IDB
       await putPlaylist(makePlaylist('p2', 'After Failure'));
       const playlists = await getAllPlaylists();
       const albums = await getAllAlbums();
 
-      // #then — still in fallback; reads come from the in-memory map, not IDB
-      expect(_testing.fallbackMode).toBe(true);
+      // #then — still not in fallback; both overlay + durable writes are visible
+      expect(_testing.fallbackMode).toBe(false);
       expect(playlists.map((p) => p.id).sort()).toEqual(['p1', 'p2']);
       expect(albums).toEqual([]);
     });

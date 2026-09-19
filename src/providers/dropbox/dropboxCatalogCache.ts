@@ -1,6 +1,6 @@
 import type { MediaCollection } from '@/types/domain';
 import { logCaughtError } from '@/utils/logCaughtError';
-import { getDb } from './dropboxArtCache';
+import { getDb, runDropboxWrite } from './dropboxIdb';
 
 const STORE = 'catalog';
 const KEY = 'collections';
@@ -44,30 +44,24 @@ export async function getCachedCatalog(): Promise<{
 }
 
 export async function putCatalogCache(collections: MediaCollection[]): Promise<void> {
-  const database = await getDb();
-  if (!database) return;
-  try {
-    const entry: CachedCatalog = { key: KEY, collections, cachedAt: Date.now() };
-    const tx = database.transaction(STORE, 'readwrite');
-    tx.objectStore(STORE).put(entry);
-  } catch (err) {
-    // fire-and-forget
-    logCaughtError('dropboxCatalogCache.putCatalogCache', err);
-  }
+  const entry: CachedCatalog = { key: KEY, collections, cachedAt: Date.now() };
+  await runDropboxWrite(`dropboxCatalogCache.putCatalogCache`, [STORE], (database) =>
+    new Promise<void>((resolve, reject) => {
+      const tx = database.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).put(entry);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    }),
+  );
 }
 
 export async function clearCatalogCache(): Promise<void> {
-  const database = await getDb();
-  if (!database) return;
-  return new Promise((resolve) => {
-    try {
+  await runDropboxWrite(`dropboxCatalogCache.clearCatalogCache`, [STORE], (database) =>
+    new Promise<void>((resolve, reject) => {
       const tx = database.transaction(STORE, 'readwrite');
       tx.objectStore(STORE).clear();
       tx.oncomplete = () => resolve();
-      tx.onerror = () => resolve();
-    } catch (err) {
-      logCaughtError('dropboxCatalogCache.clearCatalogCache', err);
-      resolve();
-    }
-  });
+      tx.onerror = () => reject(tx.error);
+    }),
+  );
 }
