@@ -2,7 +2,7 @@
 
 **Initiative label:** [`project:vorbis-player-architecture-v2`](https://github.com/smallorbit/vorbis-player/labels/project%3Avorbis-player-architecture-v2) (RFC 0001)  
 **Working mode:** **one workstream (epic) at a time**; within an epic, **one child issue at a time**.  
-**Updated:** 2026-09-19 (after #1702)
+**Updated:** 2026-09-19 (after #1703)
 
 Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tier-codebase.md`, which is **not yet on `main`** — landing that RFC is part of **[WS11](https://github.com/smallorbit/vorbis-player/issues/1757)**.
 
@@ -14,7 +14,7 @@ Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tie
 |----|------|--------|
 | WS1 | [#1685](https://github.com/smallorbit/vorbis-player/issues/1685) Neutral domain model | **Done** |
 | WS2 | [#1692](https://github.com/smallorbit/vorbis-player/issues/1692) PlaybackStore + QueueStore | **Done** |
-| WS3 | [#1699](https://github.com/smallorbit/vorbis-player/issues/1699) State, persistence & events | **In progress** (3/8) |
+| WS3 | [#1699](https://github.com/smallorbit/vorbis-player/issues/1699) State, persistence & events | **In progress** (4/8) |
 | WS4–WS12 | Reliability → DevBug | Open (do not start until WS3 closes) |
 
 Pre-initiative foundations already on `main`: async-race harness, honest e2e, full CI gate.
@@ -23,7 +23,7 @@ Pre-initiative foundations already on `main`: async-race harness, honest e2e, fu
 
 ## Do this next
 
-### Immediate: finish WS3, starting at #1703
+### Immediate: finish WS3, starting at #1704
 
 Epic: **[#1699 — State, persistence & events with single owners](https://github.com/smallorbit/vorbis-player/issues/1699)**  
 Principles: P1/P2 — one owner per state; one canonical implementation per concern.
@@ -33,8 +33,8 @@ Principles: P1/P2 — one owner per state; one canonical implementation per conc
 | 1700 | Same-tab `localStorage` broadcast | **Closed** | PR [#1771](https://github.com/smallorbit/vorbis-player/pull/1771). Helper: `src/utils/persistedStorage.ts`; hook: `src/hooks/useLocalStorage.ts`; lint allowlist in `eslint.config.js`. |
 | 1701 | Invalidate IndexedDB liked-songs on save/unsave | **Closed** | PR [#1773](https://github.com/smallorbit/vorbis-player/pull/1773). `invalidateLikedSongsCaches` awaits `libraryCache.removeTrackList({ provider: 'spotify', kind: 'liked' })`. |
 | 1702 | One IndexedDB foundation + degradation policy | **Closed** | Shared `src/services/idb`; library / settings / Dropbox rebuilt on it. Policy: retry (+ reopen) → store-scoped quota eviction (likes/tombstones protected) → `deleteDatabase` only on explicit corrupt signals. KVStore write soft-fail uses per-key overlay; Dropbox art/catalog/likes exhausted writes are dropped (not overlaid). |
-| **1703** | **`RemoteJsonFileStore<T>` under Dropbox** | **← NEXT** | Dedupe `/.vorbis` remote-JSON sync. |
-| 1704 | Logout data-purge contract | Open | High priority — can use `createIdbDatabase().deleteDatabase()` + STORAGE_KEYS |
+| 1703 | `RemoteJsonFileStore<T>` under Dropbox | **Closed** | `src/providers/dropbox/remoteJsonFileStore.ts` — download/upload + version guard + debounced single-flight push. Likes / preferences / playlists wired; domain merge policies stay in their sync modules. |
+| **1704** | **Logout data-purge contract** | **← NEXT** | High priority — can use `createIdbDatabase().deleteDatabase()` + STORAGE_KEYS |
 | 1705 | Typed `AppEventMap` in `constants/events.ts` | Open | |
 | 1706 | Complete `STORAGE_KEYS` + prefix convention | Open | Fold more raw writers off the #1700 allowlist where appropriate |
 | 1707 | Slim `ProviderContext` + StrictMode | Open | Epic exit: tests pass under StrictMode |
@@ -53,11 +53,11 @@ Optional WS2 leftovers if they surface: [#1770](https://github.com/smallorbit/vo
 
 ---
 
-## Context for #1703 (next implementation)
+## Context for #1704 (next implementation)
 
-Extract a single `RemoteJsonFileStore<T>` under the Dropbox provider for the triplicated `/.vorbis` remote-JSON sync paths. Do **not** expand into logout purge (#1704) or STORAGE_KEYS (#1706) unless a shared primitive is required.
+Define and implement the logout data-purge contract so disconnecting a provider leaves zero provider-scoped keys/DBs (proven by test). Prefer iterating `STORAGE_KEYS` + `createIdbDatabase().deleteDatabase()` over ad-hoc clears. Do **not** expand into typed events (#1705) or the full STORAGE_KEYS audit (#1706) unless a shared primitive is required — though #1704 may naturally touch a few missing keys.
 
-### Known follow-ups (do **not** block #1703)
+### Known follow-ups (do **not** block #1704)
 
 - Session hydrate clears on-disk session via `resetLastSession`; debounced re-save often never lands while position ticks reset the timer. Re-prime falls back to **PlaybackStore** cursor (`useProviderPlayback`). Durable session re-save belongs with #1706 territory if touched at all.
 - Raw `localStorage` allowlist in `eslint.config.js` still includes auth/session/debug/migration modules; shrink it as #1704/#1706 land.
@@ -80,5 +80,6 @@ Extract a single `RemoteJsonFileStore<T>` under the Dropbox provider for the tri
 
 - Label board: https://github.com/smallorbit/vorbis-player/labels/project%3Avorbis-player-architecture-v2  
 - WS3 epic: https://github.com/smallorbit/vorbis-player/issues/1699  
-- Next issue: https://github.com/smallorbit/vorbis-player/issues/1703  
+- Next issue: https://github.com/smallorbit/vorbis-player/issues/1704  
 - Shared IDB foundation: `src/services/idb/`  
+- Remote JSON store: `src/providers/dropbox/remoteJsonFileStore.ts`  

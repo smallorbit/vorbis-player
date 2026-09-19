@@ -12,10 +12,8 @@ import {
   getTombstones,
   setTombstones,
 } from './dropboxLikesCache';
-import { ensureVorbisFolder } from './dropboxSyncFolder';
-import { contentApiRequest } from './dropboxContentApiClient';
+import { RemoteJsonFileStore } from './remoteJsonFileStore';
 import { logDropboxSync } from '@/lib/debugLog';
-import { logCaughtError } from '@/utils/logCaughtError';
 
 export interface RemoteLikesFile {
   version: 1;
@@ -26,7 +24,6 @@ export interface RemoteLikesFile {
 
 const SYNC_FILE_PATH = '/.vorbis/likes.json';
 const TOMBSTONE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
-const UPLOAD_DEBOUNCE_MS = 2000;
 
 function entriesEqual<T extends { trackId: string }>(
   a: T[],
@@ -44,12 +41,19 @@ function entriesEqual<T extends { trackId: string }>(
 }
 
 export class DropboxLikesSyncService {
-  private auth: DropboxAuthAdapter;
-  private pushTimer: ReturnType<typeof setTimeout> | null = null;
-  private pushing = false;
+  private readonly store: RemoteJsonFileStore<RemoteLikesFile>;
 
   constructor(auth: DropboxAuthAdapter) {
-    this.auth = auth;
+    this.store = new RemoteJsonFileStore<RemoteLikesFile>({
+      auth,
+      path: SYNC_FILE_PATH,
+      expectedVersion: 1,
+      logLabel: 'DropboxLikesSync',
+      buildPayload: () => this.buildRemoteFile(),
+      onUploadSuccess: async (data) => {
+        await setTombstones(data.tombstones);
+      },
+    });
   }
 
   private likesEqual(a: LikedEntry[], b: LikedEntry[]): boolean {
@@ -62,86 +66,14 @@ export class DropboxLikesSyncService {
     return entriesEqual(a, b, (ea, eb) => ea.deletedAt === eb.deletedAt);
   }
 
-  async downloadLikesFile(): Promise<RemoteLikesFile | null> {
-    const apiArg = JSON.stringify({ path: SYNC_FILE_PATH });
-
-    const response = await contentApiRequest(this.auth, (token) =>
-      fetch('https://content.dropboxapi.com/2/files/download', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Dropbox-API-Arg': apiArg,
-        },
-      }),
-    );
-
-    if (!response) return null;
-
-    if (response.status === 409) {
-      // path/not_found — file doesn't exist yet
-      return null;
-    }
-
-    if (!response.ok) {
-      console.warn('[DropboxLikesSync] Download failed:', response.status);
-      return null;
-    }
-
-    try {
-      const data: RemoteLikesFile = await response.json();
-      if (data.version !== 1) {
-        console.warn('[DropboxLikesSync] Unknown file version:', data.version);
-        return null;
-      }
-      return data;
-    } catch (err) {
-      logCaughtError('dropboxLikesSync.downloadLikesFile', err);
-      console.warn('[DropboxLikesSync] Failed to parse remote likes file');
-      return null;
-    }
+  /** @internal test seam — delegates to RemoteJsonFileStore */
+  downloadLikesFile(): Promise<RemoteLikesFile | null> {
+    return this.store.download();
   }
 
-  async uploadLikesFile(data: RemoteLikesFile): Promise<boolean> {
-    const folderReady = await ensureVorbisFolder(this.auth);
-    if (!folderReady) return false;
-
-    const apiArg = JSON.stringify({
-      path: SYNC_FILE_PATH,
-      mode: 'overwrite',
-    });
-
-    const body = JSON.stringify(data);
-
-    const response = await contentApiRequest(this.auth, (accessToken) =>
-      fetch('https://content.dropboxapi.com/2/files/upload', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Dropbox-API-Arg': apiArg,
-          'Content-Type': 'application/octet-stream',
-        },
-        body,
-      }),
-    );
-
-    if (!response) return false;
-
-    if (!response.ok) {
-      const errText = await response.text();
-      let errMsg: string;
-      try {
-        const errJson = JSON.parse(errText);
-        errMsg = (errJson?.error_summary ?? errJson?.error ?? errText) || response.statusText;
-      } catch (err) {
-        logCaughtError('dropboxLikesSync.uploadLikesFile.parseError', err);
-        errMsg = errText || response.statusText;
-      }
-      console.warn('[DropboxLikesSync] Upload failed:', response.status, errMsg);
-      if (response.status === 400) console.error('[DropboxLikesSync] 400 response body:', errText);
-      return false;
-    }
-
-    return true;
+  /** @internal test seam — delegates to RemoteJsonFileStore */
+  uploadLikesFile(data: RemoteLikesFile): Promise<boolean> {
+    return this.store.upload(data);
   }
 
   /**
@@ -215,13 +147,40 @@ export class DropboxLikesSyncService {
     return { mergedLikes, mergedTombstones, changed, remoteChanged };
   }
 
+  private async buildRemoteFile(): Promise<RemoteLikesFile> {
+    const [entries, tombstones] = await Promise.all([
+      getLikedEntries(),
+      getTombstones(),
+    ]);
+
+    // Prune old tombstones before pushing
+    const now = Date.now();
+    const activeTombstones = tombstones.filter(
+      (t) => now - t.deletedAt < TOMBSTONE_TTL_MS,
+    );
+
+    const leanEntries = entries.map(({ trackId, track, likedAt }) => {
+      // Strip the (large, presigned) Dropbox image URL before uploading; the playbackRef
+      // path is the permanent identifier. MediaTrack.image is optional, so we omit it.
+      const { image: _image, ...rest } = track;
+      return { trackId, track: rest, likedAt };
+    });
+
+    return {
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      likes: leanEntries,
+      tombstones: activeTombstones,
+    };
+  }
+
   /**
    * Initial sync: download remote → merge with local → update IDB → push if local had changes.
    */
   async initialSync(): Promise<void> {
     try {
       const [remoteData, localEntries, localTombstones] = await Promise.all([
-        this.downloadLikesFile(),
+        this.store.download(),
         getLikedEntries(),
         getTombstones(),
       ]);
@@ -240,7 +199,7 @@ export class DropboxLikesSyncService {
       const shouldPush = !remoteData || remoteChanged;
 
       if (shouldPush) {
-        await this.doPush();
+        await this.store.pushNow();
       }
 
       logDropboxSync('initial sync complete: %d likes, %d tombstones', mergedLikes.length, mergedTombstones.length);
@@ -253,63 +212,11 @@ export class DropboxLikesSyncService {
    * Schedule a debounced push to Dropbox after a local change.
    */
   schedulePush(): void {
-    if (this.pushTimer) {
-      clearTimeout(this.pushTimer);
-    }
-    this.pushTimer = setTimeout(() => {
-      this.pushTimer = null;
-      this.doPush().catch((err) => {
-        console.warn('[DropboxLikesSync] Push failed:', err);
-      });
-    }, UPLOAD_DEBOUNCE_MS);
-  }
-
-  private async doPush(): Promise<void> {
-    if (this.pushing) return;
-    this.pushing = true;
-
-    try {
-      const [entries, tombstones] = await Promise.all([
-        getLikedEntries(),
-        getTombstones(),
-      ]);
-
-      // Prune old tombstones before pushing
-      const now = Date.now();
-      const activeTombstones = tombstones.filter(
-        (t) => now - t.deletedAt < TOMBSTONE_TTL_MS,
-      );
-
-      const leanEntries = entries.map(({ trackId, track, likedAt }) => {
-        // Strip the (large, presigned) Dropbox image URL before uploading; the playbackRef
-        // path is the permanent identifier. MediaTrack.image is optional, so we omit it.
-        const { image: _image, ...rest } = track;
-        return { trackId, track: rest, likedAt };
-      });
-
-      const data: RemoteLikesFile = {
-        version: 1,
-        updatedAt: new Date().toISOString(),
-        likes: leanEntries,
-        tombstones: activeTombstones,
-      };
-
-      const success = await this.uploadLikesFile(data);
-
-      if (success) {
-        // Update local tombstones to the pruned set
-        await setTombstones(activeTombstones);
-      }
-    } finally {
-      this.pushing = false;
-    }
+    this.store.schedulePush();
   }
 
   destroy(): void {
-    if (this.pushTimer) {
-      clearTimeout(this.pushTimer);
-      this.pushTimer = null;
-    }
+    this.store.destroy();
   }
 }
 

@@ -5,8 +5,7 @@
 
 import type { DropboxAuthAdapter } from './dropboxAuthAdapter';
 import { getPins, setPins, UNIFIED_PROVIDER, notifyPinsChanged } from '@/services/settings/pinnedItemsStorage';
-import { ensureVorbisFolder } from './dropboxSyncFolder';
-import { contentApiRequest } from './dropboxContentApiClient';
+import { RemoteJsonFileStore } from './remoteJsonFileStore';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { logCaughtError } from '@/utils/logCaughtError';
 import {
@@ -32,7 +31,6 @@ export interface RemotePreferencesFile {
 }
 
 const PREFERENCES_FILE_PATH = '/.vorbis/preferences.json';
-const UPLOAD_DEBOUNCE_MS = 2000;
 
 function parseJsonObject(raw: string | null): Record<string, string> {
   if (!raw) return {};
@@ -82,90 +80,36 @@ function setLocalUpdatedAt(updatedAt: string): void {
 // ── Sync service ────────────────────────────────────────────────────────────
 
 export class DropboxPreferencesSyncService {
-  private auth: DropboxAuthAdapter;
-  private pushTimer: ReturnType<typeof setTimeout> | null = null;
-  private pushing = false;
+  private readonly store: RemoteJsonFileStore<RemotePreferencesFile>;
 
   constructor(auth: DropboxAuthAdapter) {
-    this.auth = auth;
-  }
-
-  async downloadPreferencesFile(): Promise<RemotePreferencesFile | null> {
-    const apiArg = JSON.stringify({ path: PREFERENCES_FILE_PATH });
-
-    const response = await contentApiRequest(this.auth, (token) =>
-      fetch('https://content.dropboxapi.com/2/files/download', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Dropbox-API-Arg': apiArg,
-        },
-      }),
-    );
-
-    if (!response) return null;
-
-    if (response.status === 409) return null; // path/not_found
-
-    if (!response.ok) {
-      console.warn('[DropboxPreferencesSync] Download failed:', response.status);
-      return null;
-    }
-
-    try {
-      const data: RemotePreferencesFile = await response.json();
-      if (data.version !== 1) {
-        console.warn('[DropboxPreferencesSync] Unknown file version:', data.version);
-        return null;
-      }
-      return data;
-    } catch (err) {
-      logCaughtError('dropboxPreferencesSync.downloadPreferencesFile', err);
-      console.warn('[DropboxPreferencesSync] Failed to parse remote preferences file');
-      return null;
-    }
-  }
-
-  async uploadPreferencesFile(data: RemotePreferencesFile): Promise<boolean> {
-    const folderReady = await ensureVorbisFolder(this.auth);
-    if (!folderReady) return false;
-
-    const apiArg = JSON.stringify({
+    this.store = new RemoteJsonFileStore<RemotePreferencesFile>({
+      auth,
       path: PREFERENCES_FILE_PATH,
-      mode: 'overwrite',
+      expectedVersion: 1,
+      logLabel: 'DropboxPreferencesSync',
+      buildPayload: async () => {
+        const payload = await buildPreferencesFromLocal();
+        return {
+          version: 1 as const,
+          updatedAt: new Date().toISOString(),
+          ...payload,
+        };
+      },
+      onUploadSuccess: (data) => {
+        setLocalUpdatedAt(data.updatedAt);
+      },
     });
+  }
 
-    const body = JSON.stringify(data);
+  /** @internal test seam — delegates to RemoteJsonFileStore */
+  downloadPreferencesFile(): Promise<RemotePreferencesFile | null> {
+    return this.store.download();
+  }
 
-    const response = await contentApiRequest(this.auth, (token) =>
-      fetch('https://content.dropboxapi.com/2/files/upload', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Dropbox-API-Arg': apiArg,
-          'Content-Type': 'application/octet-stream',
-        },
-        body,
-      }),
-    );
-
-    if (!response) return false;
-
-    if (!response.ok) {
-      const errText = await response.text();
-      let errMsg: string;
-      try {
-        const errJson = JSON.parse(errText);
-        errMsg = (errJson?.error_summary ?? errJson?.error ?? errText) || response.statusText;
-      } catch (err) {
-        logCaughtError('dropboxPreferencesSync.uploadPreferencesFile.parseError', err);
-        errMsg = errText || response.statusText;
-      }
-      console.warn('[DropboxPreferencesSync] Upload failed:', response.status, errMsg);
-      if (response.status === 400) console.error('[DropboxPreferencesSync] 400 response body:', errText);
-      return false;
-    }
-    return true;
+  /** @internal test seam — delegates to RemoteJsonFileStore */
+  uploadPreferencesFile(data: RemotePreferencesFile): Promise<boolean> {
+    return this.store.upload(data);
   }
 
   /**
@@ -186,7 +130,7 @@ export class DropboxPreferencesSyncService {
 
   async initialSync(): Promise<void> {
     try {
-      const remote = await this.downloadPreferencesFile();
+      const remote = await this.store.download();
       const localUpdatedAt = getLocalUpdatedAt();
       const { shouldApplyRemote, shouldPushLocal } = this.merge(remote, localUpdatedAt);
 
@@ -196,7 +140,7 @@ export class DropboxPreferencesSyncService {
       }
 
       if (shouldPushLocal) {
-        await this.doPush();
+        await this.store.pushNow();
       }
     } catch (error) {
       console.warn('[DropboxPreferencesSync] Initial sync failed:', error);
@@ -204,37 +148,11 @@ export class DropboxPreferencesSyncService {
   }
 
   schedulePush(): void {
-    if (this.pushTimer) clearTimeout(this.pushTimer);
-    this.pushTimer = setTimeout(() => {
-      this.pushTimer = null;
-      this.doPush().catch((err) => {
-        console.warn('[DropboxPreferencesSync] Push failed:', err);
-      });
-    }, UPLOAD_DEBOUNCE_MS);
-  }
-
-  private async doPush(): Promise<void> {
-    if (this.pushing) return;
-    this.pushing = true;
-    try {
-      const payload = await buildPreferencesFromLocal();
-      const data: RemotePreferencesFile = {
-        version: 1,
-        updatedAt: new Date().toISOString(),
-        ...payload,
-      };
-      const success = await this.uploadPreferencesFile(data);
-      if (success) setLocalUpdatedAt(data.updatedAt);
-    } finally {
-      this.pushing = false;
-    }
+    this.store.schedulePush();
   }
 
   destroy(): void {
-    if (this.pushTimer) {
-      clearTimeout(this.pushTimer);
-      this.pushTimer = null;
-    }
+    this.store.destroy();
   }
 }
 
