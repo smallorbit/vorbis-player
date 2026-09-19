@@ -1,6 +1,7 @@
 import type { CatalogProvider } from '@/types/providers';
 import type { ProviderId, MediaTrack, MediaCollection, CollectionRef } from '@/types/domain';
 import type { ProviderSnapshot, SnapshotTrack } from '../../../playwright/fixtures/data/snapshot.types';
+import { MOCK_DROPBOX_LIKES_CHANGED_EVENT, dispatchAppEvent } from '@/constants/events';
 
 function snapshotTrackToMediaTrack(track: SnapshotTrack, providerId: ProviderId): MediaTrack {
   return {
@@ -175,7 +176,7 @@ export class MockCatalogAdapter implements CatalogProvider {
       this.likedSet.delete(trackId);
     }
     if (this.providerId === 'dropbox') {
-      window.dispatchEvent(new Event('mock-dropbox-likes-changed'));
+      dispatchAppEvent(MOCK_DROPBOX_LIKES_CHANGED_EVENT);
     }
   }
 

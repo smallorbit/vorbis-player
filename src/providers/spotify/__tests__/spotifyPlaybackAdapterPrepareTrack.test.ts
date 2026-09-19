@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SpotifyPlaybackAdapter } from '@/providers/spotify/spotifyPlaybackAdapter';
 import { spotifyPlayer, waitForSpotifyReady } from '@/services/spotifyPlayer';
 import { AuthExpiredError } from '@/providers/errors';
-import { SESSION_EXPIRED_EVENT } from '@/constants/events';
+import { SESSION_EXPIRED_EVENT, dispatchAppEvent } from '@/constants/events';
 import type { MediaTrack, PlaybackState } from '@/types/domain';
 
 vi.mock('@/services/spotifyPlayer', () => ({
@@ -392,9 +392,7 @@ describe('SpotifyPlaybackAdapter.prepareTrack', () => {
       );
 
       // #when — simulate provider session expiry, then re-prime same track
-      window.dispatchEvent(
-        new CustomEvent(SESSION_EXPIRED_EVENT, { detail: { providerId: 'spotify' } }),
-      );
+      dispatchAppEvent(SESSION_EXPIRED_EVENT, { providerId: 'spotify' });
       adapter.prepareTrack(track, { positionMs: 15_000 });
 
       // #then — second prepareTrack must re-emit (guard cleared) and trigger
@@ -420,9 +418,7 @@ describe('SpotifyPlaybackAdapter.prepareTrack', () => {
       await vi.waitFor(() => expect(stageEmissions).toHaveLength(1));
 
       // #when
-      window.dispatchEvent(
-        new CustomEvent(SESSION_EXPIRED_EVENT, { detail: { providerId: 'dropbox' } }),
-      );
+      dispatchAppEvent(SESSION_EXPIRED_EVENT, { providerId: 'dropbox' });
       adapter.prepareTrack(track, { positionMs: 10_000 });
 
       // #then — Spotify guard still set → second prepare is a no-op

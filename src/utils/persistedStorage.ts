@@ -1,11 +1,8 @@
-import { LOCAL_STORAGE_CHANGE_EVENT } from '@/constants/events';
+import { LOCAL_STORAGE_CHANGE_EVENT, dispatchAppEvent } from '@/constants/events';
+import type { LocalStorageChangeDetail } from '@/constants/events';
 import { logCaughtError } from '@/utils/logCaughtError';
 
-export interface LocalStorageChangeDetail {
-  key: string;
-  /** Serialized payload, or `null` when the key was removed (reset to initial). */
-  newValue: string | null;
-}
+export type { LocalStorageChangeDetail };
 
 export function isLocalStorageChangeDetail(value: unknown): value is LocalStorageChangeDetail {
   if (typeof value !== 'object' || value === null) return false;
@@ -14,11 +11,7 @@ export function isLocalStorageChangeDetail(value: unknown): value is LocalStorag
 }
 
 function dispatchLocalStorageChange(key: string, newValue: string | null): void {
-  window.dispatchEvent(
-    new CustomEvent<LocalStorageChangeDetail>(LOCAL_STORAGE_CHANGE_EVENT, {
-      detail: { key, newValue },
-    }),
-  );
+  dispatchAppEvent(LOCAL_STORAGE_CHANGE_EVENT, { key, newValue });
 }
 
 export function readLocalStorageRaw(key: string): string | null {

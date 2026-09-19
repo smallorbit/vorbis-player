@@ -1,16 +1,15 @@
 import type { MediaTrack } from '@/types/domain';
+import { DROPBOX_LIKES_CHANGED_EVENT, dispatchAppEvent } from '@/constants/events';
 import { logCaughtError } from '@/utils/logCaughtError';
 import { getDb, runDropboxWrite } from './dropboxIdb';
 
 const STORE = 'likes';
 
-/** Custom event name dispatched when likes change (add/remove/clear/import). */
-export const LIKES_CHANGED_EVENT = 'vorbis-dropbox-likes-changed';
+/** @deprecated Prefer `DROPBOX_LIKES_CHANGED_EVENT` from `@/constants/events`. */
+export const LIKES_CHANGED_EVENT = DROPBOX_LIKES_CHANGED_EVENT;
 
 function notifyLikesChanged(): void {
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new Event(LIKES_CHANGED_EVENT));
-  }
+  dispatchAppEvent(DROPBOX_LIKES_CHANGED_EVENT);
 }
 
 export interface LikedEntry {

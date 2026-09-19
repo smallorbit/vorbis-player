@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import type { MediaTrack, ProviderId } from '@/types/domain';
-import { PROVIDER_RECONNECTED_EVENT } from '@/constants/events';
+import { PROVIDER_RECONNECTED_EVENT, dispatchAppEvent } from '@/constants/events';
 import { queueStore } from '@/stores/queueStore';
 import { playbackStore } from '@/stores/playbackStore';
 
@@ -82,9 +82,7 @@ describe('useProviderPlayback — PROVIDER_RECONNECTED_EVENT re-prime', () => {
 
     // #when — dispatch the reconnect event for spotify
     act(() => {
-      window.dispatchEvent(
-        new CustomEvent(PROVIDER_RECONNECTED_EVENT, { detail: { providerId: 'spotify' } }),
-      );
+      dispatchAppEvent(PROVIDER_RECONNECTED_EVENT, { providerId: 'spotify' });
     });
 
     // #then
@@ -110,9 +108,7 @@ describe('useProviderPlayback — PROVIDER_RECONNECTED_EVENT re-prime', () => {
 
     // #when
     act(() => {
-      window.dispatchEvent(
-        new CustomEvent(PROVIDER_RECONNECTED_EVENT, { detail: { providerId: 'spotify' } }),
-      );
+      dispatchAppEvent(PROVIDER_RECONNECTED_EVENT, { providerId: 'spotify' });
     });
 
     // #then
@@ -131,9 +127,7 @@ describe('useProviderPlayback — PROVIDER_RECONNECTED_EVENT re-prime', () => {
 
     // #when
     act(() => {
-      window.dispatchEvent(
-        new CustomEvent(PROVIDER_RECONNECTED_EVENT, { detail: { providerId: 'spotify' } }),
-      );
+      dispatchAppEvent(PROVIDER_RECONNECTED_EVENT, { providerId: 'spotify' });
     });
 
     // #then
@@ -150,9 +144,7 @@ describe('useProviderPlayback — PROVIDER_RECONNECTED_EVENT re-prime', () => {
 
     // #when
     act(() => {
-      window.dispatchEvent(
-        new CustomEvent(PROVIDER_RECONNECTED_EVENT, { detail: { providerId: 'spotify' } }),
-      );
+      dispatchAppEvent(PROVIDER_RECONNECTED_EVENT, { providerId: 'spotify' });
     });
 
     // #then
@@ -170,9 +162,7 @@ describe('useProviderPlayback — PROVIDER_RECONNECTED_EVENT re-prime', () => {
 
     // #when
     act(() => {
-      window.dispatchEvent(
-        new CustomEvent(PROVIDER_RECONNECTED_EVENT, { detail: { providerId: 'dropbox' } }),
-      );
+      dispatchAppEvent(PROVIDER_RECONNECTED_EVENT, { providerId: 'dropbox' });
     });
 
     // #then
@@ -186,9 +176,7 @@ describe('useProviderPlayback — PROVIDER_RECONNECTED_EVENT re-prime', () => {
 
     // #when
     act(() => {
-      window.dispatchEvent(
-        new CustomEvent(PROVIDER_RECONNECTED_EVENT, { detail: { providerId: 'spotify' } }),
-      );
+      dispatchAppEvent(PROVIDER_RECONNECTED_EVENT, { providerId: 'spotify' });
     });
 
     // #then

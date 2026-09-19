@@ -11,8 +11,13 @@ import type { MockCatalogAdapter } from './mockCatalogAdapter';
 import type { MockPlaybackAdapter } from './mockPlaybackAdapter';
 import type { MockAuthAdapter } from './mockAuthAdapter';
 import type { MediaTrack, ProviderId } from '@/types/domain';
-import { AUTH_STATE_CHANGED_EVENT } from '@/hooks/usePopupAuth';
-import { SESSION_EXPIRED_EVENT } from '@/constants/events';
+import {
+  AUTH_STATE_CHANGED_EVENT,
+  MOCK_RESET_EVENT,
+  MOCK_SET_QUEUE_EVENT,
+  SESSION_EXPIRED_EVENT,
+  dispatchAppEvent,
+} from '@/constants/events';
 
 interface ExpireAuthOptions {
   /**
@@ -98,7 +103,7 @@ export function installMockTestApi(opts: InstallOptions): void {
   window.__mockTest = {
     async setQueue(trackIds) {
       const tracks = trackIds.map(resolveTrack);
-      window.dispatchEvent(new CustomEvent('mock:set-queue', { detail: tracks }));
+      dispatchAppEvent(MOCK_SET_QUEUE_EVENT, tracks);
     },
 
     async setPlaybackState({ trackId, positionMs = 0, isPlaying = true }) {
@@ -112,17 +117,15 @@ export function installMockTestApi(opts: InstallOptions): void {
 
     async expireAuth(providerId, opts) {
       resolveAuth(providerId).__testExpire();
-      window.dispatchEvent(new CustomEvent(AUTH_STATE_CHANGED_EVENT));
+      dispatchAppEvent(AUTH_STATE_CHANGED_EVENT);
       if (opts?.alsoDispatchSessionExpired) {
-        window.dispatchEvent(
-          new CustomEvent(SESSION_EXPIRED_EVENT, { detail: { providerId } }),
-        );
+        dispatchAppEvent(SESSION_EXPIRED_EVENT, { providerId });
       }
     },
 
     async restoreAuth(providerId) {
       resolveAuth(providerId).__testRestoreAuth();
-      window.dispatchEvent(new CustomEvent(AUTH_STATE_CHANGED_EVENT));
+      dispatchAppEvent(AUTH_STATE_CHANGED_EVENT);
     },
 
     isAuthenticated(providerId) {
@@ -130,7 +133,7 @@ export function installMockTestApi(opts: InstallOptions): void {
     },
 
     async reset() {
-      window.dispatchEvent(new CustomEvent('mock:reset'));
+      dispatchAppEvent(MOCK_RESET_EVENT);
       await Promise.all([
         spotifyPlayback.pause().catch(() => undefined),
         dropboxPlayback.pause().catch(() => undefined),

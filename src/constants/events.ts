@@ -1,39 +1,96 @@
-export const AUTH_COMPLETE_EVENT = 'vorbis-auth-complete';
+import type { MediaTrack, ProviderId } from '@/types/domain';
 
 /**
- * Dispatched on `window` when a provider's refresh token is rejected as
- * permanently invalid (HTTP 400/401). Listeners should transition the
- * provider to a disconnected state and surface a reconnect prompt.
+ * Typed window CustomEvent registry (Architecture v2 WS3 / F70).
  *
- * Event `detail` is `{ providerId: ProviderId }`.
+ * All app-owned CustomEvent names live here. `dispatchAppEvent` / `onAppEvent`
+ * own the single sanctioned `detail` cast — call sites must not mint event
+ * name strings or cast `CustomEvent` details themselves.
+ *
+ * `AUTH_COMPLETE_EVENT` is a postMessage `data.type` (popup → opener), not a
+ * window CustomEvent, so it is intentionally outside `AppEventMap`.
  */
-export const SESSION_EXPIRED_EVENT = 'vorbis-session-expired';
+
+/** postMessage `data.type` from the OAuth popup when auth finishes. */
+export const AUTH_COMPLETE_EVENT = 'vorbis-auth-complete' as const;
+
+export const SESSION_EXPIRED_EVENT = 'vorbis-session-expired' as const;
+export const PROVIDER_RECONNECTED_EVENT = 'vorbis-provider-reconnected' as const;
+export const LOCAL_STORAGE_CHANGE_EVENT = 'vorbis-local-storage-change' as const;
+export const AUTH_STATE_CHANGED_EVENT = 'vorbis-auth-state-changed' as const;
+export const DROPBOX_AUTH_ERROR_EVENT = 'vorbis-dropbox-auth-error' as const;
+export const DROPBOX_LIKES_CHANGED_EVENT = 'vorbis-dropbox-likes-changed' as const;
+export const ART_REFRESHED_EVENT = 'vorbis-art-refreshed' as const;
+export const LIBRARY_REFRESH_EVENT = 'vorbis-library-refresh' as const;
+export const UNIFIED_LIKED_CACHE_UPDATED_EVENT = 'vorbis-unified-liked-cache-updated' as const;
+export const PINS_CHANGED_EVENT = 'vorbis-pins-changed' as const;
+export const MOCK_SET_QUEUE_EVENT = 'mock:set-queue' as const;
+export const MOCK_RESET_EVENT = 'mock:reset' as const;
+export const MOCK_DROPBOX_LIKES_CHANGED_EVENT = 'mock-dropbox-likes-changed' as const;
+
+export interface ProviderScopedDetail {
+  providerId: ProviderId;
+}
+
+export interface LocalStorageChangeDetail {
+  key: string;
+  /** Serialized payload, or `null` when the key was removed (reset to initial). */
+  newValue: string | null;
+}
+
+export interface LibraryRefreshDetail {
+  providerId: ProviderId;
+}
 
 /**
- * Dispatched on `window` when a provider transitions from `not authenticated`
- * to `authenticated` (e.g., the user re-toggles a previously-expired provider
- * on in Settings and OAuth completes). The playback layer listens to
- * re-prime the queue's current track at the user's last known position when
- * the current track belongs to the reconnected provider.
- *
- * Not dispatched on the initial render for providers that are already
- * authenticated at mount — the persisted-session hydrate path owns the
- * initial primed state. See `openspec/changes/reload-track-after-provider-reauth/`.
- *
- * Event `detail` is `{ providerId: ProviderId }`.
+ * Map of window CustomEvent type → `detail` payload.
+ * Use `undefined` when the event carries no detail.
  */
-export const PROVIDER_RECONNECTED_EVENT = 'vorbis-provider-reconnected';
+export interface AppEventMap {
+  [SESSION_EXPIRED_EVENT]: ProviderScopedDetail;
+  [PROVIDER_RECONNECTED_EVENT]: ProviderScopedDetail;
+  [LOCAL_STORAGE_CHANGE_EVENT]: LocalStorageChangeDetail;
+  [AUTH_STATE_CHANGED_EVENT]: undefined;
+  [DROPBOX_AUTH_ERROR_EVENT]: undefined;
+  [DROPBOX_LIKES_CHANGED_EVENT]: undefined;
+  [ART_REFRESHED_EVENT]: undefined;
+  [LIBRARY_REFRESH_EVENT]: LibraryRefreshDetail;
+  [UNIFIED_LIKED_CACHE_UPDATED_EVENT]: undefined;
+  [PINS_CHANGED_EVENT]: undefined;
+  [MOCK_SET_QUEUE_EVENT]: MediaTrack[];
+  [MOCK_RESET_EVENT]: undefined;
+  [MOCK_DROPBOX_LIKES_CHANGED_EVENT]: undefined;
+}
+
+type DetailArgs<D> = [D] extends [undefined] ? [] : [detail: D];
 
 /**
- * Dispatched on `window` after a same-tab localStorage write or remove that
- * went through `src/utils/persistedStorage.ts`. Native `storage` events do
- * not fire in the tab that wrote, so multi-mounted `useLocalStorage`
- * instances and non-hook writers (preferences sync, settings clear) use
- * this instead.
- *
- * Listeners re-apply `detail.newValue`. `newValue === null` means the key
- * was removed and hook state should reset to its initial value.
- *
- * Event `detail` is `{ key: string, newValue: string | null }`.
+ * Dispatch a typed app CustomEvent on `window`.
+ * No-detail events omit the second argument.
  */
-export const LOCAL_STORAGE_CHANGE_EVENT = 'vorbis-local-storage-change';
+export function dispatchAppEvent<K extends keyof AppEventMap>(
+  type: K,
+  ...args: DetailArgs<AppEventMap[K]>
+): void {
+  if (typeof window === 'undefined') return;
+  const detail = args[0] as AppEventMap[K];
+  window.dispatchEvent(new CustomEvent(type, { detail }));
+}
+
+/**
+ * Subscribe to a typed app CustomEvent on `window`.
+ * Returns an unsubscribe function.
+ *
+ * This is the only sanctioned place that reads `CustomEvent.detail` for
+ * registry events — the cast stays here.
+ */
+export function onAppEvent<K extends keyof AppEventMap>(
+  type: K,
+  listener: (detail: AppEventMap[K]) => void,
+): () => void {
+  const handler = (event: Event): void => {
+    listener((event as CustomEvent<AppEventMap[K]>).detail);
+  };
+  window.addEventListener(type, handler);
+  return () => window.removeEventListener(type, handler);
+}

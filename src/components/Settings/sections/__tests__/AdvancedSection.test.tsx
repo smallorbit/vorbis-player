@@ -73,10 +73,6 @@ vi.mock('@/hooks/useAsyncAction', () => ({
   },
 }));
 
-vi.mock('@/hooks/useLibrarySync', () => ({
-  ART_REFRESHED_EVENT: 'art-refreshed',
-}));
-
 vi.mock('@/hooks/useQapEnabled', () => ({
   useQapEnabled: vi.fn(() => [
     mockQapEnabled,

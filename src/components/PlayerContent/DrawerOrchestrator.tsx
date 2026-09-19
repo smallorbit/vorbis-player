@@ -6,7 +6,7 @@ import { RadioProgressContent } from '@/components/RadioProgressToast';
 import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
-import { LIBRARY_REFRESH_EVENT } from '@/hooks/useLibrarySync';
+import { LIBRARY_REFRESH_EVENT, dispatchAppEvent } from '@/constants/events';
 import { providerRegistry } from '@/providers/registry';
 import { queueStore } from '@/stores/queueStore';
 import type { ProviderId } from '@/types/domain';
@@ -119,7 +119,7 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
 
       setShowSaveQueueDialog(false);
       toast(`Saved "${name}" to ${descriptor.name}`, { id: 'save-queue-success' });
-      window.dispatchEvent(new CustomEvent(LIBRARY_REFRESH_EVENT, { detail: { providerId: provider } }));
+      dispatchAppEvent(LIBRARY_REFRESH_EVENT, { providerId: provider });
       return true;
     } catch (err) {
       console.error('[SaveQueue] Failed to save:', err);

@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { LOCAL_STORAGE_CHANGE_EVENT } from '@/constants/events';
+import { LOCAL_STORAGE_CHANGE_EVENT, onAppEvent } from '@/constants/events';
 import {
-  isLocalStorageChangeDetail,
   readLocalStorageRaw,
   writeLocalStorageJson,
 } from '@/utils/persistedStorage';
@@ -61,22 +60,19 @@ export const useLocalStorage = <T>(key: string, initialValue: T): [T, (value: T 
       }
     };
 
-    const handleSameTabChange = (event: Event) => {
-      if (!(event instanceof CustomEvent)) return;
-      if (!isLocalStorageChangeDetail(event.detail)) return;
-      if (event.detail.key !== key) return;
+    const unsubscribeSameTab = onAppEvent(LOCAL_STORAGE_CHANGE_EVENT, (detail) => {
+      if (detail.key !== key) return;
       if (skipEchoRef.current) {
         skipEchoRef.current = false;
         return;
       }
-      applyIncomingValue(event.detail.newValue);
-    };
+      applyIncomingValue(detail.newValue);
+    });
 
     window.addEventListener('storage', handleStorageChange);
-    window.addEventListener(LOCAL_STORAGE_CHANGE_EVENT, handleSameTabChange);
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener(LOCAL_STORAGE_CHANGE_EVENT, handleSameTabChange);
+      unsubscribeSameTab();
     };
   }, [key, applyIncomingValue]);
 

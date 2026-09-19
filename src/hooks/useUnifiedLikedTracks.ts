@@ -1,11 +1,14 @@
 import { useState, useEffect, useCallback, useMemo, useSyncExternalStore } from 'react';
 import { useProviderContext } from '@/contexts/ProviderContext';
-import { LIBRARY_REFRESH_EVENT } from '@/hooks/useLibrarySync';
+import {
+  LIBRARY_REFRESH_EVENT,
+  UNIFIED_LIKED_CACHE_UPDATED_EVENT,
+  dispatchAppEvent,
+  onAppEvent,
+} from '@/constants/events';
 import { providerRegistry } from '@/providers/registry';
 import { createNewestWins } from '@/hooks/useNewestWins';
 import type { MediaTrack, ProviderId } from '@/types/domain';
-
-const CACHE_UPDATED_EVENT = 'vorbis-unified-liked-cache-updated';
 
 interface CacheState {
   tracks: MediaTrack[];
@@ -27,7 +30,7 @@ export function resetUnifiedLikedCache(): void {
 }
 
 function notifySubscribers(): void {
-  window.dispatchEvent(new Event(CACHE_UPDATED_EVENT));
+  dispatchAppEvent(UNIFIED_LIKED_CACHE_UPDATED_EVENT);
 }
 
 function updateCache(partial: Partial<CacheState>): void {
@@ -75,8 +78,7 @@ function refreshCache(providerIds: ProviderId[]): void {
 }
 
 function subscribe(callback: () => void): () => void {
-  window.addEventListener(CACHE_UPDATED_EVENT, callback);
-  return () => window.removeEventListener(CACHE_UPDATED_EVENT, callback);
+  return onAppEvent(UNIFIED_LIKED_CACHE_UPDATED_EVENT, callback);
 }
 
 function getSnapshot(): CacheState {
@@ -131,8 +133,7 @@ export function useUnifiedLikedTracks(): UseUnifiedLikedTracksResult {
     const handle = () => refreshCache(likedProviderIds);
     const cleanups: Array<() => void> = [];
 
-    window.addEventListener(LIBRARY_REFRESH_EVENT, handle);
-    cleanups.push(() => window.removeEventListener(LIBRARY_REFRESH_EVENT, handle));
+    cleanups.push(onAppEvent(LIBRARY_REFRESH_EVENT, handle));
 
     const likesEvents = providerRegistry.getAll()
       .filter(d => d.likesChangedEvent)

@@ -13,6 +13,7 @@ import { seedSessionFromUrlParam } from './sessionSeed';
 import { assertProviderSnapshot, type ProviderSnapshot } from '../../../playwright/fixtures/data/snapshot.types';
 import spotifySnapshotJson from '../../../playwright/fixtures/data/spotify-snapshot.json' with { type: 'json' };
 import dropboxSnapshotJson from '../../../playwright/fixtures/data/dropbox-snapshot.json' with { type: 'json' };
+import { MOCK_DROPBOX_LIKES_CHANGED_EVENT } from '@/constants/events';
 
 assertProviderSnapshot(spotifySnapshotJson, 'spotify');
 assertProviderSnapshot(dropboxSnapshotJson, 'dropbox');
@@ -63,7 +64,7 @@ const dropbox = createMockProvider(
     name: 'Dropbox',
     color: theme.colors.dropbox,
     icon: DropboxIcon,
-    likesChangedEvent: 'mock-dropbox-likes-changed',
+    likesChangedEvent: MOCK_DROPBOX_LIKES_CHANGED_EVENT,
     capabilities: {
       hasExternalLink: true,
       externalLinkLabel: 'Search Discogs',

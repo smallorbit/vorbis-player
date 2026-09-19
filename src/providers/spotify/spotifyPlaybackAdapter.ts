@@ -10,7 +10,7 @@ import { spotifyAuth } from '@/services/spotify';
 import { spotifyApiRequest, SpotifyApiError } from '@/services/spotify/api';
 import { SPOTIFY_MAX_RETRIES, SPOTIFY_BASE_BACKOFF_MS } from '@/constants/spotify';
 import { SPOTIFY_DEVICE_ACTIVATE_RETRIES, SPOTIFY_DEVICE_ACTIVATE_DELAY_MS } from '@/constants/timing';
-import { SESSION_EXPIRED_EVENT } from '@/constants/events';
+import { SESSION_EXPIRED_EVENT, onAppEvent } from '@/constants/events';
 import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
 import { spotifyQueueSync } from './spotifyQueueSync';
 import { logSpotify, logArtRace } from '@/lib/debugLog';
@@ -55,16 +55,15 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
    * `useProviderPlayback`'s `PROVIDER_RECONNECTED_EVENT` handler stage state
    * again.
    */
-  private readonly handleSessionExpired = (event: Event): void => {
-    const detail = (event as CustomEvent<{ providerId: ProviderId }>).detail;
-    if (detail?.providerId !== 'spotify') return;
+  private readonly handleSessionExpired = (detail: { providerId: ProviderId }): void => {
+    if (detail.providerId !== 'spotify') return;
     this.preparedTrackRef = null;
     this.playbackSessionActive = false;
   };
 
   constructor() {
     if (typeof window !== 'undefined') {
-      window.addEventListener(SESSION_EXPIRED_EVENT, this.handleSessionExpired);
+      onAppEvent(SESSION_EXPIRED_EVENT, this.handleSessionExpired);
     }
   }
 

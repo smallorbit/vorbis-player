@@ -5,9 +5,13 @@ import { spotifyLibrarySyncEngine } from '@/services/cache/librarySyncEngine';
 import { readLikedCountSnapshots } from '@/services/cache/likedCountSnapshot';
 import { useEngineLibrarySync } from '@/hooks/useEngineLibrarySync';
 import { useCatalogLibrarySync, type PerProviderLikedCount } from '@/hooks/useCatalogLibrarySync';
+import {
+  ART_REFRESHED_EVENT,
+  LIBRARY_REFRESH_EVENT,
+  onAppEvent,
+} from '@/constants/events';
 
-export const ART_REFRESHED_EVENT = 'vorbis-art-refreshed';
-export const LIBRARY_REFRESH_EVENT = 'vorbis-library-refresh';
+export { ART_REFRESHED_EVENT, LIBRARY_REFRESH_EVENT };
 
 interface UseLibrarySyncResult {
   playlists: MediaCollection[];
@@ -120,16 +124,15 @@ export function useLibrarySync(): UseLibrarySyncResult {
   }, [engineProviderId, engineRefresh, catalogRefresh]);
 
   useEffect(() => {
-    const handleArtRefresh = () => { refreshNow().catch(() => {}); };
-    const handleLibraryRefresh = (e: Event) => {
-      const providerId = (e as CustomEvent<{ providerId?: ProviderId }>).detail?.providerId;
-      refreshNow(providerId).catch(() => {});
-    };
-    window.addEventListener(ART_REFRESHED_EVENT, handleArtRefresh);
-    window.addEventListener(LIBRARY_REFRESH_EVENT, handleLibraryRefresh);
+    const unsubArt = onAppEvent(ART_REFRESHED_EVENT, () => {
+      refreshNow().catch(() => {});
+    });
+    const unsubLibrary = onAppEvent(LIBRARY_REFRESH_EVENT, (detail) => {
+      refreshNow(detail.providerId).catch(() => {});
+    });
     return () => {
-      window.removeEventListener(ART_REFRESHED_EVENT, handleArtRefresh);
-      window.removeEventListener(LIBRARY_REFRESH_EVENT, handleLibraryRefresh);
+      unsubArt();
+      unsubLibrary();
     };
   }, [refreshNow]);
 

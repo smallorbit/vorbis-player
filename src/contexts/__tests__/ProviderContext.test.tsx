@@ -2,8 +2,7 @@ import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
-import { PROVIDER_RECONNECTED_EVENT, SESSION_EXPIRED_EVENT } from '@/constants/events';
-import { AUTH_STATE_CHANGED_EVENT } from '@/hooks/usePopupAuth';
+import { PROVIDER_RECONNECTED_EVENT, AUTH_STATE_CHANGED_EVENT, SESSION_EXPIRED_EVENT, dispatchAppEvent, onAppEvent } from '@/constants/events';
 import { STORAGE_KEYS } from '@/constants/storage';
 import type { ProviderDescriptor } from '@/types/providers';
 import type { ProviderId } from '@/types/domain';
@@ -82,9 +81,7 @@ describe('ProviderContext', () => {
       // #when — Spotify's session is reported as expired
       act(() => {
         spotify.auth.isAuthenticated = vi.fn().mockReturnValue(false);
-        window.dispatchEvent(
-          new CustomEvent(SESSION_EXPIRED_EVENT, { detail: { providerId: 'spotify' } }),
-        );
+        dispatchAppEvent(SESSION_EXPIRED_EVENT, { providerId: 'spotify' });
       });
 
       // #then — Spotify is removed from the enabled set; Dropbox stays
@@ -119,9 +116,7 @@ describe('ProviderContext', () => {
 
       // #when — a stray SESSION_EXPIRED for the already-disabled Spotify fires
       act(() => {
-        window.dispatchEvent(
-          new CustomEvent(SESSION_EXPIRED_EVENT, { detail: { providerId: 'spotify' } }),
-        );
+        dispatchAppEvent(SESSION_EXPIRED_EVENT, { providerId: 'spotify' });
       });
 
       // #then — Dropbox is not re-toggled and remains the sole enabled provider
@@ -157,9 +152,7 @@ describe('ProviderContext', () => {
       // #when — Spotify's session expires while it is the sole enabled provider
       act(() => {
         spotify.auth.isAuthenticated = vi.fn().mockReturnValue(false);
-        window.dispatchEvent(
-          new CustomEvent(SESSION_EXPIRED_EVENT, { detail: { providerId: 'spotify' } }),
-        );
+        dispatchAppEvent(SESSION_EXPIRED_EVENT, { providerId: 'spotify' });
       });
 
       // #then — Spotify is removed even though it was the last enabled provider
@@ -195,9 +188,7 @@ describe('ProviderContext', () => {
 
       // #when
       act(() => {
-        window.dispatchEvent(
-          new CustomEvent(SESSION_EXPIRED_EVENT, { detail: { providerId: 'spotify' } }),
-        );
+        dispatchAppEvent(SESSION_EXPIRED_EVENT, { providerId: 'spotify' });
       });
 
       // #then
@@ -211,13 +202,12 @@ describe('ProviderContext', () => {
       detach: () => void;
     } {
       const events: Array<{ providerId: ProviderId }> = [];
-      const listener = (e: Event) => {
-        events.push((e as CustomEvent<{ providerId: ProviderId }>).detail);
-      };
-      window.addEventListener(PROVIDER_RECONNECTED_EVENT, listener);
+      const detach = onAppEvent(PROVIDER_RECONNECTED_EVENT, (detail) => {
+        events.push(detail);
+      });
       return {
         events,
-        detach: () => window.removeEventListener(PROVIDER_RECONNECTED_EVENT, listener),
+        detach,
       };
     }
 
@@ -272,11 +262,11 @@ describe('ProviderContext', () => {
       renderHook(() => useProviderContext(), { wrapper });
 
       // #when — spotify auth flips to true, then AUTH_STATE_CHANGED_EVENT fires
-      // (production flow: usePopupAuth posts the event after a successful OAuth
+      // (production flow: AUTH_STATE_CHANGED_EVENT fires after a successful OAuth
       // popup, which bumps authRevision and recomputes connectedProviderIds).
       act(() => {
         spotify.auth.isAuthenticated = vi.fn().mockReturnValue(true);
-        window.dispatchEvent(new CustomEvent(AUTH_STATE_CHANGED_EVENT));
+        dispatchAppEvent(AUTH_STATE_CHANGED_EVENT);
       });
 
       // #then — exactly one event for the newly-connected provider
@@ -311,13 +301,13 @@ describe('ProviderContext', () => {
 
       act(() => {
         spotify.auth.isAuthenticated = vi.fn().mockReturnValue(true);
-        window.dispatchEvent(new CustomEvent(AUTH_STATE_CHANGED_EVENT));
+        dispatchAppEvent(AUTH_STATE_CHANGED_EVENT);
       });
       expect(events).toHaveLength(1);
 
       // #when — another auth-state change fires but no provider newly connects
       act(() => {
-        window.dispatchEvent(new CustomEvent(AUTH_STATE_CHANGED_EVENT));
+        dispatchAppEvent(AUTH_STATE_CHANGED_EVENT);
       });
 
       // #then — no additional dispatches
