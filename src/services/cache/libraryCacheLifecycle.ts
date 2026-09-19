@@ -48,10 +48,6 @@ export function isFallback(): boolean {
   return handle.isFallback();
 }
 
-export function enterFallback(): void {
-  handle.enterFallback();
-}
-
 export function getFallbackMap(storeName: string): Map<string, unknown> {
   return handle.getFallbackMap(storeName);
 }

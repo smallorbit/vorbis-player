@@ -37,13 +37,18 @@ export function classifyIdbError(err: unknown): IdbErrorKind {
     return 'quota';
   }
 
-  // Chromium / Firefox / Safari corruption-ish signals seen in the wild.
+  // Closed connection / versionchange — common, not corrupt. Retry (with reopen).
+  if (name === 'InvalidStateError') {
+    return 'transient';
+  }
+
+  // Reserve deleteDatabase for explicit corruption signals only.
+  // Bare UnknownError without a corrupt/internal message is treated as unknown
+  // (retry once) rather than wiping a healthy DB.
   if (
-    name === 'InvalidStateError' ||
-    name === 'UnknownError' ||
     haystack.includes('corrupt') ||
-    haystack.includes('internal error') ||
-    haystack.includes('database disrupted')
+    haystack.includes('database disrupted') ||
+    (name === 'UnknownError' && haystack.includes('internal error'))
   ) {
     return 'corruption';
   }
@@ -62,10 +67,15 @@ export function classifyIdbError(err: unknown): IdbErrorKind {
 
 export interface DegradationContext {
   readonly label: string;
-  /** Clear object-store contents to free quota (connection may stay open). */
+  /** Clear quota-evictable object-store contents (connection may stay open). */
   readonly evictForQuota: () => Promise<void>;
   /** `deleteDatabase` + reopen so a later retry can succeed. */
   readonly recoverFromCorruption: () => Promise<void>;
+  /**
+   * Re-open the connection without deleting data. Used for transient failures
+   * such as `InvalidStateError` after `onversionchange` closed the handle.
+   */
+  readonly reopenConnection?: (() => Promise<void>) | undefined;
 }
 
 export type DegradationResult<T> =
@@ -92,8 +102,10 @@ export async function runWithDegradationPolicy<T>(
         await ctx.evictForQuota();
       } else if (kind === 'corruption') {
         await ctx.recoverFromCorruption();
+      } else if (ctx.reopenConnection) {
+        // transient / unknown: reopen in case the handle was closed, then retry
+        await ctx.reopenConnection();
       }
-      // transient / unknown: bare retry once
       return { ok: true, value: await operation() };
     } catch (retryErr) {
       logCaughtError(`${ctx.label}.retry`, retryErr);

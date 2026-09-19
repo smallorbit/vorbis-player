@@ -19,6 +19,11 @@ export type StoreKeyMode =
 export interface StoreSpec {
   readonly name: string;
   readonly keyMode: StoreKeyMode;
+  /**
+   * When false, quota eviction leaves this store intact (user data such as
+   * Dropbox likes / tombstones). Defaults to true (cache-safe to clear).
+   */
+  readonly evictableForQuota?: boolean | undefined;
 }
 
 export interface CreateIdbDatabaseOptions {

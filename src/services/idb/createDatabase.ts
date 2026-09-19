@@ -14,13 +14,18 @@ export interface IdbDatabaseHandle {
   init(): Promise<void>;
   close(): void;
   isFallback(): boolean;
-  enterFallback(): void;
   getDb(): IDBDatabase | null;
   getStore<T>(storeName: string): KVStore<T>;
   getFallbackMap(storeName: string): Map<string, unknown>;
   /** Per-key session overlay after a write soft-fail (`undefined` = tombstone). */
   getOverlayMap(storeName: string): Map<string, unknown>;
-  evictForQuota(): Promise<void>;
+  /**
+   * Clear quota-evictable stores. When `storeNames` is provided, only those
+   * names that are also marked evictable are cleared.
+   */
+  evictForQuota(storeNames?: readonly string[]): Promise<void>;
+  /** Close + reopen without deleting data (closed-handle / versionchange). */
+  reopenConnection(): Promise<void>;
   recoverFromCorruption(): Promise<void>;
   /** Testing / logout purge. */
   deleteDatabase(): Promise<void>;
@@ -36,6 +41,10 @@ function buildFallbackStores(stores: readonly StoreSpec[]): Record<string, Map<s
 
 function buildOverlayStores(stores: readonly StoreSpec[]): Record<string, Map<string, unknown>> {
   return buildFallbackStores(stores);
+}
+
+function isEvictable(spec: StoreSpec): boolean {
+  return spec.evictableForQuota !== false;
 }
 
 export function createIdbDatabase(options: CreateIdbDatabaseOptions): IdbDatabaseHandle {
@@ -59,27 +68,27 @@ export function createIdbDatabase(options: CreateIdbDatabaseOptions): IdbDatabas
     for (const map of Object.values(maps)) map.clear();
   };
 
+  const openFresh = async (): Promise<void> => {
+    try {
+      if (typeof indexedDB === 'undefined') {
+        throw new Error('IndexedDB not available');
+      }
+      db = await openIdbDatabase(options);
+      fallbackMode = false;
+    } catch (err) {
+      console.warn(`[${options.logLabel}] IndexedDB unavailable, using in-memory fallback:`, err);
+      fallbackMode = true;
+      db = null;
+    }
+  };
+
   const handle: IdbDatabaseHandle = {
     name: options.name,
     logLabel: options.logLabel,
 
     async init(): Promise<void> {
       if (initPromise) return initPromise;
-
-      initPromise = (async () => {
-        try {
-          if (typeof indexedDB === 'undefined') {
-            throw new Error('IndexedDB not available');
-          }
-          db = await openIdbDatabase(options);
-          fallbackMode = false;
-        } catch (err) {
-          console.warn(`[${options.logLabel}] IndexedDB unavailable, using in-memory fallback:`, err);
-          fallbackMode = true;
-          db = null;
-        }
-      })();
-
+      initPromise = openFresh();
       return initPromise;
     },
 
@@ -96,10 +105,6 @@ export function createIdbDatabase(options: CreateIdbDatabaseOptions): IdbDatabas
 
     isFallback(): boolean {
       return fallbackMode;
-    },
-
-    enterFallback(): void {
-      fallbackMode = true;
     },
 
     getDb(): IDBDatabase | null {
@@ -125,22 +130,47 @@ export function createIdbDatabase(options: CreateIdbDatabaseOptions): IdbDatabas
       return store;
     },
 
-    async evictForQuota(): Promise<void> {
+    async evictForQuota(storeNames?: readonly string[]): Promise<void> {
       const database = db;
       if (!database) return;
       try {
-        const names = Array.from(database.objectStoreNames);
+        const candidates =
+          storeNames && storeNames.length > 0
+            ? storeNames.filter((name) => {
+                const spec = storeByName.get(name);
+                return spec ? isEvictable(spec) : false;
+              })
+            : options.stores.filter(isEvictable).map((s) => s.name);
+
+        const names = candidates.filter((name) => database.objectStoreNames.contains(name));
         if (names.length === 0) return;
+
         await new Promise<void>((resolve, reject) => {
           const tx = database.transaction(names, 'readwrite');
           for (const name of names) tx.objectStore(name).clear();
           tx.oncomplete = () => resolve();
           tx.onerror = () => reject(tx.error);
         });
-        clearMaps(overlayStores);
+        for (const name of names) {
+          overlayStores[name]?.clear();
+        }
       } catch (err) {
         logCaughtError(`${options.logLabel}.evictForQuota`, err);
       }
+    },
+
+    async reopenConnection(): Promise<void> {
+      if (db) {
+        try {
+          db.close();
+        } catch (err) {
+          logCaughtError(`${options.logLabel}.reopen.close`, err);
+        }
+        db = null;
+      }
+      initPromise = null;
+      initPromise = openFresh();
+      await initPromise;
     },
 
     async recoverFromCorruption(): Promise<void> {
@@ -159,17 +189,7 @@ export function createIdbDatabase(options: CreateIdbDatabaseOptions): IdbDatabas
       } catch (err) {
         logCaughtError(`${options.logLabel}.recover.delete`, err);
       }
-      // Re-open synchronously within this recovery so the caller's retry can proceed.
-      initPromise = (async () => {
-        try {
-          db = await openIdbDatabase(options);
-          fallbackMode = false;
-        } catch (err) {
-          console.warn(`[${options.logLabel}] IndexedDB reopen after corruption failed:`, err);
-          fallbackMode = true;
-          db = null;
-        }
-      })();
+      initPromise = openFresh();
       await initPromise;
     },
 

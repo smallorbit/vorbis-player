@@ -1,7 +1,6 @@
 import type { MediaCollection } from '@/types/domain';
-import { runWithDegradationPolicy } from '@/services/idb';
 import { logCaughtError } from '@/utils/logCaughtError';
-import { dropboxIdbHandle, getDb } from './dropboxIdb';
+import { getDb, runDropboxWrite } from './dropboxIdb';
 
 const STORE = 'catalog';
 const KEY = 'collections';
@@ -44,34 +43,9 @@ export async function getCachedCatalog(): Promise<{
   });
 }
 
-async function runCatalogWrite(
-  label: string,
-  operation: (database: IDBDatabase) => Promise<void>,
-): Promise<void> {
-  const database = await getDb();
-  if (!database) return;
-
-  const result = await runWithDegradationPolicy(
-    {
-      label: `dropboxCatalogCache.${label}`,
-      evictForQuota: () => dropboxIdbHandle.evictForQuota(),
-      recoverFromCorruption: () => dropboxIdbHandle.recoverFromCorruption(),
-    },
-    async () => {
-      const live = dropboxIdbHandle.getDb();
-      if (!live) throw new Error('Dropbox IDB unavailable');
-      await operation(live);
-    },
-  );
-
-  if (!result.ok) {
-    logCaughtError(`dropboxCatalogCache.${label}.exhausted`, result.error);
-  }
-}
-
 export async function putCatalogCache(collections: MediaCollection[]): Promise<void> {
   const entry: CachedCatalog = { key: KEY, collections, cachedAt: Date.now() };
-  await runCatalogWrite('putCatalogCache', (database) =>
+  await runDropboxWrite(`dropboxCatalogCache.putCatalogCache`, [STORE], (database) =>
     new Promise<void>((resolve, reject) => {
       const tx = database.transaction(STORE, 'readwrite');
       tx.objectStore(STORE).put(entry);
@@ -82,7 +56,7 @@ export async function putCatalogCache(collections: MediaCollection[]): Promise<v
 }
 
 export async function clearCatalogCache(): Promise<void> {
-  await runCatalogWrite('clearCatalogCache', (database) =>
+  await runDropboxWrite(`dropboxCatalogCache.clearCatalogCache`, [STORE], (database) =>
     new Promise<void>((resolve, reject) => {
       const tx = database.transaction(STORE, 'readwrite');
       tx.objectStore(STORE).clear();

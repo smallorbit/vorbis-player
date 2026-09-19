@@ -4,15 +4,17 @@ import type { MediaCollection } from '@/types/domain';
 
 vi.mock('../dropboxIdb', () => ({
   getDb: vi.fn(),
+  runDropboxWrite: vi.fn(),
   dropboxIdbHandle: {
     getDb: vi.fn(),
     evictForQuota: vi.fn().mockResolvedValue(undefined),
     recoverFromCorruption: vi.fn().mockResolvedValue(undefined),
+    reopenConnection: vi.fn().mockResolvedValue(undefined),
   },
   closeDropboxCache: vi.fn(),
 }));
 
-import { dropboxIdbHandle, getDb } from '../dropboxIdb';
+import { getDb, runDropboxWrite } from '../dropboxIdb';
 import {
   getCachedCatalog,
   putCatalogCache,
@@ -54,7 +56,12 @@ let testDb: IDBDatabase;
 beforeEach(async () => {
   testDb = await openTestDb();
   vi.mocked(getDb).mockResolvedValue(testDb);
-  vi.mocked(dropboxIdbHandle.getDb).mockReturnValue(testDb);
+  vi.mocked(runDropboxWrite).mockImplementation(async (_label, _stores, operation) => {
+    const db = await vi.mocked(getDb)();
+    if (!db) return false;
+    await operation(db);
+    return true;
+  });
 });
 
 describe('dropboxCatalogCache', () => {

@@ -32,7 +32,7 @@ Principles: P1/P2 — one owner per state; one canonical implementation per conc
 |---|--------|--------|--------|
 | 1700 | Same-tab `localStorage` broadcast | **Closed** | PR [#1771](https://github.com/smallorbit/vorbis-player/pull/1771). Helper: `src/utils/persistedStorage.ts`; hook: `src/hooks/useLocalStorage.ts`; lint allowlist in `eslint.config.js`. |
 | 1701 | Invalidate IndexedDB liked-songs on save/unsave | **Closed** | PR [#1773](https://github.com/smallorbit/vorbis-player/pull/1773). `invalidateLikedSongsCaches` awaits `libraryCache.removeTrackList({ provider: 'spotify', kind: 'liked' })`. |
-| 1702 | One IndexedDB foundation + degradation policy | **Closed** | Shared `src/services/idb`; library / settings / Dropbox rebuilt on it. Policy: retry → quota eviction → `deleteDatabase` on corruption; write soft-fail uses per-key overlay (never whole-DB fallback). |
+| 1702 | One IndexedDB foundation + degradation policy | **Closed** | Shared `src/services/idb`; library / settings / Dropbox rebuilt on it. Policy: retry (+ reopen) → store-scoped quota eviction (likes/tombstones protected) → `deleteDatabase` only on explicit corrupt signals. KVStore write soft-fail uses per-key overlay; Dropbox art/catalog/likes exhausted writes are dropped (not overlaid). |
 | **1703** | **`RemoteJsonFileStore<T>` under Dropbox** | **← NEXT** | Dedupe `/.vorbis` remote-JSON sync. |
 | 1704 | Logout data-purge contract | Open | High priority — can use `createIdbDatabase().deleteDatabase()` + STORAGE_KEYS |
 | 1705 | Typed `AppEventMap` in `constants/events.ts` | Open | |
@@ -68,7 +68,7 @@ Extract a single `RemoteJsonFileStore<T>` under the Dropbox provider for the tri
 
 ## Agent operating notes
 
-- Branch from latest `main`; name `cursor/<slug>-26d0` (or the cloud run suffix) when using the cloud branch convention.
+- Branch from latest `main`; name `cursor/<slug>-<cloud-suffix>` when using the cloud branch convention (suffix varies per run).
 - Target PRs at `main`; conventional commits; run `npm test` / `npm run test:run` before push. PRs squash-merge; mark draft ready before merge.
 - Staging: workflow **Deploy PR to Staging** (`workflow_dispatch` + `pr_number`). Cloud agent `gh` is often **read-only** for dispatch — equivalent plumbing is rebuild `staging` from `main`, merge `pull/N/head`, `git push --force-with-lease origin staging`.
 - Prefer issue-sized PRs; update the epic checklist when closing children (tick #1700/#1701/#1702 on #1699 when editing is available).

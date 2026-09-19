@@ -98,4 +98,28 @@ describe('createIdbDatabase', () => {
 
     spy.mockRestore();
   });
+
+  it('skips non-evictable stores when clearing for quota', async () => {
+    handle.close();
+    await deleteIdbDatabase(DB_NAME);
+    handle = createIdbDatabase({
+      name: DB_NAME,
+      version: 1,
+      logLabel: 'idbFoundationQuota',
+      stores: [
+        { name: 'cache', keyMode: { kind: 'outOfLine' } },
+        { name: 'likes', keyMode: { kind: 'outOfLine' }, evictableForQuota: false },
+      ],
+    });
+    await handle.init();
+    const cache = handle.getStore<{ n: number }>('cache');
+    const likes = handle.getStore<{ n: number }>('likes');
+    await cache.put('c1', { n: 1 });
+    await likes.put('l1', { n: 2 });
+
+    await handle.evictForQuota();
+
+    expect(await cache.get('c1')).toBeUndefined();
+    expect(await likes.get('l1')).toEqual({ n: 2 });
+  });
 });

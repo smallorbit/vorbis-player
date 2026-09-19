@@ -7,9 +7,8 @@
  * (`src/services/idb`) — see #1702 / F35.
  */
 
-import { runWithDegradationPolicy } from '@/services/idb';
 import { logCaughtError } from '@/utils/logCaughtError';
-import { closeDropboxCache, dropboxIdbHandle, getDb } from './dropboxIdb';
+import { closeDropboxCache, getDb, runDropboxWrite } from './dropboxIdb';
 
 const STORE = 'art';
 const ART_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -21,33 +20,6 @@ interface CachedArt {
   path: string;
   dataUrl: string;
   cachedAt: number;
-}
-
-async function runWrite(
-  label: string,
-  operation: (database: IDBDatabase) => Promise<void>,
-): Promise<void> {
-  const database = await getDb();
-  if (!database) return;
-
-  const result = await runWithDegradationPolicy(
-    {
-      label: `dropboxArtCache.${label}`,
-      evictForQuota: () => dropboxIdbHandle.evictForQuota(),
-      recoverFromCorruption: () => dropboxIdbHandle.recoverFromCorruption(),
-    },
-    async () => {
-      // After corruption recovery the captured `database` may be closed —
-      // always resolve the live handle inside the operation/retry.
-      const live = dropboxIdbHandle.getDb();
-      if (!live) throw new Error('Dropbox IDB unavailable');
-      await operation(live);
-    },
-  );
-
-  if (!result.ok) {
-    logCaughtError(`dropboxArtCache.${label}.exhausted`, result.error);
-  }
 }
 
 function idbPut(database: IDBDatabase, storeName: string, value: unknown): Promise<void> {
@@ -88,7 +60,9 @@ export async function getArt(path: string): Promise<string | null> {
 
 export async function putArt(path: string, dataUrl: string): Promise<void> {
   const entry: CachedArt = { path, dataUrl, cachedAt: Date.now() };
-  await runWrite('putArt', (database) => idbPut(database, STORE, entry));
+  await runDropboxWrite(`dropboxArtCache.putArt`, [STORE], (database) =>
+    idbPut(database, STORE, entry),
+  );
 }
 
 function albumArtCacheKey(albumPath: string): string {
@@ -106,11 +80,13 @@ export async function putAlbumArt(albumPath: string, dataUrl: string): Promise<v
 }
 
 export async function clearArt(): Promise<void> {
-  await runWrite('clearArt', (database) => idbClear(database, STORE));
+  await runDropboxWrite(`dropboxArtCache.clearArt`, [STORE], (database) =>
+    idbClear(database, STORE),
+  );
 }
 
 export async function putDurationMs(trackId: string, durationMs: number): Promise<void> {
-  await runWrite('putDurationMs', (database) =>
+  await runDropboxWrite(`dropboxArtCache.putDurationMs`, ['durations'], (database) =>
     idbPut(database, 'durations', { trackId, durationMs }),
   );
 }
@@ -123,7 +99,7 @@ interface CachedTagMetadata {
 }
 
 export async function putTagMetadata(trackId: string, tags: Omit<CachedTagMetadata, 'trackId'>): Promise<void> {
-  await runWrite('putTagMetadata', (database) =>
+  await runDropboxWrite(`dropboxArtCache.putTagMetadata`, ['tags'], (database) =>
     idbPut(database, 'tags', { trackId, ...tags }),
   );
 }
@@ -179,7 +155,7 @@ interface CachedTrackDate {
 }
 
 export async function putTrackDate(albumId: string, releaseYear: number): Promise<void> {
-  await runWrite('putTrackDate', (database) =>
+  await runDropboxWrite(`dropboxArtCache.putTrackDate`, ['trackDates'], (database) =>
     idbPut(database, 'trackDates', { albumId, releaseYear }),
   );
 }

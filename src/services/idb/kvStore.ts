@@ -105,8 +105,9 @@ export function createKvStore<T>(
     get label() {
       return `${handle.logLabel}.${storeName}`;
     },
-    evictForQuota: () => handle.evictForQuota(),
+    evictForQuota: () => handle.evictForQuota([storeName]),
     recoverFromCorruption: () => handle.recoverFromCorruption(),
+    reopenConnection: () => handle.reopenConnection(),
   };
 
   return {
@@ -152,7 +153,12 @@ export function createKvStore<T>(
         return Array.from(merged.values());
       } catch (err) {
         logCaughtError(`${handle.logLabel}.${storeName}.getAll`, err);
-        return Array.from((handle.getFallbackMap(storeName) as Map<string, T>).values());
+        const merged = new Map(handle.getFallbackMap(storeName) as Map<string, T>);
+        for (const [key, value] of map) {
+          if (value === undefined) merged.delete(key);
+          else merged.set(key, value);
+        }
+        return Array.from(merged.values());
       }
     },
 

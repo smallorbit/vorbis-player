@@ -6,10 +6,17 @@ describe('classifyIdbError', () => {
     expect(classifyIdbError(new DOMException('boom', 'QuotaExceededError'))).toBe('quota');
   });
 
-  it('detects corruption-ish UnknownError / InvalidStateError', () => {
+  it('detects corruption from corrupt messages / UnknownError+internal error', () => {
     expect(classifyIdbError(new DOMException('Internal error.', 'UnknownError'))).toBe('corruption');
-    expect(classifyIdbError(new DOMException('closed', 'InvalidStateError'))).toBe('corruption');
     expect(classifyIdbError(new Error('database corrupted'))).toBe('corruption');
+  });
+
+  it('treats InvalidStateError as transient (closed handle), not corruption', () => {
+    expect(classifyIdbError(new DOMException('closed', 'InvalidStateError'))).toBe('transient');
+  });
+
+  it('treats bare UnknownError without corrupt signals as unknown', () => {
+    expect(classifyIdbError(new DOMException('something', 'UnknownError'))).toBe('unknown');
   });
 
   it('detects transient AbortError', () => {
@@ -40,10 +47,11 @@ describe('runWithDegradationPolicy', () => {
     expect(recoverFromCorruption).not.toHaveBeenCalled();
   });
 
-  it('retries once on a transient failure', async () => {
+  it('retries once on a transient failure after reopenConnection', async () => {
+    const reopenConnection = vi.fn().mockResolvedValue(undefined);
     const operation = vi
       .fn()
-      .mockRejectedValueOnce(new DOMException('aborted', 'AbortError'))
+      .mockRejectedValueOnce(new DOMException('closed', 'InvalidStateError'))
       .mockResolvedValueOnce('recovered');
 
     const result = await runWithDegradationPolicy(
@@ -51,10 +59,12 @@ describe('runWithDegradationPolicy', () => {
         label: 'test.transient',
         evictForQuota: vi.fn(),
         recoverFromCorruption: vi.fn(),
+        reopenConnection,
       },
       operation,
     );
 
+    expect(reopenConnection).toHaveBeenCalledTimes(1);
     expect(result).toEqual({ ok: true, value: 'recovered' });
     expect(operation).toHaveBeenCalledTimes(2);
   });
@@ -97,6 +107,28 @@ describe('runWithDegradationPolicy', () => {
 
     expect(recoverFromCorruption).toHaveBeenCalledTimes(1);
     expect(result).toEqual({ ok: true, value: 'after-delete' });
+  });
+
+  it('does not call recoverFromCorruption for InvalidStateError', async () => {
+    const recoverFromCorruption = vi.fn();
+    const reopenConnection = vi.fn().mockResolvedValue(undefined);
+    const operation = vi
+      .fn()
+      .mockRejectedValueOnce(new DOMException('closed', 'InvalidStateError'))
+      .mockResolvedValueOnce('ok');
+
+    await runWithDegradationPolicy(
+      {
+        label: 'test.no-wipe',
+        evictForQuota: vi.fn(),
+        recoverFromCorruption,
+        reopenConnection,
+      },
+      operation,
+    );
+
+    expect(recoverFromCorruption).not.toHaveBeenCalled();
+    expect(reopenConnection).toHaveBeenCalledTimes(1);
   });
 
   it('returns ok:false when the retry also fails', async () => {
