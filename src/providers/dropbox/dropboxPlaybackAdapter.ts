@@ -7,15 +7,17 @@ import type { PlaybackProvider } from '@/types/providers';
 import type { ProviderId, MediaTrack, PlaybackState, CollectionRef } from '@/types/domain';
 import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
 import { DropboxCatalogAdapter } from './dropboxCatalogAdapter';
-import { parseID3 } from '@/utils/id3Parser';
-import { bytesToDataUrl } from '@/utils/bytesToDataUrl';
-import { putDurationMs, putTagMetadata } from './dropboxArtCache';
+import { putDurationMs } from './dropboxArtCache';
+import {
+  applyEnrichmentResult,
+  enrichMetadataFromStream,
+  hydrateAlbumArtFromCache as hydrateAlbumArtFromCacheHelper,
+  resolveFolderAlbumArt,
+} from './dropboxMetadataEnrichment';
 import { logArtRace } from '@/lib/debugLog';
 import { logCaughtError } from '@/utils/logCaughtError';
 
 const PLAYBACK_POLL_INTERVAL_MS = 250;
-const FETCH_LIMIT = 262144; // 256KB — enough to cover large embedded cover art in ID3 headers
-const ENRICHMENT_DELAY_MS = 2000; // Wait for audio to buffer before fetching ID3 tags
 
 export class DropboxPlaybackAdapter implements PlaybackProvider {
   readonly providerId: ProviderId = 'dropbox';
@@ -165,10 +167,10 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
   }
 
   private hydrateAlbumArtFromCache(track: MediaTrack): void {
-    if (track.image || !track.albumId) return;
-    this.catalog.getAlbumArtForAlbum(track.albumId)
-      .then((cachedImage) => {
-        if (!cachedImage) return;
+    hydrateAlbumArtFromCacheHelper(
+      track,
+      this.catalog,
+      (cachedImage) => {
         if (this.currentTrack?.id !== track.id) return;
         if (this.currentTrack.image) return;
 
@@ -178,90 +180,29 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
           image: cachedImage,
         };
         this.notifyListeners();
-      })
-      .catch(() => {
-        // Best-effort cache hydration.
-      });
+      },
+    );
   }
 
   private enrichMetadataInBackground(track: MediaTrack, streamUrl: string): void {
-    const doEnrich = async () => {
-      // Let the audio element buffer first before competing for bandwidth
-      await new Promise((resolve) => setTimeout(resolve, ENRICHMENT_DELAY_MS));
-      // Bail if track changed during the delay
-      if (this.currentTrack?.id !== track.id) return;
-      let res: Response;
-      try {
-        res = await fetch(streamUrl, { headers: { Range: `bytes=0-${FETCH_LIMIT - 1}` } });
-      } catch (err) {
-        logCaughtError('dropboxPlaybackAdapter.enrichMetadataInBackground', err);
-        return;
-      }
-
-      if ((!res.ok && res.status !== 206) || !res.body) return;
-
-      const reader = res.body.getReader();
-      const chunks: Uint8Array[] = [];
-      let totalBytes = 0;
-      try {
-        while (totalBytes < FETCH_LIMIT) {
-          const { done, value } = await reader.read();
-          if (done || !value) break;
-          chunks.push(value);
-          totalBytes += value.length;
-        }
-      } finally {
-        reader.cancel();
-      }
-
-      if (this.currentTrack?.id !== track.id) return;
-
-      const combined = new Uint8Array(totalBytes);
-      let offset = 0;
-      for (const chunk of chunks) {
-        combined.set(chunk, offset);
-        offset += chunk.length;
-      }
-
-      // WebAudio API boundary: parseID3 expects ArrayBuffer; combined.buffer is ArrayBufferLike under DOM lib typings.
-      const { title, artist, album, coverArt, musicbrainzRecordingId, musicbrainzArtistId, isrc } = parseID3(combined.buffer as ArrayBuffer);
-      const update: PlaybackState['trackMetadata'] = {};
-      if (title && title !== track.name) update.name = title;
-      if (artist && artist !== track.artists) update.artists = artist;
-      if (album && album !== track.album) update.album = album;
-      if (coverArt && !this.currentTrack?.image) {
-        update.image = bytesToDataUrl(coverArt.data, coverArt.mimeType);
-        if (track.albumId) {
-          this.catalog.cacheAlbumArtForAlbum(track.albumId, update.image).catch(() => {});
-        }
-      }
-
-      if (title || artist || album) {
-        putTagMetadata(track.id, {
-          ...(title ? { name: title } : {}),
-          ...(artist ? { artists: artist } : {}),
-          ...(album ? { album } : {}),
-        }).catch(() => {});
-      }
-
-      // MusicBrainz IDs go directly on the track (not via trackMetadata)
-      const mbUpdate: Partial<MediaTrack> = {};
-      if (musicbrainzRecordingId) mbUpdate.musicbrainzRecordingId = musicbrainzRecordingId;
-      if (musicbrainzArtistId) mbUpdate.musicbrainzArtistId = musicbrainzArtistId;
-      if (isrc) mbUpdate.isrc = isrc;
-
-      if (Object.keys(update).length > 0 || Object.keys(mbUpdate).length > 0) {
-        this.currentTrack = { ...(this.currentTrack ?? track), ...update, ...mbUpdate };
-        if (Object.keys(update).length > 0) {
-          this.pendingMetadataUpdate = update;
+    void enrichMetadataFromStream(track, streamUrl, {
+      isStillCurrent: () => this.currentTrack?.id === track.id,
+      hasImage: () => Boolean(this.currentTrack?.image),
+      cacheAlbumArt: (albumId, dataUrl) => this.catalog.cacheAlbumArtForAlbum(albumId, dataUrl),
+    })
+      .then((result) => {
+        if (!result) return;
+        if (this.currentTrack?.id !== track.id) return;
+        const applied = applyEnrichmentResult(this.currentTrack, result);
+        this.currentTrack = applied.currentTrack;
+        if (applied.pendingMetadataUpdate) {
+          this.pendingMetadataUpdate = applied.pendingMetadataUpdate;
         }
         this.notifyListeners();
-      }
-    };
-
-    doEnrich().catch(() => {
-      // Metadata enrichment is best-effort; ignore failures
-    });
+      })
+      .catch(() => {
+        // Metadata enrichment is best-effort; ignore failures
+      });
   }
 
   async probePlayable(track: MediaTrack): Promise<boolean> {
@@ -367,24 +308,21 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
     if (!track || track.image) return;
 
     // Try album art from Dropbox folder (cover.jpg etc.)
-    if (track.albumId) {
-      this.catalog.resolveAlbumArt(track.albumId).then((imageUrl) => {
-        if (!imageUrl) return;
-        if (this.currentTrack?.id !== track.id) return;
-        if (this.currentTrack.image) return;
+    resolveFolderAlbumArt(track, this.catalog, (imageUrl) => {
+      if (this.currentTrack?.id !== track.id) return;
+      if (this.currentTrack.image) return;
 
-        this.currentTrack = { ...this.currentTrack, image: imageUrl };
-        this.pendingMetadataUpdate = {
-          ...(this.pendingMetadataUpdate ?? {}),
-          image: imageUrl,
-        };
-        this.notifyListeners();
-      }).catch(() => {});
-    }
+      this.currentTrack = { ...this.currentTrack, image: imageUrl };
+      this.pendingMetadataUpdate = {
+        ...(this.pendingMetadataUpdate ?? {}),
+        image: imageUrl,
+      };
+      this.notifyListeners();
+    });
 
     // Also re-attempt ID3 tag extraction for embedded cover art
     const dropboxPath = track.playbackRef.ref;
-    this.catalog.getTemporaryLink(dropboxPath).then((streamUrl) => {
+    void this.catalog.getTemporaryLink(dropboxPath).then((streamUrl) => {
       this.enrichMetadataInBackground(track, streamUrl);
     }).catch(() => {});
   }

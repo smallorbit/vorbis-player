@@ -2,7 +2,7 @@ import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
-import { PROVIDER_RECONNECTED_EVENT, AUTH_STATE_CHANGED_EVENT, SESSION_EXPIRED_EVENT, dispatchAppEvent, onAppEvent } from '@/constants/events';
+import { PROVIDER_RECONNECTED_EVENT, AUTH_STATE_CHANGED_EVENT, SESSION_EXPIRED_EVENT, PROVIDER_DISCONNECTED_EVENT, dispatchAppEvent, onAppEvent } from '@/constants/events';
 import { STORAGE_KEYS } from '@/constants/storage';
 import type { ProviderDescriptor } from '@/types/providers';
 import type { ProviderId } from '@/types/domain';
@@ -157,11 +157,9 @@ describe('ProviderContext', () => {
 
       // #then — Spotify is removed even though it was the last enabled provider
       expect(result.current.enabledProviderIds).toEqual([]);
-      // #then — the disconnect toast still surfaces so the user knows why
-      expect(result.current.disconnectToast).toBe('Spotify disconnected — session expired.');
     });
 
-    it('surfaces the disconnect toast', () => {
+    it('emits PROVIDER_DISCONNECTED_EVENT for the UI toast layer', () => {
       // #given
       registerProvider({
         id: 'spotify',
@@ -184,15 +182,20 @@ describe('ProviderContext', () => {
         [STORAGE_KEYS.ENABLED_PROVIDERS]: JSON.stringify(['spotify', 'dropbox']),
       });
 
-      const { result } = renderHook(() => useProviderContext(), { wrapper });
+      const disconnected: Array<{ providerId: string; providerName: string }> = [];
+      const unsub = onAppEvent(PROVIDER_DISCONNECTED_EVENT, (detail) => {
+        disconnected.push(detail);
+      });
+      renderHook(() => useProviderContext(), { wrapper });
 
       // #when
       act(() => {
         dispatchAppEvent(SESSION_EXPIRED_EVENT, { providerId: 'spotify' });
       });
 
-      // #then
-      expect(result.current.disconnectToast).toBe('Spotify disconnected — session expired.');
+      // #then — toast copy is owned by the UI; context only emits structured detail
+      expect(disconnected).toEqual([{ providerId: 'spotify', providerName: 'Spotify' }]);
+      unsub();
     });
   });
 

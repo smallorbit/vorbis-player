@@ -16,6 +16,10 @@ export const AUTH_COMPLETE_EVENT = 'vorbis-auth-complete' as const;
 
 export const SESSION_EXPIRED_EVENT = 'vorbis-session-expired' as const;
 export const PROVIDER_RECONNECTED_EVENT = 'vorbis-provider-reconnected' as const;
+/** Active provider lost auth; playback switched to a still-authenticated fallback. */
+export const PROVIDER_SESSION_FALLTHROUGH_EVENT = 'vorbis-provider-session-fallthrough' as const;
+/** Provider was force-disabled because its session expired (no automatic switch). */
+export const PROVIDER_DISCONNECTED_EVENT = 'vorbis-provider-disconnected' as const;
 export const LOCAL_STORAGE_CHANGE_EVENT = 'vorbis-local-storage-change' as const;
 export const AUTH_STATE_CHANGED_EVENT = 'vorbis-auth-state-changed' as const;
 export const DROPBOX_AUTH_ERROR_EVENT = 'vorbis-dropbox-auth-error' as const;
@@ -30,6 +34,18 @@ export const MOCK_DROPBOX_LIKES_CHANGED_EVENT = 'mock-dropbox-likes-changed' as 
 
 export interface ProviderScopedDetail {
   providerId: ProviderId;
+}
+
+export interface ProviderDisconnectedDetail {
+  providerId: ProviderId;
+  providerName: string;
+}
+
+export interface ProviderSessionFallthroughDetail {
+  expiredProviderId: ProviderId;
+  expiredProviderName: string;
+  fallbackProviderId: ProviderId;
+  fallbackProviderName: string;
 }
 
 export interface LocalStorageChangeDetail {
@@ -49,6 +65,8 @@ export interface LibraryRefreshDetail {
 export interface AppEventMap {
   [SESSION_EXPIRED_EVENT]: ProviderScopedDetail;
   [PROVIDER_RECONNECTED_EVENT]: ProviderScopedDetail;
+  [PROVIDER_SESSION_FALLTHROUGH_EVENT]: ProviderSessionFallthroughDetail;
+  [PROVIDER_DISCONNECTED_EVENT]: ProviderDisconnectedDetail;
   [LOCAL_STORAGE_CHANGE_EVENT]: LocalStorageChangeDetail;
   [AUTH_STATE_CHANGED_EVENT]: undefined;
   [DROPBOX_AUTH_ERROR_EVENT]: undefined;
