@@ -18,8 +18,15 @@ function createMissingStores(db: IDBDatabase, stores: readonly StoreSpec[]): voi
 /**
  * Open (or upgrade) an IndexedDB database.
  * Rejects on `onerror` / `onblocked` so callers can enter memory fallback.
+ *
+ * @param onVersionChange — called when another connection wants to upgrade.
+ *   Default closes the DB. Callers should also drop their held reference so
+ *   the next `init()` reopens instead of reading through a closed handle.
  */
-export function openIdbDatabase(options: CreateIdbDatabaseOptions): Promise<IDBDatabase> {
+export function openIdbDatabase(
+  options: CreateIdbDatabaseOptions,
+  onVersionChange?: ((database: IDBDatabase) => void) | undefined,
+): Promise<IDBDatabase> {
   const { name, version, stores, onUpgrade, customUpgradeOnly } = options;
 
   return new Promise((resolve, reject) => {
@@ -37,7 +44,11 @@ export function openIdbDatabase(options: CreateIdbDatabaseOptions): Promise<IDBD
       // Close when a newer version wants to upgrade elsewhere so this tab
       // never becomes the blocker described above.
       database.onversionchange = () => {
-        database.close();
+        if (onVersionChange) {
+          onVersionChange(database);
+        } else {
+          database.close();
+        }
       };
       resolve(database);
     };

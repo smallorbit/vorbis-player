@@ -122,4 +122,27 @@ describe('createIdbDatabase', () => {
     expect(await cache.get('c1')).toBeUndefined();
     expect(await likes.get('l1')).toEqual({ n: 2 });
   });
+
+  it('drops the closed handle on versionchange and reopens on next init', async () => {
+    await handle.init();
+    const store = handle.getStore<{ name: string }>('items');
+    await store.put('keep', { name: 'Temp' });
+    expect(handle.getDb()).not.toBeNull();
+
+    // #when — deleteDatabase fires versionchange on open connections (same
+    // mechanism as another tab upgrading), then finishes the wipe
+    await deleteIdbDatabase(DB_NAME);
+
+    // #then — handle no longer holds the closed connection
+    expect(handle.getDb()).toBeNull();
+    expect(handle.isFallback()).toBe(false);
+
+    // Next init reopens a live connection; reads/writes work again
+    await handle.init();
+    expect(handle.getDb()).not.toBeNull();
+    expect(handle.isFallback()).toBe(false);
+    expect(await store.get('keep')).toBeUndefined();
+    await store.put('again', { name: 'Works' });
+    expect(await store.get('again')).toEqual({ name: 'Works' });
+  });
 });

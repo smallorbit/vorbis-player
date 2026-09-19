@@ -73,7 +73,16 @@ export function createIdbDatabase(options: CreateIdbDatabaseOptions): IdbDatabas
       if (typeof indexedDB === 'undefined') {
         throw new Error('IndexedDB not available');
       }
-      db = await openIdbDatabase(options);
+      db = await openIdbDatabase(options, (database) => {
+        // Another tab is upgrading: close so we are not the blocker, and drop
+        // our reference so the next init()/getDb() path reopens instead of
+        // serving reads through a closed handle (InvalidStateError → empty).
+        database.close();
+        if (db === database) {
+          db = null;
+          initPromise = null;
+        }
+      });
       fallbackMode = false;
     } catch (err) {
       console.warn(`[${options.logLabel}] IndexedDB unavailable, using in-memory fallback:`, err);
@@ -87,6 +96,8 @@ export function createIdbDatabase(options: CreateIdbDatabaseOptions): IdbDatabas
     logLabel: options.logLabel,
 
     async init(): Promise<void> {
+      // Already holding a live connection — nothing to do.
+      if (db) return;
       if (initPromise) return initPromise;
       initPromise = openFresh();
       return initPromise;
