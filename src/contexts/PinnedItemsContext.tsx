@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useCallback, useMemo, useState, useEffect } from 'react';
+import React, { createContext, useContext, useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import { getPins, setPins, migratePinsFromLocalStorage, MAX_PINS, UNIFIED_PROVIDER } from '@/services/settings/pinnedItemsStorage';
 import { PINS_CHANGED_EVENT, onAppEvent } from '@/constants/events';
 import { schedulePreferencesPush } from '@/providers/preferencesSync';
@@ -53,6 +53,17 @@ export function PinnedItemsProvider({ children }: { children: React.ReactNode })
   const [pinnedPlaylistIds, setPinnedPlaylistIds] = useState<string[]>([]);
   const [pinnedAlbumIds, setPinnedAlbumIds] = useState<string[]>([]);
 
+  // Cross-type cap checks need the other list inside functional updaters.
+  const pinnedPlaylistIdsRef = useRef(pinnedPlaylistIds);
+  const pinnedAlbumIdsRef = useRef(pinnedAlbumIds);
+  pinnedPlaylistIdsRef.current = pinnedPlaylistIds;
+  pinnedAlbumIdsRef.current = pinnedAlbumIds;
+
+  // Persist only after user toggles — not after hydrate / remote PINS_CHANGED.
+  // Side effects live in an effect (F84), not inside setState updaters.
+  const dirtyPlaylistsRef = useRef(false);
+  const dirtyAlbumsRef = useRef(false);
+
   useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -83,6 +94,24 @@ export function PinnedItemsProvider({ children }: { children: React.ReactNode })
     return onAppEvent(PINS_CHANGED_EVENT, onPinsChanged);
   }, []);
 
+  useEffect(() => {
+    if (!dirtyPlaylistsRef.current) return;
+    dirtyPlaylistsRef.current = false;
+    void setPins(UNIFIED_PROVIDER, 'playlists', pinnedPlaylistIds).catch(err =>
+      console.warn('[PinnedItemsContext] pin write failed:', err),
+    );
+    schedulePreferencesPush();
+  }, [pinnedPlaylistIds]);
+
+  useEffect(() => {
+    if (!dirtyAlbumsRef.current) return;
+    dirtyAlbumsRef.current = false;
+    void setPins(UNIFIED_PROVIDER, 'albums', pinnedAlbumIds).catch(err =>
+      console.warn('[PinnedItemsContext] pin write failed:', err),
+    );
+    schedulePreferencesPush();
+  }, [pinnedAlbumIds]);
+
   const isPlaylistPinned = useCallback(
     (id: string) => pinnedPlaylistIds.includes(id),
     [pinnedPlaylistIds]
@@ -93,25 +122,15 @@ export function PinnedItemsProvider({ children }: { children: React.ReactNode })
     [pinnedAlbumIds]
   );
 
-  // Persist + push outside setState updaters so StrictMode's double-invoke
-  // cannot fire async side effects twice for a single user gesture (F84).
   const togglePinPlaylist = useCallback((id: string) => {
-    const next = togglePinId(pinnedPlaylistIds, id, pinnedAlbumIds);
-    setPinnedPlaylistIds(next);
-    void setPins(UNIFIED_PROVIDER, 'playlists', next).catch(err =>
-      console.warn('[PinnedItemsContext] pin write failed:', err),
-    );
-    schedulePreferencesPush();
-  }, [pinnedPlaylistIds, pinnedAlbumIds]);
+    dirtyPlaylistsRef.current = true;
+    setPinnedPlaylistIds(prev => togglePinId(prev, id, pinnedAlbumIdsRef.current));
+  }, []);
 
   const togglePinAlbum = useCallback((id: string) => {
-    const next = togglePinId(pinnedAlbumIds, id, pinnedPlaylistIds);
-    setPinnedAlbumIds(next);
-    void setPins(UNIFIED_PROVIDER, 'albums', next).catch(err =>
-      console.warn('[PinnedItemsContext] pin write failed:', err),
-    );
-    schedulePreferencesPush();
-  }, [pinnedAlbumIds, pinnedPlaylistIds]);
+    dirtyAlbumsRef.current = true;
+    setPinnedAlbumIds(prev => togglePinId(prev, id, pinnedPlaylistIdsRef.current));
+  }, []);
 
   const totalUserPinned = countUserPins(pinnedPlaylistIds) + countUserPins(pinnedAlbumIds);
   const canPinMorePlaylists = totalUserPinned < MAX_PINS;
