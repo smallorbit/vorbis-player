@@ -145,7 +145,7 @@ export const MusicSourcesSection = memo(() => {
         performDisconnect(descriptor.id);
       }
     },
-    [tracks, performDisconnect],
+    [tracks, performDisconnect, registry],
   );
 
   if (providers.length < 2) return null;
