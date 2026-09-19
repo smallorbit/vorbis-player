@@ -25,7 +25,7 @@ function setupAuthenticatedModule() {
     expires_at: Date.now() + 3600 * 1000,
   };
   vi.mocked(localStorage.getItem).mockImplementation((key: string) => {
-    if (key === 'spotify_token') return JSON.stringify(token);
+    if (key === 'vorbis-player-spotify-token') return JSON.stringify(token);
     return null;
   });
 }

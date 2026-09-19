@@ -6,10 +6,11 @@
  */
 
 import { createIdbDatabase, type IdbDatabaseHandle } from '@/services/idb';
+import { STORAGE_KEYS } from '@/constants/storage';
 
 export const STORE_NAMES = { PINS: 'pins' } as const;
 
-const DB_NAME = 'vorbis-player-settings';
+const DB_NAME = STORAGE_KEYS.SETTINGS;
 const DB_VERSION = 1;
 
 const handle: IdbDatabaseHandle = createIdbDatabase({

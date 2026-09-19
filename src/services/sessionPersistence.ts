@@ -1,8 +1,12 @@
 import type { MediaTrack, PlaybackSelection, ProviderId } from '@/types/domain';
 import { keyToCollectionRef } from '@/types/domain';
+import { STORAGE_KEYS } from '@/constants/storage';
 import { logCaughtError } from '@/utils/logCaughtError';
-
-const SESSION_KEY = 'vorbis-player-last-session';
+import {
+  readLocalStorageRaw,
+  removeLocalStorageKey,
+  writeLocalStorageJson,
+} from '@/utils/persistedStorage';
 
 /** Sessions older than this are treated as absent for landing routing. */
 export const STALE_SESSION_MS = 30 * 24 * 60 * 60 * 1000;
@@ -37,7 +41,7 @@ export function saveSession(snapshot: SessionSnapshot): void {
       savedAt: Date.now(),
       ...(snapshot.queueTracks !== undefined && { queueTracks: snapshot.queueTracks.map(sanitizeTrack) }),
     };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(sanitized));
+    writeLocalStorageJson(STORAGE_KEYS.LAST_SESSION, sanitized);
   } catch (err) {
     console.warn('[session] saveSession failed:', err);
   }
@@ -129,7 +133,7 @@ function upgradeLegacySnapshot(value: LegacySessionFields & Record<string, unkno
 
 export function loadSession(): SessionSnapshot | null {
   try {
-    const raw = localStorage.getItem(SESSION_KEY);
+    const raw = readLocalStorageRaw(STORAGE_KEYS.LAST_SESSION);
     if (!raw) return null;
     const parsed: unknown = JSON.parse(raw);
     if (isSessionSnapshot(parsed)) return parsed;
@@ -156,10 +160,5 @@ export function isSessionStale(
 }
 
 export function clearSession(): void {
-  try {
-    localStorage.removeItem(SESSION_KEY);
-  } catch (err) {
-    // Ignore
-    logCaughtError('sessionPersistence.clearSession', err);
-  }
+  removeLocalStorageKey(STORAGE_KEYS.LAST_SESSION);
 }

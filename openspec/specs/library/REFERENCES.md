@@ -181,7 +181,7 @@ Verified by test at `search/__tests__/searchMatch.test.ts:45-51` ("returns false
 
 **Sources**
 
-- `search/useLibrarySearch.ts:9-13` — storage keys `'vorbis-player-library-route-provider-filter'`, `'vorbis-player-library-route-kind-filter'`, `'vorbis-player-library-route-sort'`.
+- storage keys: `src/constants/storage.ts` — `LIBRARY_ROUTE_PROVIDER_FILTER`, `LIBRARY_ROUTE_KIND_FILTER`, `LIBRARY_ROUTE_SORT`
 - `search/useLibrarySearch.ts:37-45` — `useLocalStorage` for all three.
 - `search/useLibrarySearch.ts:47-59` — `toggleProvider` and `toggleKind` via `toggleInArray`.
 - `search/useLibrarySearch.ts:62-66` — `hasActiveFilters` true when any filter differs from default.

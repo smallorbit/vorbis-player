@@ -2,7 +2,7 @@
 
 **Initiative label:** [`project:vorbis-player-architecture-v2`](https://github.com/smallorbit/vorbis-player/labels/project%3Avorbis-player-architecture-v2) (RFC 0001)  
 **Working mode:** **one workstream (epic) at a time**; within an epic, **one child issue at a time**.  
-**Updated:** 2026-09-19 (after #1705)
+**Updated:** 2026-09-19 (after #1706)
 
 Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tier-codebase.md`, which is **not yet on `main`** — landing that RFC is part of **[WS11](https://github.com/smallorbit/vorbis-player/issues/1757)**.
 
@@ -14,7 +14,7 @@ Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tie
 |----|------|--------|
 | WS1 | [#1685](https://github.com/smallorbit/vorbis-player/issues/1685) Neutral domain model | **Done** |
 | WS2 | [#1692](https://github.com/smallorbit/vorbis-player/issues/1692) PlaybackStore + QueueStore | **Done** |
-| WS3 | [#1699](https://github.com/smallorbit/vorbis-player/issues/1699) State, persistence & events | **In progress** (6/8) |
+| WS3 | [#1699](https://github.com/smallorbit/vorbis-player/issues/1699) State, persistence & events | **In progress** (7/8) |
 | WS4–WS12 | Reliability → DevBug | Open (do not start until WS3 closes) |
 
 Pre-initiative foundations already on `main`: async-race harness, honest e2e, full CI gate.
@@ -23,7 +23,7 @@ Pre-initiative foundations already on `main`: async-race harness, honest e2e, fu
 
 ## Do this next
 
-### Immediate: finish WS3, starting at #1706
+### Immediate: finish WS3 at #1707
 
 Epic: **[#1699 — State, persistence & events with single owners](https://github.com/smallorbit/vorbis-player/issues/1699)**  
 Principles: P1/P2 — one owner per state; one canonical implementation per concern.
@@ -36,8 +36,8 @@ Principles: P1/P2 — one owner per state; one canonical implementation per conc
 | 1703 | `RemoteJsonFileStore<T>` under Dropbox | **Closed** | `src/providers/dropbox/remoteJsonFileStore.ts` — download/upload + version guard + debounced single-flight push. Likes / preferences / playlists wired; domain merge policies stay in their sync modules. |
 | 1704 | Logout data-purge contract | **Closed** | `src/services/cache/providerDataPurge.ts` — enumerable `PROVIDER_PURGE_LOCAL_STORAGE_KEYS` + `purgeProviderPersistedData`. Spotify/Dropbox adapters await it from `logout`. Dropbox IDB deleted via `dropboxIdbHandle.deleteDatabase()`. Spotify tokens added to `STORAGE_KEYS`; `spotify/auth.ts` on `persistedStorage`. Session-expiry (`reportUnauthorized`) also runs the full Spotify purge (parity with Dropbox). |
 | 1705 | Typed `AppEventMap` in `constants/events.ts` | **Closed** | `AppEventMap` + `dispatchAppEvent` / `onAppEvent` own the sanctioned `detail` cast. All window CustomEvent names moved into `events.ts`; providers→hooks inversion (`usePopupAuth`) removed. |
-| **1706** | **Complete `STORAGE_KEYS` + prefix convention** | **← NEXT** | Fold more raw writers off the #1700 allowlist where appropriate |
-| 1707 | Slim `ProviderContext` + StrictMode | Open | Epic exit: tests pass under StrictMode |
+| 1706 | Complete `STORAGE_KEYS` + prefix convention | **Closed** | All durable keys + IDB names in `STORAGE_KEYS` under `vorbis-player-`. Spotify token migrated from unprefixed literals. ESLint bans raw `localStorage` and hardcoded `vorbis-player-*` literals outside `storage.ts` / `persistedStorage.ts`. Allowlist emptied. |
+| **1707** | **Slim `ProviderContext` + StrictMode** | **← NEXT** | Epic exit: tests pass under StrictMode |
 
 **WS3 exit criteria** (from epic): settings change visible across surfaces without reload; `npm run test:run` under StrictMode; logout leaves zero provider-scoped keys/DBs (proven by test).
 
@@ -53,13 +53,13 @@ Optional WS2 leftovers if they surface: [#1770](https://github.com/smallorbit/vo
 
 ---
 
-## Context for #1706 (next implementation)
+## Context for #1707 (next implementation)
 
-Complete `STORAGE_KEYS` and enforce the `vorbis-player-` prefix convention. Fold more raw `localStorage` writers off the eslint allowlist from #1700 (Dropbox auth, session/debug/migration modules) onto `persistedStorage` where appropriate. Do **not** expand into ProviderContext StrictMode (#1707) unless a shared primitive is required.
+Slim `ProviderContext` and fix `PinnedItemsContext` so the suite passes under React StrictMode. Do **not** start WS4–WS12 until WS3 (#1699) closes.
 
-### Known follow-ups (do **not** block #1706)
+### Known follow-ups (do **not** block #1707)
 
-- Session hydrate clears on-disk session via `resetLastSession`; debounced re-save often never lands while position ticks reset the timer. Re-prime falls back to **PlaybackStore** cursor (`useProviderPlayback`). Durable session re-save belongs with #1706 territory if touched at all.
+- Session hydrate clears on-disk session via `resetLastSession`; debounced re-save often never lands while position ticks reset the timer. Re-prime falls back to **PlaybackStore** cursor (`useProviderPlayback`).
 - Accent/pin maps may still hold Dropbox-shaped album paths after Dropbox logout — product/gray area; not part of the #1704 enumerable purge set.
 - `docs/rfcs/0001-s-tier-codebase.md` still missing from the tree → WS11.
 - In-place IDB patch of liked-songs (vs full remove from #1701) was deferred; revisit only if refetch cost after save/unsave becomes measurable.
@@ -71,7 +71,7 @@ Complete `STORAGE_KEYS` and enforce the `vorbis-player-` prefix convention. Fold
 - Branch from latest `main`; name `cursor/<slug>-<cloud-suffix>` when using the cloud branch convention (suffix varies per run).
 - Target PRs at `main`; conventional commits; run `npm test` / `npm run test:run` before push. PRs squash-merge; mark draft ready before merge.
 - Staging: workflow **Deploy PR to Staging** (`workflow_dispatch` + `pr_number`). Cloud agent `gh` is often **read-only** for dispatch — equivalent plumbing is rebuild `staging` from `main`, merge `pull/N/head`, `git push --force-with-lease origin staging`.
-- Prefer issue-sized PRs; update the epic checklist when closing children (tick #1700–#1705 on #1699 when editing is available).
+- Prefer issue-sized PRs; update the epic checklist when closing children (tick #1700–#1706 on #1699 when editing is available).
 - Update **this file** when finishing a WS3 child or switching epics so the next agent has a current pointer.
 
 ---
@@ -80,8 +80,9 @@ Complete `STORAGE_KEYS` and enforce the `vorbis-player-` prefix convention. Fold
 
 - Label board: https://github.com/smallorbit/vorbis-player/labels/project%3Avorbis-player-architecture-v2  
 - WS3 epic: https://github.com/smallorbit/vorbis-player/issues/1699  
-- Next issue: https://github.com/smallorbit/vorbis-player/issues/1706  
+- Next issue: https://github.com/smallorbit/vorbis-player/issues/1707  
 - Shared IDB foundation: `src/services/idb/`  
 - Remote JSON store: `src/providers/dropbox/remoteJsonFileStore.ts`  
 - Logout purge: `src/services/cache/providerDataPurge.ts`  
 - Typed events: `src/constants/events.ts`  
+- Storage keys: `src/constants/storage.ts`  

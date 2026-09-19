@@ -14,6 +14,11 @@ import {
 } from '@/constants/visualizerDebugConfig';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { logCaughtError } from '@/utils/logCaughtError';
+import {
+  readLocalStorageRaw,
+  removeLocalStorageKey,
+  writeLocalStorageJson,
+} from '@/utils/persistedStorage';
 
 const DEBUG_PARAM = 'debug';
 const DEBUG_VALUE = 'visualizer';
@@ -26,7 +31,7 @@ function isDebugModeEnabled(): boolean {
 
 function readStoredOverrides(): VisualizerDebugOverrides | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.VISUALIZER_DEBUG_OVERRIDES);
+    const raw = readLocalStorageRaw(STORAGE_KEYS.VISUALIZER_DEBUG_OVERRIDES);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as VisualizerDebugOverrides;
     return parsed;
@@ -39,10 +44,10 @@ function readStoredOverrides(): VisualizerDebugOverrides | null {
 function writeStoredOverrides(overrides: VisualizerDebugOverrides | null): void {
   try {
     if (overrides == null) {
-      localStorage.removeItem(STORAGE_KEYS.VISUALIZER_DEBUG_OVERRIDES);
+      removeLocalStorageKey(STORAGE_KEYS.VISUALIZER_DEBUG_OVERRIDES);
       return;
     }
-    localStorage.setItem(STORAGE_KEYS.VISUALIZER_DEBUG_OVERRIDES, JSON.stringify(overrides));
+    writeLocalStorageJson(STORAGE_KEYS.VISUALIZER_DEBUG_OVERRIDES, overrides);
   } catch (err) {
     // ignore
     logCaughtError('VisualizerDebugContext.writeStoredOverrides', err);

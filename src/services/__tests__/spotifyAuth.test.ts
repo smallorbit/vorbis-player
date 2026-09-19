@@ -7,7 +7,7 @@ const mockPurgeProviderPersistedData = vi.hoisted(() =>
 vi.mock('@/services/cache/providerDataPurge', () => ({
   purgeProviderPersistedData: mockPurgeProviderPersistedData,
   PROVIDER_PURGE_LOCAL_STORAGE_KEYS: {
-    spotify: ['spotify_token', 'spotify_code_verifier'],
+    spotify: ['vorbis-player-spotify-token', 'vorbis-player-spotify-code-verifier', 'spotify_token', 'spotify_code_verifier'],
     dropbox: [],
   },
   remainingProviderLocalStorageKeys: () => [],
@@ -79,7 +79,7 @@ describe('SpotifyAuth', () => {
 
       // #then
       expect(auth.isAuthenticated()).toBe(true);
-      expect(localStorage.removeItem).not.toHaveBeenCalledWith('spotify_token');
+      expect(localStorage.removeItem).not.toHaveBeenCalledWith('vorbis-player-spotify-token');
     });
 
     it('returns false and clears storage when token is expired without refresh token', async () => {
@@ -95,7 +95,7 @@ describe('SpotifyAuth', () => {
 
       // #then
       expect(auth.isAuthenticated()).toBe(false);
-      expect(localStorage.removeItem).toHaveBeenCalledWith('spotify_token');
+      expect(localStorage.removeItem).toHaveBeenCalledWith('vorbis-player-spotify-token');
     });
   });
 
@@ -104,7 +104,7 @@ describe('SpotifyAuth', () => {
       vi.mocked(localStorage.getItem).mockReturnValue('not-valid-json{{{');
       const auth = await freshAuth();
       expect(auth.isAuthenticated()).toBe(false);
-      expect(localStorage.removeItem).toHaveBeenCalledWith('spotify_token');
+      expect(localStorage.removeItem).toHaveBeenCalledWith('vorbis-player-spotify-token');
     });
   });
 
@@ -240,7 +240,7 @@ describe('SpotifyAuth', () => {
       await expect(auth.refreshAccessToken()).rejects.toThrow('Token refresh failed');
 
       // #then
-      expect(localStorage.removeItem).toHaveBeenCalledWith('spotify_token');
+      expect(localStorage.removeItem).toHaveBeenCalledWith('vorbis-player-spotify-token');
       const dispatchedEvents = dispatchSpy.mock.calls.map(call => (call[0] as Event).type);
       expect(dispatchedEvents).toContain('vorbis-session-expired');
       dispatchSpy.mockRestore();
@@ -264,7 +264,7 @@ describe('SpotifyAuth', () => {
       await expect(auth.refreshAccessToken()).rejects.toThrow('Token refresh failed');
 
       // #then
-      expect(localStorage.removeItem).toHaveBeenCalledWith('spotify_token');
+      expect(localStorage.removeItem).toHaveBeenCalledWith('vorbis-player-spotify-token');
       const dispatchedEvents = dispatchSpy.mock.calls.map(call => (call[0] as Event).type);
       expect(dispatchedEvents).toContain('vorbis-session-expired');
       dispatchSpy.mockRestore();
@@ -288,7 +288,7 @@ describe('SpotifyAuth', () => {
       await expect(auth.refreshAccessToken()).rejects.toThrow('Token refresh failed');
 
       // #then
-      expect(localStorage.removeItem).not.toHaveBeenCalledWith('spotify_token');
+      expect(localStorage.removeItem).not.toHaveBeenCalledWith('vorbis-player-spotify-token');
       const dispatchedEvents = dispatchSpy.mock.calls.map(call => (call[0] as Event).type);
       expect(dispatchedEvents).not.toContain('vorbis-session-expired');
       dispatchSpy.mockRestore();
@@ -329,7 +329,7 @@ describe('SpotifyAuth', () => {
     it('exchanges code+verifier, stores tokens, clears code_verifier', async () => {
       // #given
       vi.mocked(localStorage.getItem).mockImplementation((key: string) => {
-        if (key === 'spotify_code_verifier') return 'test-verifier';
+        if (key === 'vorbis-player-spotify-code-verifier') return 'test-verifier';
         return null;
       });
       const auth = await freshAuth();
@@ -352,10 +352,10 @@ describe('SpotifyAuth', () => {
       expect(body.get('code_verifier')).toBe('test-verifier');
 
       expect(localStorage.setItem).toHaveBeenCalledWith(
-        'spotify_token',
+        'vorbis-player-spotify-token',
         expect.stringContaining('new-access')
       );
-      expect(localStorage.removeItem).toHaveBeenCalledWith('spotify_code_verifier');
+      expect(localStorage.removeItem).toHaveBeenCalledWith('vorbis-player-spotify-code-verifier');
     });
   });
 
@@ -381,7 +381,7 @@ describe('SpotifyAuth', () => {
         writable: true,
       });
       vi.mocked(localStorage.getItem).mockImplementation((key: string) => {
-        if (key === 'spotify_code_verifier') return 'verifier';
+        if (key === 'vorbis-player-spotify-code-verifier') return 'verifier';
         return null;
       });
       const auth = await freshAuth();

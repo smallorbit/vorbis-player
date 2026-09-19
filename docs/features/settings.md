@@ -133,7 +133,7 @@ export const useQapEnabled = (): [boolean, (value: boolean) => void] => {
 
 ### Gotcha
 
-The QAP key is NOT centralized in `STORAGE_KEYS`. It is hardcoded as a string literal in `useQapEnabled.ts`. If you need to reference it elsewhere, use the hook or duplicate the string.
+The QAP key lives in `STORAGE_KEYS.QAP_ENABLED` and is read via `useQapEnabled()`.
 
 ## Dropbox Preferences Sync
 
@@ -201,7 +201,7 @@ Convention: all keys use the `vorbis-player-` prefix.
 
 ## Complete localStorage Key Reference
 
-All keys from `src/constants/storage.ts` (`STORAGE_KEYS`) plus standalone keys:
+All keys from `src/constants/storage.ts` (`STORAGE_KEYS`). Convention: every key uses the `vorbis-player-` prefix; production modules import `STORAGE_KEYS` rather than hardcoding literals (enforced by ESLint).
 
 | Key | Default | Type | Purpose |
 |---|---|---|---|
@@ -228,8 +228,8 @@ All keys from `src/constants/storage.ts` (`STORAGE_KEYS`) plus standalone keys:
 | `vorbis-player-playlist-sort` | -- | `string` | Playlist sort preference |
 | `vorbis-player-album-sort` | -- | `string` | Album sort preference |
 | `vorbis-player-album-filters` | -- | -- | Album filter state |
-| `vorbis-player-pinned-playlists` | -- | `string[]` | Pinned playlist IDs |
-| `vorbis-player-pinned-albums` | -- | `string[]` | Pinned album IDs |
+| `vorbis-player-pinned-playlists` | -- | `string[]` | Pinned playlist IDs (legacy; migrated to IDB) |
+| `vorbis-player-pinned-albums` | -- | `string[]` | Pinned album IDs (legacy; migrated to IDB) |
 | `vorbis-player-dropbox-token` | -- | `string` | Dropbox access token |
 | `vorbis-player-dropbox-refresh-token` | -- | `string` | Dropbox refresh token |
 | `vorbis-player-dropbox-token-expiry` | -- | `string` | Dropbox token expiry timestamp |
@@ -238,24 +238,30 @@ All keys from `src/constants/storage.ts` (`STORAGE_KEYS`) plus standalone keys:
 | `vorbis-player-preferences-sync-updatedAt` | -- | `string` | Last sync timestamp (ISO) |
 | `vorbis-player-spotify-queue-sync-enabled` | `true` | `boolean` | Spotify native queue sync |
 | `vorbis-player-spotify-queue-resolve-cross-provider` | `true` | `boolean` | Replace non-Spotify tracks in synced queue |
-| `vorbis-player-cache-albums` | -- | -- | Cached album data |
-| `vorbis-player-cache-playlists` | -- | -- | Cached playlist data |
 | `vorbis-player-liked-count-snapshots` | -- | -- | Liked song count snapshots |
-| `vorbis-player-library` | -- | -- | Cached library state |
-| `vorbis-player-settings` | -- | -- | General settings cache |
+| `vorbis-player-library` | -- | -- | Library IndexedDB database name |
+| `vorbis-player-settings` | -- | -- | Settings IndexedDB database name |
 | `vorbis-player-profiling` | `'false'` | `string` | Profiler enabled (raw string, not JSON) |
 | `vorbis-player-debug-overlay` | `'false'` | `string` | Debug overlay enabled (raw string) |
 | `vorbis-player-visualizer-debug-overrides` | -- | `JSON` | Visualizer param overrides |
 | `vorbis-player-devbug` | `false` | `boolean` | DevBug FAB enabled |
-| `vorbis-player-qap-enabled` | `false` | `boolean` | Quick Access Panel enabled (NOT in STORAGE_KEYS) |
+| `vorbis-player-qap-enabled` | `false` | `boolean` | Quick Access Panel enabled (`STORAGE_KEYS.QAP_ENABLED`) |
+| `vorbis-player-welcome-seen` | `false` | `boolean` | Welcome / first-run dismissed |
+| `vorbis-player-recently-played` | `[]` | `RecentlyPlayedEntry[]` | Recent collections for resume UI |
+| `vorbis-player-last-session` | -- | `SessionSnapshot` | Last playback session |
+| `vorbis-player-library-route-provider-filter` | `[]` | `ProviderId[]` | Library search provider filter |
+| `vorbis-player-library-route-kind-filter` | `[]` | `LibraryKindFilter[]` | Library search kind filter |
+| `vorbis-player-library-route-sort` | `'recent'` | `LibrarySort` | Library search sort |
+| `vorbis-player-spotify-token` | -- | `TokenData` JSON | Spotify OAuth token blob |
+| `vorbis-player-spotify-code-verifier` | -- | `string` | Spotify PKCE verifier |
 
 ### Gotcha: Raw vs JSON Storage
 
 Most keys use `useLocalStorage` which JSON-serializes values (so `true` is stored as `"true"` which `JSON.parse` reads back).
 
-Two keys bypass `useLocalStorage` and write raw strings directly:
-- `PROFILING` -- written with `localStorage.setItem(key, String(next))` in `ProfilingContext`. Read with `=== 'true'` comparison.
-- `DEBUG_OVERLAY` -- written with `localStorage.setItem(key, String(enabled))`. Read with `=== 'true'` comparison.
+Two keys bypass `useLocalStorage` and write raw strings via `persistedStorage`:
+- `PROFILING` -- written with `writeLocalStorageRaw(key, String(next))` in `ProfilingContext`. Read with `=== 'true'` comparison.
+- `DEBUG_OVERLAY` -- written with `writeLocalStorageRaw(key, String(enabled))`. Read with `=== 'true'` comparison.
 
 These are compatible because `JSON.parse('"true"')` and `'true' === 'true'` both work, but be aware if mixing read methods.
 
