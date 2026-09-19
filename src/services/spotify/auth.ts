@@ -1,6 +1,7 @@
 import type { TokenData } from './types';
 import { SESSION_EXPIRED_EVENT } from '@/constants/events';
 import { STORAGE_KEYS } from '@/constants/storage';
+import { purgeProviderPersistedData } from '@/services/cache/providerDataPurge';
 import { logCaughtError } from '@/utils/logCaughtError';
 import {
   readLocalStorageRaw,
@@ -200,23 +201,27 @@ class SpotifyAuth {
 
   /**
    * Called by API consumers (and `performRefresh` itself on a 400/401 from the
-   * refresh endpoint) when the session is no longer recoverable. Clears any
-   * surviving tokens and dispatches `SESSION_EXPIRED_EVENT` once per session.
+   * refresh endpoint) when the session is no longer recoverable. Clears tokens,
+   * runs the full provider data-purge contract (library cache, liked snapshot,
+   * in-memory caches — same as `AuthProvider.logout`), and dispatches
+   * `SESSION_EXPIRED_EVENT` once per session.
    *
-   * Idempotent: a follow-up invocation after `logout()` (e.g. a wrapper catch
-   * path after `performRefresh` already cleared `tokenData`) re-dispatches
-   * nothing thanks to `sessionExpiredNotified`, but earlier we would have
-   * silently skipped the event entirely whenever `tokenData` was already null.
-   * The notification flag resets on the next successful `saveTokenToStorage`,
-   * so a fresh login can surface a future session-expired toast.
+   * Idempotent: a follow-up invocation after the first (e.g. a wrapper catch
+   * path after `performRefresh` already notified) re-dispatches nothing thanks
+   * to `sessionExpiredNotified`. The notification flag resets on the next
+   * successful `saveTokenToStorage`, so a fresh login can surface a future
+   * session-expired toast.
    */
   public reportUnauthorized(): void {
     if (this.sessionExpiredNotified) return;
     this.sessionExpiredNotified = true;
     console.warn('[spotifyAuth] Persistent 401 — logging out');
-    if (this.tokenData) {
-      this.logout();
-    }
+    // Always clear in-memory/token keys (idempotent) and run the full purge —
+    // Dropbox's reportUnauthorized routes through adapter.logout() the same way.
+    this.logout();
+    void purgeProviderPersistedData('spotify').catch((err) => {
+      logCaughtError('spotifyAuth.reportUnauthorized.purge', err);
+    });
     if (typeof window === 'undefined') return;
     window.dispatchEvent(
       new CustomEvent(SESSION_EXPIRED_EVENT, { detail: { providerId: 'spotify' } }),

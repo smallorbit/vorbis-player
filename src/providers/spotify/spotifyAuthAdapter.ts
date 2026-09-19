@@ -65,6 +65,8 @@ export class SpotifyAuthAdapter implements AuthProvider {
   }
 
   reportUnauthorized(): void {
+    // spotifyAuth.reportUnauthorized owns SESSION_EXPIRED idempotency and now
+    // runs the same purge contract as logout() (parity with Dropbox).
     spotifyAuth.reportUnauthorized();
   }
 }
