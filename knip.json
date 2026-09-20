@@ -3,10 +3,20 @@
   "tags": [
     "-lintignore"
   ],
+  "ignoreExportsUsedInFile": {
+    "interface": true,
+    "type": true,
+    "enum": true
+  },
   "ignore": [
     "public/sw.js",
     "src/types/spotify.d.ts",
     "src/types/styled.d.ts",
-    "src/components/ui/**"
-  ]
+    "src/components/ui/**",
+    "eslint-rules/props-explicit-undefined.d.ts",
+    "playwright/mock-window.d.ts"
+  ],
+  "ignoreIssues": {
+    "src/constants/zenAnimation.ts": ["duplicates"]
+  }
 }

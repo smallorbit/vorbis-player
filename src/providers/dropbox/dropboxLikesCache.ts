@@ -5,9 +5,6 @@ import { getDb, runDropboxWrite } from './dropboxIdb';
 
 const STORE = 'likes';
 
-/** @deprecated Prefer `DROPBOX_LIKES_CHANGED_EVENT` from `@/constants/events`. */
-export const LIKES_CHANGED_EVENT = DROPBOX_LIKES_CHANGED_EVENT;
-
 function notifyLikesChanged(): void {
   dispatchAppEvent(DROPBOX_LIKES_CHANGED_EVENT);
 }

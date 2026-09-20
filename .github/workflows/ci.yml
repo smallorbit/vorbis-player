@@ -34,8 +34,14 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Unit tests
-        run: npm run test:run
+      - name: Unused exports (knip)
+        run: npm run knip
+
+      - name: Audit (high+)
+        run: npm run audit:ci
+
+      - name: Unit tests with coverage
+        run: npm run test:coverage
 
       - name: Build
         run: npm run build

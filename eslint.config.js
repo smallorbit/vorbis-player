@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint'
 import propsExplicitUndefined from './eslint-rules/props-explicit-undefined.js'
 
 export default tseslint.config(
-  { ignores: ['dist', 'eslint-rules/__tests__/**'] },
+  { ignores: ['dist', 'coverage', 'eslint-rules/__tests__/**'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['**/*.{ts,tsx}'],

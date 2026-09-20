@@ -11,9 +11,6 @@ import { readLocalStorageRaw, removeLocalStorageKey } from '@/utils/persistedSto
 
 export const MAX_PINS = 12;
 
-/** Re-export for callers that import the event name alongside pin helpers. */
-export { PINS_CHANGED_EVENT };
-
 export function notifyPinsChanged(): void {
   dispatchAppEvent(PINS_CHANGED_EVENT);
 }

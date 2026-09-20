@@ -26,7 +26,7 @@
  * 
  * @testing
  * - Environment: jsdom for DOM simulation
- * - Coverage: V8 provider with HTML reports
+ * - Coverage: V8 provider, all-src include, per-directory ratchet thresholds
  * - Setup: Custom test setup file
  * - Exclusions: node_modules, dist, coverage directories
  * 
@@ -111,15 +111,41 @@ export default defineConfig({
     exclude: ['**/node_modules/**', '**/dist/**', 'playwright/**', 'proxy-server/**', '.claude/**'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
+      reporter: ['text-summary', 'json-summary', 'html'],
+      reportsDirectory: './coverage',
+      reportOnFailure: true,
+      // Count every production file, not just those imported by a test, so
+      // new untested modules drop the ratchet instead of hiding at 0%.
+      all: true,
+      include: ['src/**/*.{ts,tsx}'],
       exclude: [
-        'node_modules/',
-        'src/test/',
+        'src/test/**',
+        'src/**/__tests__/**',
         '**/*.d.ts',
-        'dist/',
-        'coverage/',
-        'proxy-server/'
-      ]
+        'src/vite-env.d.ts',
+        'src/main.tsx',
+        'src/workers/**',
+      ],
+      // Floors are the measured current percentages (ratchet-only, F51).
+      // Raise a number when a directory's coverage grows; never lower it
+      // without an explicit decision in the PR.
+      thresholds: {
+        statements: 69,
+        branches: 81,
+        functions: 73,
+        lines: 69,
+        'src/components/**': { statements: 65, branches: 80, functions: 69, lines: 65 },
+        'src/constants/**': { statements: 100, branches: 97, functions: 100, lines: 100 },
+        'src/contexts/**': { statements: 60, branches: 85, functions: 75, lines: 60 },
+        'src/hooks/**': { statements: 78, branches: 83, functions: 86, lines: 78 },
+        'src/lib/**': { 100: true },
+        'src/providers/**': { statements: 65, branches: 77, functions: 68, lines: 65 },
+        'src/services/**': { statements: 78, branches: 84, functions: 80, lines: 78 },
+        'src/stores/**': { statements: 95, branches: 92, functions: 97, lines: 95 },
+        'src/styles/**': { 100: true },
+        'src/types/**': { statements: 100, branches: 96, functions: 100, lines: 100 },
+        'src/utils/**': { statements: 60, branches: 65, functions: 74, lines: 60 },
+      },
     }
   }
 })

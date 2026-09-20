@@ -8,13 +8,11 @@
  */
 
 import { logCaughtError } from '@/utils/logCaughtError';
-import { closeDropboxCache, getDb, runDropboxWrite } from './dropboxIdb';
+import { getDb, runDropboxWrite } from './dropboxIdb';
 
 const STORE = 'art';
 const ART_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const ALBUM_ART_KEY_PREFIX = 'album:';
-
-export { closeDropboxCache, getDb };
 
 interface CachedArt {
   path: string;

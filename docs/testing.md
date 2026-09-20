@@ -5,6 +5,8 @@ Run with `npm run test:run`. Tests are colocated with source files in `__tests__
 - Verify actual behavior, not mock implementations
 - Every test should have meaningful assertions
 
+CI runs `npm run test:coverage`, `npm run knip`, and `npm run audit:ci`. Coverage floors live in `vite.config.ts` (`test.coverage.thresholds`) and are ratchet-only: raise a number when coverage grows, never lower it without calling that out in the PR.
+
 ## Test utilities (`src/test/`)
 
 | File | Purpose |

@@ -35,6 +35,8 @@ npm run test           # Run tests in watch mode
 npm run test:run       # Run tests once
 npm run test:ui        # Run tests with UI
 npm run test:coverage  # Run tests with coverage
+npm run knip           # Unused files, exports, and dependencies
+npm run audit:ci       # Fail on high/critical npm advisories
 npm run deploy         # Deploy to production (see docs/deploy.md)
 npm run deploy:preview # Deploy preview (see docs/deploy.md)
 ```
@@ -103,6 +105,8 @@ Tests are colocated with source files in `__tests__/` subdirectories.
 npm run test:run       # Run once
 npm run test           # Watch mode
 npm run test:coverage  # With coverage report
+npm run knip           # Unused files/exports/dependencies
+npm run audit:ci       # Fail on high/critical advisories
 ```
 
 Guidelines:

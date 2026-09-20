@@ -22,7 +22,7 @@ describe('ToggleGroup', () => {
       renderGroup({ type: 'single' });
 
       // #then
-      expect(screen.getByRole('group', { name: 'Sizes' })).toBeInTheDocument();
+      expect(screen.getByRole('radiogroup', { name: 'Sizes' })).toBeInTheDocument();
     });
 
     it('type="single" renders items as radio controls (roving selection)', () => {
@@ -105,7 +105,7 @@ describe('ToggleGroup', () => {
       renderGroup({ type: 'single', rootStyle: { gap: '12px' } });
 
       // #then
-      expect(screen.getByRole('group', { name: 'Sizes' })).toHaveStyle({ gap: '12px' });
+      expect(screen.getByRole('radiogroup', { name: 'Sizes' })).toHaveStyle({ gap: '12px' });
     });
 
     it('group itemStyle applies as inline style on each item', () => {
