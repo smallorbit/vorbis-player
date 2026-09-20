@@ -1,12 +1,8 @@
 import { Linter } from 'eslint';
-import type { Rule } from 'eslint';
 import tsParser from '@typescript-eslint/parser';
 import { describe, expect, it } from 'vitest';
-import { createRequire } from 'node:module';
 
-const propsExplicitUndefined: Rule.RuleModule = createRequire(import.meta.url)(
-  '../props-explicit-undefined.js',
-);
+import propsExplicitUndefined from '../props-explicit-undefined.js';
 
 const RULE_ID = 'vorbis/props-explicit-undefined';
 

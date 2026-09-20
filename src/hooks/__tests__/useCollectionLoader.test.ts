@@ -27,15 +27,17 @@ function folderSel(id: string, name?: string): CollectionSelection {
 }
 
 function makeMediaTrack(id: string, addedAt?: number): MediaTrack {
-  return makeTrack({
+  return {
     id,
+    provider: 'spotify',
+    playbackRef: { provider: 'spotify', ref: `spotify:track:${id}` },
     name: `Track ${id}`,
     artists: 'Artist',
     album: 'Album',
     durationMs: 180000,
-    playbackRef: { provider: 'spotify', ref: `spotify:track:${id}` },
+    genres: [],
     ...(addedAt !== undefined && { addedAt }),
-  });
+  };
 }
 
 function stubDescriptor(options: {

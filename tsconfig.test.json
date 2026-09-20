@@ -38,6 +38,7 @@
     "src/test/**/*",
     "src/vite-env.d.ts",
     "src/types/**/*.d.ts",
-    "eslint-rules/__tests__/**/*"
+    "eslint-rules/__tests__/**/*",
+    "eslint-rules/**/*.d.ts"
   ]
 }
