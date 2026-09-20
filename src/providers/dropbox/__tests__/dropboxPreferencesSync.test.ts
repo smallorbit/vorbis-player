@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { RemotePreferencesFile } from '../dropboxPreferencesSync';
-import type { DropboxAuthAdapter } from '../dropboxAuthAdapter';
+import { DropboxAuthAdapter } from '../dropboxAuthAdapter';
 
 vi.mock('@/services/settings/pinnedItemsStorage', () => ({
   getPins: vi.fn(),
@@ -31,18 +31,42 @@ function makeRemote(overrides?: Partial<RemotePreferencesFile>): RemotePreferenc
   };
 }
 
-function createMockAuth(token = 'test-token') {
-  return {
+/** Public methods DropboxPreferencesSyncService actually uses on the auth adapter. */
+type DropboxAuthPublic = Pick<
+  DropboxAuthAdapter,
+  | 'providerId'
+  | 'isAuthenticated'
+  | 'getAccessToken'
+  | 'beginLogin'
+  | 'handleCallback'
+  | 'logout'
+  | 'ensureValidToken'
+  | 'refreshAccessToken'
+  | 'reportUnauthorized'
+>;
+
+function createMockAuth(token = 'test-token'): DropboxAuthAdapter {
+  const methods = {
     providerId: 'dropbox' as const,
-    isAuthenticated: vi.fn().mockReturnValue(true),
-    getAccessToken: vi.fn().mockResolvedValue(token),
-    beginLogin: vi.fn(),
-    handleCallback: vi.fn(),
-    logout: vi.fn(),
-    ensureValidToken: vi.fn().mockResolvedValue(token),
-    refreshAccessToken: vi.fn().mockResolvedValue(token),
-    reportUnauthorized: vi.fn(),
-  } satisfies DropboxAuthAdapter;
+    isAuthenticated: vi.fn<() => boolean>().mockReturnValue(true),
+    getAccessToken: vi.fn<() => Promise<string | null>>().mockResolvedValue(token),
+    beginLogin: vi.fn<() => Promise<void>>(),
+    handleCallback: vi.fn<(url: URL) => Promise<boolean>>(),
+    logout: vi.fn<() => Promise<void>>(),
+    ensureValidToken: vi.fn<() => Promise<string | null>>().mockResolvedValue(token),
+    refreshAccessToken: vi.fn<() => Promise<string | null>>().mockResolvedValue(token),
+    reportUnauthorized: vi.fn<() => void>(),
+  } satisfies DropboxAuthPublic;
+  const auth = new DropboxAuthAdapter();
+  auth.isAuthenticated = methods.isAuthenticated;
+  auth.getAccessToken = methods.getAccessToken;
+  auth.beginLogin = methods.beginLogin;
+  auth.handleCallback = methods.handleCallback;
+  auth.logout = methods.logout;
+  auth.ensureValidToken = methods.ensureValidToken;
+  auth.refreshAccessToken = methods.refreshAccessToken;
+  auth.reportUnauthorized = methods.reportUnauthorized;
+  return Object.assign(auth, methods);
 }
 
 describe('DropboxPreferencesSyncService', () => {
@@ -182,7 +206,7 @@ describe('DropboxPreferencesSyncService', () => {
 
   describe('downloadPreferencesFile', () => {
     it('returns null when not authenticated', async () => {
-      mockAuth.ensureValidToken.mockResolvedValue(null);
+      vi.mocked(mockAuth.ensureValidToken).mockResolvedValue(null);
       const result = await service.downloadPreferencesFile();
       expect(result).toBeNull();
     });
@@ -228,13 +252,13 @@ describe('DropboxPreferencesSyncService', () => {
       // #then
       expect(result).toEqual(remoteData);
       expect(fetchMock).toHaveBeenCalledTimes(2);
-      expect(mockAuth.refreshAccessToken).toHaveBeenCalled();
+      expect(vi.mocked(mockAuth.refreshAccessToken)).toHaveBeenCalled();
     });
   });
 
   describe('uploadPreferencesFile', () => {
     it('returns false when not authenticated', async () => {
-      mockAuth.ensureValidToken.mockResolvedValue(null);
+      vi.mocked(mockAuth.ensureValidToken).mockResolvedValue(null);
       const result = await service.uploadPreferencesFile(makeRemote());
       expect(result).toBe(false);
     });

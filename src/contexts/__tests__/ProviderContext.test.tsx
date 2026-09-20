@@ -35,7 +35,7 @@ function resetRegistry() {
 function stubLocalStorage(entries: Record<string, string>): void {
   const store: Record<string, string> = { ...entries };
   vi.mocked(window.localStorage.getItem).mockImplementation((key: string) =>
-    Object.prototype.hasOwnProperty.call(store, key) ? store[key] : null,
+    store[key] ?? null,
   );
   vi.mocked(window.localStorage.setItem).mockImplementation((key: string, value: string) => {
     store[key] = value;

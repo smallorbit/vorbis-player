@@ -4,7 +4,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
 import LibraryRoute from '../index';
-import type { MediaTrack } from '@/types/domain';
+import { makePlayerSizingValue, makeTrack } from '@/test/fixtures';
 
 vi.mock('@/contexts/PlayerSizingContext', () => ({
   usePlayerSizingContext: vi.fn(),
@@ -48,7 +48,7 @@ vi.mock('../hooks', () => ({
 }));
 
 const { mockCurrentTrack } = vi.hoisted(() => ({
-  mockCurrentTrack: vi.fn<[], { currentTrack: MediaTrack | null }>(),
+  mockCurrentTrack: vi.fn<() => { currentTrack: ReturnType<typeof makeTrack> | null }>(),
 }));
 
 vi.mock('@/contexts/TrackContext', () => ({
@@ -72,8 +72,9 @@ vi.mock('@/hooks/useRecentlyPlayedCollections', () => ({
 
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 
-const baseProps = {
-  onPlaylistSelect: vi.fn(),
+const baseProps: React.ComponentProps<typeof LibraryRoute> = {
+  onSelectCollection: vi.fn(),
+  onAddToQueue: vi.fn().mockResolvedValue(null),
   lastSession: null,
   isPlaying: false,
   onMiniPlay: vi.fn(),
@@ -84,9 +85,10 @@ const baseProps = {
 };
 
 function renderRoute(propsOverrides: Partial<React.ComponentProps<typeof LibraryRoute>> = {}) {
+  const props: React.ComponentProps<typeof LibraryRoute> = { ...baseProps, ...propsOverrides };
   return render(
     <ThemeProvider theme={theme}>
-      <LibraryRoute {...baseProps} {...propsOverrides} />
+      <LibraryRoute {...props} />
     </ThemeProvider>,
   );
 }
@@ -99,7 +101,7 @@ describe('LibraryRoute', () => {
 
   it('renders mobile layout testid when isMobile is true', () => {
     // #given
-    vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: true } as ReturnType<typeof usePlayerSizingContext>);
+    vi.mocked(usePlayerSizingContext).mockReturnValue(makePlayerSizingValue({ isMobile: true, isDesktop: false }));
 
     // #when
     renderRoute();
@@ -111,7 +113,7 @@ describe('LibraryRoute', () => {
 
   it('renders desktop layout testid when isMobile is false', () => {
     // #given
-    vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: false } as ReturnType<typeof usePlayerSizingContext>);
+    vi.mocked(usePlayerSizingContext).mockReturnValue(makePlayerSizingValue({ isMobile: false }));
 
     // #when
     renderRoute();
@@ -123,7 +125,7 @@ describe('LibraryRoute', () => {
 
   it('renders HomeView at home view by default', () => {
     // #given
-    vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: false } as ReturnType<typeof usePlayerSizingContext>);
+    vi.mocked(usePlayerSizingContext).mockReturnValue(makePlayerSizingValue({ isMobile: false }));
 
     // #when
     renderRoute();
@@ -134,7 +136,7 @@ describe('LibraryRoute', () => {
 
   it('does not mount mini-player when no current track', () => {
     // #given
-    vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: false } as ReturnType<typeof usePlayerSizingContext>);
+    vi.mocked(usePlayerSizingContext).mockReturnValue(makePlayerSizingValue({ isMobile: false }));
     mockCurrentTrack.mockReturnValue({ currentTrack: null });
 
     // #when
@@ -146,13 +148,9 @@ describe('LibraryRoute', () => {
 
   it('mounts mini-player when a current track is loaded', () => {
     // #given
-    vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: true } as ReturnType<typeof usePlayerSizingContext>);
+    vi.mocked(usePlayerSizingContext).mockReturnValue(makePlayerSizingValue({ isMobile: true, isDesktop: false }));
     mockCurrentTrack.mockReturnValue({
-      currentTrack: {
-        id: 't1',
-        name: 'Song',
-        artists: 'Artist',
-      } as MediaTrack,
+      currentTrack: makeTrack({ id: 't1', name: 'Song', artists: 'Artist' }),
     });
 
     // #when
@@ -165,9 +163,9 @@ describe('LibraryRoute', () => {
 
   it('forwards onMiniExpand from the mini-player tap region', () => {
     // #given
-    vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: true } as ReturnType<typeof usePlayerSizingContext>);
+    vi.mocked(usePlayerSizingContext).mockReturnValue(makePlayerSizingValue({ isMobile: true, isDesktop: false }));
     mockCurrentTrack.mockReturnValue({
-      currentTrack: { id: 't1', name: 'Song', artists: 'Artist' } as MediaTrack,
+      currentTrack: makeTrack({ id: 't1', name: 'Song', artists: 'Artist' }),
     });
     const onMiniExpand = vi.fn();
 
@@ -182,7 +180,7 @@ describe('LibraryRoute', () => {
   describe('initialSearchQuery', () => {
     it('pre-fills search input and shows search results view when initialSearchQuery is provided', () => {
       // #given
-      vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: false } as ReturnType<typeof usePlayerSizingContext>);
+      vi.mocked(usePlayerSizingContext).mockReturnValue(makePlayerSizingValue({ isMobile: false }));
 
       // #when
       renderRoute({ initialSearchQuery: 'Pink Floyd' });
@@ -196,7 +194,7 @@ describe('LibraryRoute', () => {
 
     it('leaves search input empty and shows home view when initialSearchQuery is not provided', () => {
       // #given
-      vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: false } as ReturnType<typeof usePlayerSizingContext>);
+      vi.mocked(usePlayerSizingContext).mockReturnValue(makePlayerSizingValue({ isMobile: false }));
 
       // #when
       renderRoute();
@@ -209,7 +207,7 @@ describe('LibraryRoute', () => {
 
   describe('Escape key handling', () => {
     beforeEach(() => {
-      vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: false } as ReturnType<typeof usePlayerSizingContext>);
+      vi.mocked(usePlayerSizingContext).mockReturnValue(makePlayerSizingValue({ isMobile: false }));
     });
 
     it('calls onClose when Escape is pressed outside an input', () => {

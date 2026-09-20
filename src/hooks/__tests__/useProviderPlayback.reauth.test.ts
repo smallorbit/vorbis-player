@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import type { MediaTrack, ProviderId } from '@/types/domain';
+import type { MediaTrack } from '@/types/domain';
 import { PROVIDER_RECONNECTED_EVENT, dispatchAppEvent } from '@/constants/events';
 import { queueStore } from '@/stores/queueStore';
 import { playbackStore } from '@/stores/playbackStore';
@@ -39,19 +39,13 @@ vi.mock('@/services/sessionPersistence', () => ({
 }));
 
 import { useProviderPlayback } from '../useProviderPlayback';
+import { makeMediaTrack as makeFixtureTrack } from '@/test/fixtures';
 
 function makeMediaTrack(overrides?: Partial<MediaTrack>): MediaTrack {
-  return {
-    id: 'track-1',
-    provider: 'spotify' as ProviderId,
-    playbackRef: { provider: 'spotify' as ProviderId, ref: 'spotify:track:track-1' },
-    name: 'Test Track',
-    artists: 'Test Artist',
-    album: 'Test Album',
-    durationMs: 210000,
+  return makeFixtureTrack({
     image: '',
     ...overrides,
-  };
+  });
 }
 
 describe('useProviderPlayback — PROVIDER_RECONNECTED_EVENT re-prime', () => {

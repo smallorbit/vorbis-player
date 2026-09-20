@@ -1,16 +1,19 @@
 {
   "compilerOptions": {
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.scripts.tsbuildinfo",
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.e2e.tsbuildinfo",
     "target": "ES2022",
-    "lib": ["ES2023"],
+    "lib": ["ES2022", "DOM"],
     "module": "ESNext",
+    "skipLibCheck": true,
+
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "noEmit": true,
+    "resolveJsonModule": true,
+
     "types": ["node"],
-    "skipLibCheck": true,
 
     "strict": true,
     "noUnusedLocals": true,
@@ -23,8 +26,9 @@
     "exactOptionalPropertyTypes": true
   },
   "include": [
-    "scripts/**/*.ts",
-    "playwright/fixtures/data/snapshot.types.ts",
-    "playwright/fixtures/data/snapshot.config.json"
+    "playwright.config.ts",
+    "playwright/**/*.ts",
+    "playwright/**/*.d.ts",
+    "playwright/fixtures/data/*.json"
   ]
 }

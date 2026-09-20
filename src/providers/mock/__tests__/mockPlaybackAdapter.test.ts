@@ -1,17 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MockPlaybackAdapter } from '../mockPlaybackAdapter';
-import type { MediaTrack } from '@/types/domain';
+import type { PlaybackState } from '@/types/domain';
+import { defined } from '@/test/defined';
+import { makeTrack as makeTrackFixture } from '@/test/fixtures';
 
-function makeTrack(id = 'track-1'): MediaTrack {
-  return {
+function makeTrack(id = 'track-1') {
+  return makeTrackFixture({
     id,
-    provider: 'spotify',
     playbackRef: { provider: 'spotify', ref: `spotify:track:${id}` },
     name: 'Test Track',
     artists: 'Test Artist',
     album: 'Test Album',
     durationMs: 300000,
-  };
+  });
 }
 
 const mockAudio = {
@@ -158,27 +159,27 @@ describe('MockPlaybackAdapter', () => {
   describe('prepareTrack', () => {
     it('emits staged state when positionMs is provided', () => {
       // #given a subscribed listener and no prior track
-      const listener = vi.fn();
+      const listener = vi.fn<(state: PlaybackState | null) => void>();
       adapter.subscribe(listener);
       // #when prepareTrack is called with positionMs > 0
       adapter.prepareTrack(makeTrack('seed-track'), { positionMs: 45000 });
       // #then listener is notified with the staged state
       expect(listener).toHaveBeenCalledOnce();
-      const state = listener.mock.calls[0][0];
+      const state = defined(defined(listener.mock.calls[0])[0]);
       expect(state?.currentTrackId).toBe('seed-track');
       expect(state?.positionMs).toBe(45000);
     });
 
     it('emits staged state when positionMs is 0', () => {
       // #given a subscribed listener
-      const listener = vi.fn();
+      const listener = vi.fn<(state: PlaybackState | null) => void>();
       adapter.subscribe(listener);
       // #when prepareTrack is called with positionMs: 0 (valid start-of-track seed)
       adapter.prepareTrack(makeTrack('seed-track'), { positionMs: 0 });
       // #then listener is notified — positionMs=0 is semantically distinct from
       // omitting options, matching the Spotify and Dropbox adapter contracts
       expect(listener).toHaveBeenCalledOnce();
-      const state = listener.mock.calls[0][0];
+      const state = defined(defined(listener.mock.calls[0])[0]);
       expect(state?.currentTrackId).toBe('seed-track');
       expect(state?.positionMs).toBe(0);
     });
@@ -207,12 +208,12 @@ describe('MockPlaybackAdapter', () => {
       expect(mockAudio.load).not.toHaveBeenCalled();
     });
 
-    it('does not emit state when positionMs is undefined', () => {
+    it('does not emit state when positionMs is omitted from options', () => {
       // #given a subscribed listener
       const listener = vi.fn();
       adapter.subscribe(listener);
-      // #when prepareTrack is called with positionMs explicitly undefined
-      adapter.prepareTrack(makeTrack('seed-track'), { positionMs: undefined });
+      // #when prepareTrack is called with an options object that omits positionMs
+      adapter.prepareTrack(makeTrack('seed-track'), {});
       // #then listener is not notified
       expect(listener).not.toHaveBeenCalled();
     });

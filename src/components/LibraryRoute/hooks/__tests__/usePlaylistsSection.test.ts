@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { usePlaylistsSection } from '../usePlaylistsSection';
 import type { MediaCollection, ProviderId } from '@/types/domain';
+import { defined } from '@/test/defined';
+import { makeLibrarySyncResult, makePinnedItemsResult } from '@/test/fixtures';
 
 vi.mock('@/hooks/useLibrarySync', () => ({
   useLibrarySync: vi.fn(),
@@ -30,42 +32,19 @@ const makePlaylist = (id: string, provider: ProviderId = 'spotify'): MediaCollec
   genres: [],
 });
 
-const defaultPinnedItems = {
-  pinnedPlaylistIds: [] as string[],
-  pinnedAlbumIds: [] as string[],
-  isPlaylistPinned: vi.fn(() => false),
-  isAlbumPinned: vi.fn(() => false),
-  togglePinPlaylist: vi.fn(),
-  togglePinAlbum: vi.fn(),
-  canPinMorePlaylists: true,
-  canPinMoreAlbums: true,
-} as ReturnType<typeof usePinnedItems>;
+const defaultPinnedItems = makePinnedItemsResult();
 
 describe('usePlaylistsSection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUsePinnedItems.mockReturnValue(defaultPinnedItems);
-    mockUseLibrarySync.mockReturnValue({
-      playlists: [],
-      albums: [],
-      likedSongsCount: 0,
-      likedSongsPerProvider: [],
-      isInitialLoadComplete: true,
-      isLikedSongsSyncing: false,
-    } as ReturnType<typeof useLibrarySync>);
+    mockUseLibrarySync.mockReturnValue(makeLibrarySyncResult());
   });
 
   describe('loading state', () => {
     it('returns isLoading true when library not yet loaded', () => {
       // #given
-      mockUseLibrarySync.mockReturnValue({
-        playlists: [],
-        albums: [],
-        likedSongsCount: 0,
-        likedSongsPerProvider: [],
-        isInitialLoadComplete: false,
-        isLikedSongsSyncing: false,
-      } as ReturnType<typeof useLibrarySync>);
+      mockUseLibrarySync.mockReturnValue(makeLibrarySyncResult({ isInitialLoadComplete: false }));
 
       // #when
       const { result } = renderHook(() => usePlaylistsSection({}));
@@ -88,14 +67,14 @@ describe('usePlaylistsSection', () => {
   describe('no filter', () => {
     it('returns all playlists when providerFilter is undefined', () => {
       // #given
-      mockUseLibrarySync.mockReturnValue({
+      mockUseLibrarySync.mockReturnValue(makeLibrarySyncResult({
         playlists: [makePlaylist('pl-1'), makePlaylist('pl-2', 'dropbox')],
         albums: [],
         likedSongsCount: 0,
         likedSongsPerProvider: [],
         isInitialLoadComplete: true,
         isLikedSongsSyncing: false,
-      } as ReturnType<typeof useLibrarySync>);
+      }));
 
       // #when
       const { result } = renderHook(() => usePlaylistsSection({}));
@@ -106,14 +85,14 @@ describe('usePlaylistsSection', () => {
 
     it('returns all playlists when providerFilter is empty array', () => {
       // #given
-      mockUseLibrarySync.mockReturnValue({
+      mockUseLibrarySync.mockReturnValue(makeLibrarySyncResult({
         playlists: [makePlaylist('pl-1'), makePlaylist('pl-2', 'dropbox')],
         albums: [],
         likedSongsCount: 0,
         likedSongsPerProvider: [],
         isInitialLoadComplete: true,
         isLikedSongsSyncing: false,
-      } as ReturnType<typeof useLibrarySync>);
+      }));
 
       // #when
       const { result } = renderHook(() => usePlaylistsSection({ providerFilter: [] }));
@@ -126,7 +105,7 @@ describe('usePlaylistsSection', () => {
   describe('provider filter', () => {
     it('filters playlists to specified provider', () => {
       // #given
-      mockUseLibrarySync.mockReturnValue({
+      mockUseLibrarySync.mockReturnValue(makeLibrarySyncResult({
         playlists: [
           makePlaylist('pl-1', 'spotify'),
           makePlaylist('pl-2', 'dropbox'),
@@ -137,7 +116,7 @@ describe('usePlaylistsSection', () => {
         likedSongsPerProvider: [],
         isInitialLoadComplete: true,
         isLikedSongsSyncing: false,
-      } as ReturnType<typeof useLibrarySync>);
+      }));
 
       // #when
       const { result } = renderHook(() => usePlaylistsSection({ providerFilter: ['spotify'] }));
@@ -149,33 +128,33 @@ describe('usePlaylistsSection', () => {
 
     it('matches on the required provider field stamped on each collection', () => {
       // #given — provider is required on MediaCollection; no fallback is applied
-      mockUseLibrarySync.mockReturnValue({
+      mockUseLibrarySync.mockReturnValue(makeLibrarySyncResult({
         playlists: [makePlaylist('pl-1', 'dropbox')],
         albums: [],
         likedSongsCount: 0,
         likedSongsPerProvider: [],
         isInitialLoadComplete: true,
         isLikedSongsSyncing: false,
-      } as ReturnType<typeof useLibrarySync>);
+      }));
 
       // #when
       const { result } = renderHook(() => usePlaylistsSection({ providerFilter: ['dropbox'] }));
 
       // #then — the dropbox-stamped playlist matches the dropbox filter
       expect(result.current.items).toHaveLength(1);
-      expect(result.current.items[0].provider).toBe('dropbox');
+      expect(defined(result.current.items[0]).provider).toBe('dropbox');
     });
 
     it('returns empty items when no playlists match the provider filter', () => {
       // #given
-      mockUseLibrarySync.mockReturnValue({
+      mockUseLibrarySync.mockReturnValue(makeLibrarySyncResult({
         playlists: [makePlaylist('pl-1', 'spotify')],
         albums: [],
         likedSongsCount: 0,
         likedSongsPerProvider: [],
         isInitialLoadComplete: true,
         isLikedSongsSyncing: false,
-      } as ReturnType<typeof useLibrarySync>);
+      }));
 
       // #when
       const { result } = renderHook(() => usePlaylistsSection({ providerFilter: ['dropbox'] }));
@@ -193,21 +172,21 @@ describe('usePlaylistsSection', () => {
         ...defaultPinnedItems,
         pinnedPlaylistIds: ['pl-1'],
       });
-      mockUseLibrarySync.mockReturnValue({
+      mockUseLibrarySync.mockReturnValue(makeLibrarySyncResult({
         playlists: [makePlaylist('pl-1'), makePlaylist('pl-2')],
         albums: [],
         likedSongsCount: 0,
         likedSongsPerProvider: [],
         isInitialLoadComplete: true,
         isLikedSongsSyncing: false,
-      } as ReturnType<typeof useLibrarySync>);
+      }));
 
       // #when
       const { result } = renderHook(() => usePlaylistsSection({}));
 
       // #then
       expect(result.current.items).toHaveLength(1);
-      expect(result.current.items[0].id).toBe('pl-2');
+      expect(defined(result.current.items[0]).id).toBe('pl-2');
     });
 
     it('includes pinned playlists when excludePinned is false', () => {
@@ -216,14 +195,14 @@ describe('usePlaylistsSection', () => {
         ...defaultPinnedItems,
         pinnedPlaylistIds: ['pl-1'],
       });
-      mockUseLibrarySync.mockReturnValue({
+      mockUseLibrarySync.mockReturnValue(makeLibrarySyncResult({
         playlists: [makePlaylist('pl-1'), makePlaylist('pl-2')],
         albums: [],
         likedSongsCount: 0,
         likedSongsPerProvider: [],
         isInitialLoadComplete: true,
         isLikedSongsSyncing: false,
-      } as ReturnType<typeof useLibrarySync>);
+      }));
 
       // #when
       const { result } = renderHook(() => usePlaylistsSection({ excludePinned: false }));
@@ -238,7 +217,7 @@ describe('usePlaylistsSection', () => {
         ...defaultPinnedItems,
         pinnedPlaylistIds: ['pl-1'],
       });
-      mockUseLibrarySync.mockReturnValue({
+      mockUseLibrarySync.mockReturnValue(makeLibrarySyncResult({
         playlists: [
           makePlaylist('pl-1', 'spotify'),  // pinned
           makePlaylist('pl-2', 'spotify'),  // not pinned
@@ -249,7 +228,7 @@ describe('usePlaylistsSection', () => {
         likedSongsPerProvider: [],
         isInitialLoadComplete: true,
         isLikedSongsSyncing: false,
-      } as ReturnType<typeof useLibrarySync>);
+      }));
 
       // #when
       const { result } = renderHook(() =>
@@ -258,7 +237,7 @@ describe('usePlaylistsSection', () => {
 
       // #then — only pl-2 remains (pl-1 pinned, pl-3 wrong provider)
       expect(result.current.items).toHaveLength(1);
-      expect(result.current.items[0].id).toBe('pl-2');
+      expect(defined(result.current.items[0]).id).toBe('pl-2');
     });
   });
 });

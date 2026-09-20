@@ -4,6 +4,7 @@ import { ThemeProvider } from 'styled-components';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { theme } from '@/styles/theme';
 import { makeMediaTrack } from '@/test/fixtures';
+import { defined } from '@/test/defined';
 
 vi.mock('@/contexts/PlayerSizingContext', () => ({
   usePlayerSizingContext: vi.fn(() => ({
@@ -165,7 +166,7 @@ describe('QueueDrawer', () => {
       );
 
       // #when
-      fireEvent.click(screen.getAllByText('select')[1]);
+      fireEvent.click(defined(screen.getAllByText('select')[1]));
 
       // #then
       expect(onTrackSelect).toHaveBeenCalledWith(1);
@@ -198,7 +199,7 @@ describe('QueueDrawer', () => {
       );
 
       // #when
-      fireEvent.click(screen.getAllByText('remove')[0]);
+      fireEvent.click(defined(screen.getAllByText('remove')[0]));
 
       // #then
       expect(onRemoveTrack).toHaveBeenCalledWith(0);

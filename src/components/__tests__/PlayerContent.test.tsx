@@ -205,7 +205,7 @@ const mockHandlers: PlaybackHandlers = {
   onTrackSelect: vi.fn(),
   onOpenLibrary: vi.fn(),
   onCloseLibrary: vi.fn(),
-  onPlaylistSelect: vi.fn(),
+  onSelectCollection: vi.fn(),
   onAddToQueue: vi.fn(),
   onAlbumPlay: vi.fn(),
   onBackToLibrary: vi.fn(),
@@ -303,7 +303,7 @@ describe('PlayerContent', () => {
 
   it('handles all required handler callbacks', () => {
     // #given
-    const handlers = {
+    const handlers: PlaybackHandlers = {
       onPlay: vi.fn(),
       onPause: vi.fn(),
       onNext: vi.fn(),
@@ -311,7 +311,7 @@ describe('PlayerContent', () => {
       onTrackSelect: vi.fn(),
       onOpenLibrary: vi.fn(),
       onCloseLibrary: vi.fn(),
-      onPlaylistSelect: vi.fn(),
+      onSelectCollection: vi.fn(),
       onAlbumPlay: vi.fn(),
       onBackToLibrary: vi.fn(),
     };
@@ -322,7 +322,7 @@ describe('PlayerContent', () => {
         <PlayerContent
           isPlaying={true}
           showLibrary={false}
-          handlers={handlers as PlaybackHandlers}
+          handlers={handlers}
         />
       </TestWrapper>
     );

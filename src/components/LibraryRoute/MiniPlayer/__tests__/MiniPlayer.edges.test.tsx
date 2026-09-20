@@ -9,7 +9,7 @@
  *  - isRadioGenerating disabled→enabled transition + click after re-enable
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { ThemeProvider } from 'styled-components';
@@ -17,7 +17,7 @@ import { theme } from '@/styles/theme';
 import type { MediaTrack } from '@/types/domain';
 
 const { mockCurrentTrack } = vi.hoisted(() => ({
-  mockCurrentTrack: vi.fn<[], { currentTrack: MediaTrack | null }>(),
+  mockCurrentTrack: vi.fn<() => { currentTrack: MediaTrack | null }>(),
 }));
 
 vi.mock('@/contexts/TrackContext', () => ({

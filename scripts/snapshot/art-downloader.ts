@@ -42,7 +42,10 @@ export function createArtDownloader(targetDir: string, seed: string): ArtDownloa
         }
       }
 
-      const response = await fetch(originalUrl, { signal });
+      const response = await fetch(
+        originalUrl,
+        signal === undefined ? {} : { signal },
+      );
       if (!response.ok) {
         throw new Error(`Failed to fetch art ${originalUrl}: ${response.status} ${response.statusText}`);
       }

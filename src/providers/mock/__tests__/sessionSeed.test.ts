@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { parseMockSessionParam, seedSessionFromUrlParam } from '../sessionSeed';
 import { MockCatalogAdapter } from '../mockCatalogAdapter';
 import type { ProviderSnapshot } from '../../../../playwright/fixtures/data/snapshot.types';
+import { defined } from '@/test/defined';
 
 const SNAPSHOT_SCHEMA_VERSION = 1;
 
@@ -31,7 +32,7 @@ function makeSnapshot(provider: 'spotify' | 'dropbox' = 'spotify'): ProviderSnap
     playlists: [],
     albums: [],
     likedTrackIds: [],
-    pins: [],
+    pins: { playlistIds: [], albumIds: [] },
   };
 }
 
@@ -167,7 +168,7 @@ describe('seedSessionFromUrlParam', () => {
     // #then a SessionSnapshot is written to localStorage
     const stored = savedItems['vorbis-player-last-session'];
     expect(stored).toBeTruthy();
-    const session = JSON.parse(stored) as Record<string, unknown>;
+    const session = JSON.parse(defined(stored)) as Record<string, unknown>;
     expect(session.trackId).toBe('track-abc');
     expect(session.playbackPosition).toBe(45000);
     expect(Array.isArray(session.queueTracks)).toBe(true);
@@ -190,7 +191,7 @@ describe('seedSessionFromUrlParam', () => {
     // #then the Dropbox track is found and stored
     const stored = savedItems['vorbis-player-last-session'];
     expect(stored).toBeTruthy();
-    const session = JSON.parse(stored) as Record<string, unknown>;
+    const session = JSON.parse(defined(stored)) as Record<string, unknown>;
     expect(session.trackId).toBe('track-abc');
     expect(session.playbackPosition).toBe(10000);
   });

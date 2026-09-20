@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { startCapture, stopCapture, getEntries, clearEntries } from '../consoleCapture';
 import type { ConsoleEntry } from '../consoleCapture';
+import { defined } from '@/test/defined';
 
 beforeEach(() => {
   stopCapture();
@@ -99,8 +100,8 @@ describe('console level interception', () => {
 
       // #then
       expect(entries).toHaveLength(1);
-      expect(entries[0].level).toBe(level);
-      expect(entries[0].args[0]).toBe('test message');
+      expect(defined(entries[0]).level).toBe(level);
+      expect(defined(entries[0]).args[0]).toBe('test message');
     });
   }
 
@@ -133,7 +134,7 @@ describe('entry shape', () => {
     const entries = stopCapture();
 
     // #then
-    expect(entries[0].timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+    expect(defined(entries[0]).timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
   });
 
   it('records a stack trace string', () => {
@@ -145,7 +146,7 @@ describe('entry shape', () => {
     const entries = stopCapture();
 
     // #then
-    expect(typeof entries[0].stack).toBe('string');
+    expect(typeof defined(entries[0]).stack).toBe('string');
   });
 
   it('serializes multiple arguments', () => {
@@ -157,7 +158,7 @@ describe('entry shape', () => {
     const entries = stopCapture();
 
     // #then
-    expect(entries[0].args).toEqual(['first', 'second', 'third']);
+    expect(defined(entries[0]).args).toEqual(['first', 'second', 'third']);
   });
 });
 
@@ -174,7 +175,7 @@ describe('safe serialization', () => {
     const entries = stopCapture();
 
     // #then
-    expect(entries[0].args[0]).toContain('[Circular]');
+    expect(defined(entries[0]).args[0]).toContain('[Circular]');
   });
 
   it('handles Error objects', () => {
@@ -188,8 +189,8 @@ describe('safe serialization', () => {
     const entries = stopCapture();
 
     // #then
-    expect(entries[0].args[0]).toContain('Error');
-    expect(entries[0].args[0]).toContain('something went wrong');
+    expect(defined(entries[0]).args[0]).toContain('Error');
+    expect(defined(entries[0]).args[0]).toContain('something went wrong');
   });
 
   it('truncates very long strings', () => {
@@ -203,8 +204,8 @@ describe('safe serialization', () => {
     const entries = stopCapture();
 
     // #then
-    expect(entries[0].args[0].length).toBeLessThan(1100);
-    expect(entries[0].args[0]).toContain('[truncated]');
+    expect(defined(defined(entries[0]).args[0]).length).toBeLessThan(1100);
+    expect(defined(defined(entries[0]).args[0])).toContain('[truncated]');
   });
 
   it('handles null and undefined', () => {
@@ -216,8 +217,8 @@ describe('safe serialization', () => {
     const entries = stopCapture();
 
     // #then
-    expect(entries[0].args[0]).toBe('null');
-    expect(entries[0].args[1]).toBe('undefined');
+    expect(defined(entries[0]).args[0]).toBe('null');
+    expect(defined(entries[0]).args[1]).toBe('undefined');
   });
 
   it('handles numbers and booleans', () => {
@@ -229,9 +230,9 @@ describe('safe serialization', () => {
     const entries = stopCapture();
 
     // #then
-    expect(entries[0].args[0]).toBe('42');
-    expect(entries[0].args[1]).toBe('true');
-    expect(entries[0].args[2]).toBe('false');
+    expect(defined(entries[0]).args[0]).toBe('42');
+    expect(defined(entries[0]).args[1]).toBe('true');
+    expect(defined(entries[0]).args[2]).toBe('false');
   });
 
   it('handles nested arrays', () => {
@@ -243,9 +244,9 @@ describe('safe serialization', () => {
     const entries = stopCapture();
 
     // #then
-    expect(entries[0].args[0]).toContain('1');
-    expect(entries[0].args[0]).toContain('2');
-    expect(entries[0].args[0]).toContain('3');
+    expect(defined(entries[0]).args[0]).toContain('1');
+    expect(defined(entries[0]).args[0]).toContain('2');
+    expect(defined(entries[0]).args[0]).toContain('3');
   });
 
   it('handles plain objects', () => {
@@ -257,8 +258,8 @@ describe('safe serialization', () => {
     const entries = stopCapture();
 
     // #then
-    expect(entries[0].args[0]).toContain('name');
-    expect(entries[0].args[0]).toContain('Alice');
+    expect(defined(entries[0]).args[0]).toContain('name');
+    expect(defined(entries[0]).args[0]).toContain('Alice');
   });
 
   it('handles functions', () => {
@@ -270,8 +271,8 @@ describe('safe serialization', () => {
     const entries = stopCapture();
 
     // #then
-    expect(entries[0].args[0]).toContain('Function');
-    expect(entries[0].args[0]).toContain('myFunc');
+    expect(defined(entries[0]).args[0]).toContain('Function');
+    expect(defined(entries[0]).args[0]).toContain('myFunc');
   });
 });
 
@@ -326,7 +327,7 @@ describe('clearEntries', () => {
 
     // #then
     expect(entries).toHaveLength(1);
-    expect(entries[0].args[0]).toBe('second');
+    expect(defined(entries[0]).args[0]).toBe('second');
   });
 });
 
@@ -343,8 +344,8 @@ describe('circular buffer — 200 entry limit', () => {
 
     // #then
     expect(entries).toHaveLength(200);
-    expect(entries[0].args[0]).toBe('entry 50');
-    expect(entries[199].args[0]).toBe('entry 249');
+    expect(defined(entries[0]).args[0]).toBe('entry 50');
+    expect(defined(entries[199]).args[0]).toBe('entry 249');
   });
 });
 
@@ -356,7 +357,7 @@ describe('type contract', () => {
     const entries = stopCapture();
 
     // #then
-    const entry: ConsoleEntry = entries[0];
+    const entry: ConsoleEntry = defined(entries[0]);
     expect(typeof entry.timestamp).toBe('string');
     expect(entry.level).toBe('info');
     expect(Array.isArray(entry.args)).toBe(true);

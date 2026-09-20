@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SpotifyPlaybackAdapter } from '@/providers/spotify/spotifyPlaybackAdapter';
 import { spotifyPlayer, waitForSpotifyReady } from '@/services/spotifyPlayer';
-import type { MediaTrack } from '@/types/domain';
+import { makeTrack as makeTrackFixture } from '@/test/fixtures';
 
 vi.mock('@/services/spotifyPlayer', () => ({
   spotifyPlayer: {
@@ -24,16 +24,16 @@ vi.mock('@/services/spotify', () => ({
   },
 }));
 
-const makeTrack = (overrides: Partial<MediaTrack> = {}): MediaTrack => ({
-  id: 'track-1',
-  provider: 'spotify',
-  playbackRef: { provider: 'spotify', ref: 'spotify:track:abc' },
-  name: 'Track',
-  artists: 'Artist',
-  album: 'Album',
-  durationMs: 210_000,
-  ...overrides,
-});
+const makeTrack = (overrides: Parameters<typeof makeTrackFixture>[0] = {}) =>
+  makeTrackFixture({
+    id: 'track-1',
+    playbackRef: { provider: 'spotify', ref: 'spotify:track:abc' },
+    name: 'Track',
+    artists: 'Artist',
+    album: 'Album',
+    durationMs: 210_000,
+    ...overrides,
+  });
 
 describe('SpotifyPlaybackAdapter.playTrack', () => {
   let adapter: SpotifyPlaybackAdapter;

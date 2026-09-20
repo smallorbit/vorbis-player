@@ -23,12 +23,12 @@ function makeAnchorRect(overrides: Partial<DOMRect> = {}): DOMRect {
 }
 
 interface RenderOverrides {
-  trackName?: string;
-  anchorRect?: DOMRect | null;
-  onClose?: () => void;
-  onPlayRadio?: () => void;
-  isAvailable?: boolean;
-  disabledReason?: string;
+  trackName?: string | undefined;
+  anchorRect?: DOMRect | null | undefined;
+  onClose?: (() => void) | undefined;
+  onPlayRadio?: (() => void) | undefined;
+  isAvailable?: boolean | undefined;
+  disabledReason?: string | undefined;
 }
 
 function renderPopover(overrides: RenderOverrides = {}) {

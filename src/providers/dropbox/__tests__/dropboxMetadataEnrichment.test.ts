@@ -34,9 +34,7 @@ describe('dropboxMetadataEnrichment', () => {
       title: 'Real Title',
       artist: 'Real Artist',
       album: 'Real Album',
-      coverArt: null,
       musicbrainzRecordingId: 'mb-rec',
-      musicbrainzArtistId: undefined,
       isrc: 'ISRC123',
     });
 

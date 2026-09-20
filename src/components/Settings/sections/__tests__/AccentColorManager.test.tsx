@@ -4,7 +4,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { ThemeProvider } from 'styled-components';
 
 import { theme } from '@/styles/theme';
-import type { MediaTrack } from '@/types/domain';
+import { makeTrack } from '@/test/fixtures';
 
 const mockSetAccentColor = vi.fn();
 const mockHandleSetAccentColorOverride = vi.fn();
@@ -15,17 +15,15 @@ const mockHandleRemoveCustomAccentColor = vi.fn();
 
 let mockAccentColor = '#ff0000';
 let mockCustomAccentColors: Record<string, string> = {};
-let mockCurrentTrack: MediaTrack | null = {
+let mockCurrentTrack: ReturnType<typeof makeTrack> | null = makeTrack({
   id: 't1',
-  provider: 'spotify',
-  playbackRef: { provider: 'spotify', ref: 'spotify:track:t1' },
   name: 'Test Track',
   artists: 'Test Artist',
   album: 'Test Album',
   albumId: 'album-123',
   durationMs: 1000,
   image: 'https://example.com/image.jpg',
-};
+});
 
 vi.mock('@/contexts/ColorContext', () => ({
   useColorContext: vi.fn(() => ({
@@ -83,17 +81,15 @@ describe('Settings AccentColorManager', () => {
     vi.clearAllMocks();
     mockAccentColor = '#ff0000';
     mockCustomAccentColors = {};
-    mockCurrentTrack = {
+    mockCurrentTrack = makeTrack({
       id: 't1',
-      provider: 'spotify',
-      playbackRef: { provider: 'spotify', ref: 'spotify:track:t1' },
       name: 'Test Track',
       artists: 'Test Artist',
       album: 'Test Album',
       albumId: 'album-123',
       durationMs: 1000,
       image: 'https://example.com/image.jpg',
-    };
+    });
   });
 
   describe('palette swatch selection', () => {
@@ -195,7 +191,8 @@ describe('Settings AccentColorManager', () => {
 
     it('does not write keys when albumId is missing', () => {
       // #given
-      mockCurrentTrack = { ...mockCurrentTrack!, albumId: undefined };
+      const { albumId: _albumId, ...trackWithoutAlbumId } = makeTrack();
+      mockCurrentTrack = trackWithoutAlbumId;
 
       // #when
       render(

@@ -37,19 +37,13 @@ vi.mock('@/providers/registry', () => ({
 
 import { useProviderPlayback } from '../useProviderPlayback';
 import { playbackStore } from '@/stores/playbackStore';
+import { makeMediaTrack as makeFixtureTrack } from '@/test/fixtures';
 
 function makeMediaTrack(overrides?: Partial<MediaTrack>): MediaTrack {
-  return {
-    id: 'track-1',
-    provider: 'spotify' as ProviderId,
-    playbackRef: { provider: 'spotify' as ProviderId, ref: 'spotify:track:track-1' },
-    name: 'Test Track',
-    artists: 'Test Artist',
-    album: 'Test Album',
-    durationMs: 210000,
+  return makeFixtureTrack({
     image: 'https://example.com/image.jpg',
     ...overrides,
-  };
+  });
 }
 
 describe('useProviderPlayback', () => {

@@ -11,8 +11,8 @@ import type { ProviderDescriptor } from '@/types/providers';
 const mockToggleProvider = vi.fn();
 
 const mockRegistry = {
-  getAll: vi.fn<[], ProviderDescriptor[]>(() => []),
-  get: vi.fn<[string], ProviderDescriptor | undefined>(() => undefined),
+  getAll: vi.fn<() => ProviderDescriptor[]>(() => []),
+  get: vi.fn<(arg0: string) => ProviderDescriptor | undefined>(() => undefined),
   has: vi.fn(() => true),
 };
 

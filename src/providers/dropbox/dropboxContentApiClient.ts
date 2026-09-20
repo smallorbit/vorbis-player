@@ -1,4 +1,9 @@
-import type { DropboxAuthAdapter } from './dropboxAuthAdapter';
+/** Token + unauthorized-reporting surface `contentApiRequest` actually uses. */
+export interface DropboxRequestAuth {
+  ensureValidToken(): Promise<string | null>;
+  refreshAccessToken(): Promise<string | null>;
+  reportUnauthorized(): void;
+}
 
 /**
  * Executes a Dropbox API request with one automatic token refresh on 401.
@@ -18,7 +23,7 @@ import type { DropboxAuthAdapter } from './dropboxAuthAdapter';
  * @returns The Response on any non-401 outcome, or null when auth is unrecoverable.
  */
 export async function contentApiRequest(
-  auth: DropboxAuthAdapter,
+  auth: DropboxRequestAuth,
   requestFn: (token: string) => Promise<Response>,
 ): Promise<Response | null> {
   const token = await auth.ensureValidToken();

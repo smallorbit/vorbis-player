@@ -1,6 +1,7 @@
 import 'fake-indexeddb/auto';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { MediaCollection } from '@/types/domain';
+import { makeCollection as makeCollectionFixture } from '@/test/fixtures';
 
 vi.mock('../dropboxIdb', () => ({
   getDb: vi.fn(),
@@ -43,12 +44,12 @@ function openTestDb(): Promise<IDBDatabase> {
 }
 
 function makeCollection(id: string, name?: string): MediaCollection {
-  return {
+  return makeCollectionFixture({
     id,
     provider: 'dropbox',
     kind: 'folder',
     name: name ?? `Collection ${id}`,
-  };
+  });
 }
 
 let testDb: IDBDatabase;

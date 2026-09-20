@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import type { ContextMenuRequest } from '../../types';
-import type { ProviderId } from '@/types/domain';
+import type { CollectionRef, CollectionSelection, ProviderId } from '@/types/domain';
+import { makeCollectionSelection } from '@/test/fixtures';
 
 const { mockPinned, mockLikedSection, mockRecent, mockLoadLiked } = vi.hoisted(() => ({
   mockPinned: vi.fn(),
@@ -41,15 +42,50 @@ vi.mock('../useAlbumSavedStatus', () => ({
 
 import { useMenuItems, type UseMenuItemsCallbacks } from '../useMenuItems';
 
-function makeRequest(overrides: Partial<ContextMenuRequest> = {}): ContextMenuRequest {
-  return {
-    kind: 'playlist',
-    id: 'p1',
-    name: 'My Playlist',
-    provider: 'spotify' as ProviderId,
+interface MakeRequestOptions {
+  kind?: 'playlist' | 'album' | 'liked' | 'recently-played';
+  id?: string;
+  name?: string;
+  provider?: ProviderId | undefined;
+  selection?: CollectionSelection;
+  originalKind?: 'playlist' | 'album' | 'liked';
+  recentRef?: CollectionRef;
+}
+
+function makeRequest(overrides: MakeRequestOptions = {}): ContextMenuRequest {
+  const kind = overrides.kind ?? 'playlist';
+  const id = overrides.id ?? 'p1';
+  const name = overrides.name ?? 'My Playlist';
+  const provider: ProviderId | undefined =
+    'provider' in overrides ? overrides.provider : 'spotify';
+
+  const effectiveKind = kind === 'recently-played' ? (overrides.originalKind ?? 'playlist') : kind;
+  const selection: CollectionSelection =
+    overrides.selection ??
+    (effectiveKind === 'liked'
+      ? makeCollectionSelection('liked', id, provider ?? 'spotify')
+      : makeCollectionSelection(effectiveKind, id, provider ?? 'spotify'));
+
+  const base = {
+    id,
+    name,
+    selection,
     anchorRect: new DOMRect(10, 10, 100, 40),
-    ...overrides,
+    ...(provider !== undefined && { provider }),
   };
+
+  if (kind === 'recently-played') {
+    return {
+      ...base,
+      kind: 'recently-played',
+      originalKind: overrides.originalKind ?? 'playlist',
+      recentRef:
+        overrides.recentRef ?? { provider: provider ?? 'spotify', kind: 'playlist', id },
+    };
+  }
+  if (kind === 'album') return { ...base, kind: 'album' };
+  if (kind === 'liked') return { ...base, kind: 'liked' };
+  return { ...base, kind: 'playlist' };
 }
 
 function makeCallbacks(overrides: Partial<UseMenuItemsCallbacks> = {}): UseMenuItemsCallbacks {

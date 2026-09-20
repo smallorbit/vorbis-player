@@ -7,6 +7,7 @@ import { TrackProvider } from '../../contexts/TrackContext';
 import { VisualEffectsProvider } from '../../contexts/visualEffects';
 import { ColorProvider } from '../../contexts/ColorContext';
 import { ProviderProvider } from '../../contexts/ProviderContext';
+import { defined } from '@/test/defined';
 
 vi.mock('../../hooks/usePlaylistManager', () => ({
   usePlaylistManager: vi.fn(() => ({
@@ -114,7 +115,7 @@ describe('Keyboard Shortcuts Integration', () => {
 
     const addEventListenerSpy = vi.spyOn(document, 'addEventListener');
     renderHook(() => useKeyboardShortcuts(handlers));
-    const handler = addEventListenerSpy.mock.calls[0][1] as EventListener;
+    const handler = defined(defined(addEventListenerSpy.mock.calls[0])[1]) as EventListener;
 
     const tests = [
       { key: 'Space', handler: handlers.onPlayPause },
@@ -150,7 +151,7 @@ describe('Keyboard Shortcuts Integration', () => {
 
     const addEventListenerSpy = vi.spyOn(document, 'addEventListener');
     renderHook(() => useKeyboardShortcuts(handlers));
-    const handler = addEventListenerSpy.mock.calls[0][1] as EventListener;
+    const handler = defined(defined(addEventListenerSpy.mock.calls[0])[1]) as EventListener;
 
     const input = document.createElement('input');
     const textarea = document.createElement('textarea');

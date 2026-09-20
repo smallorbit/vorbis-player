@@ -2,7 +2,6 @@
  * Tests for ResumeSection — renders the ResumeHero card when a resumable session exists (#1294).
  */
 
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
@@ -17,7 +16,10 @@ import ResumeSection from '../ResumeSection';
 const mockUseResumeSection = vi.mocked(useResumeSection);
 
 const makeSession = (overrides: Partial<SessionSnapshot> = {}): SessionSnapshot => ({
-  collectionId: 'pl1',
+  selection: {
+    type: 'collection',
+    ref: { provider: 'spotify', kind: 'playlist', id: 'pl1' },
+  },
   collectionName: 'My Playlist',
   trackIndex: 0,
   trackTitle: 'Song Title',

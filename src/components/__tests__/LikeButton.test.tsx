@@ -10,8 +10,20 @@ const defaultProps = {
   onToggleLike: vi.fn(),
 };
 
-function renderLikeButton(overrides?: Partial<typeof defaultProps>) {
-  const props = { ...defaultProps, onToggleLike: vi.fn(), ...overrides };
+function renderLikeButton(overrides: {
+  trackId?: string | undefined;
+  isLiked?: boolean;
+  isLoading?: boolean;
+  accentColor?: string;
+  onToggleLike?: typeof defaultProps.onToggleLike;
+} = {}) {
+  const onToggleLike = overrides.onToggleLike ?? vi.fn();
+  const props = {
+    trackId: 'trackId' in overrides ? overrides.trackId : defaultProps.trackId,
+    isLiked: overrides.isLiked ?? defaultProps.isLiked,
+    isLoading: overrides.isLoading ?? defaultProps.isLoading,
+    onToggleLike,
+  };
   const result = render(<LikeButton {...props} />);
   return { ...result, props };
 }

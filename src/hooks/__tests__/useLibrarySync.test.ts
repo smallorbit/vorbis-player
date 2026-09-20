@@ -3,6 +3,7 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { SyncState } from '../../services/cache/cacheTypes';
 import type { MediaCollection, ProviderId } from '@/types/domain';
+import { defined } from '@/test/defined';
 
 // vi.hoisted runs before vi.mock, so variables are available when the factory runs
 const { mockSubscribe, mockStart, mockStop, mockSyncNow } = vi.hoisted(() => ({
@@ -233,9 +234,9 @@ describe('useLibrarySync', () => {
     // #then
     await waitFor(() => {
       expect(result.current.playlists).toHaveLength(1);
-      expect(result.current.playlists[0].name).toBe('My Playlist');
+      expect(defined(result.current.playlists[0]).name).toBe('My Playlist');
       expect(result.current.albums).toHaveLength(1);
-      expect(result.current.albums[0].name).toBe('My Album');
+      expect(defined(result.current.albums[0]).name).toBe('My Album');
       expect(result.current.likedSongsCount).toBe(42);
       expect(result.current.isInitialLoadComplete).toBe(true);
     });
@@ -673,7 +674,7 @@ describe('useLibrarySync', () => {
 
       // #then
       expect(result.current.playlists).toHaveLength(1);
-      expect(result.current.playlists[0].id).toBe('p1');
+      expect(defined(result.current.playlists[0]).id).toBe('p1');
     });
 
     it('removes a collection from engine album data and re-merges', async () => {
@@ -696,7 +697,7 @@ describe('useLibrarySync', () => {
 
       // #then
       expect(result.current.albums).toHaveLength(1);
-      expect(result.current.albums[0].id).toBe('a1');
+      expect(defined(result.current.albums[0]).id).toBe('a1');
     });
 
     it('removes a collection from catalog provider data and re-merges', async () => {

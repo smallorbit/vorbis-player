@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { MediaTrack } from '@/types/domain';
 import type { RadioSeed } from '@/types/radio';
+import { defined } from '@/test/defined';
+import { makeTrack } from '@/test/fixtures';
 
 vi.mock('@/services/lastfm', () => ({
   getSimilarTracks: vi.fn(),
@@ -8,7 +10,7 @@ vi.mock('@/services/lastfm', () => ({
 }));
 
 function makeRadioTrack(name: string, artist: string, extra?: Partial<MediaTrack>): MediaTrack {
-  return {
+  return makeTrack({
     id: `${artist}-${name}`.toLowerCase().replace(/\s+/g, '-'),
     provider: 'dropbox',
     playbackRef: { provider: 'dropbox', ref: `/${artist}/${name}.mp3` },
@@ -17,7 +19,7 @@ function makeRadioTrack(name: string, artist: string, extra?: Partial<MediaTrack
     album: 'Test Album',
     durationMs: 240000,
     ...extra,
-  };
+  });
 }
 
 describe('RadioService', () => {
@@ -244,9 +246,9 @@ describe('RadioService', () => {
       const result = await generateRadioQueue(seed, catalog);
 
       // #then
-      expect(result.queue[0].name).toBe('A');
-      expect(result.queue[1].name).toBe('B');
-      expect(result.queue[2].name).toBe('D');
+      expect(defined(result.queue[0]).name).toBe('A');
+      expect(defined(result.queue[1]).name).toBe('B');
+      expect(defined(result.queue[2]).name).toBe('D');
     });
   });
 

@@ -80,11 +80,11 @@ describe('createIdbDatabase', () => {
 
     const original = db!.transaction.bind(db);
     const spy = vi.spyOn(db!, 'transaction').mockImplementation(
-      (storeNames: string | string[], mode?: IDBTransactionMode) => {
+      (storeNames: string | string[] | Iterable<string>, mode?: IDBTransactionMode) => {
         if (mode === 'readwrite') {
           throw new DOMException('QuotaExceededError', 'QuotaExceededError');
         }
-        return original(storeNames, mode);
+        return mode !== undefined ? original(storeNames, mode) : original(storeNames);
       },
     );
 

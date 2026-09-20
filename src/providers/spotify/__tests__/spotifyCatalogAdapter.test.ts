@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { MediaTrack } from '@/types/domain';
 
 const { mockGetPlaylistTracks, mockGetAlbumTracks, mockGetLikedSongs } = vi.hoisted(() => ({
   mockGetPlaylistTracks: vi.fn(),
@@ -25,16 +24,16 @@ vi.mock('@/services/spotify', () => ({
 }));
 
 import { SpotifyCatalogAdapter } from '@/providers/spotify/spotifyCatalogAdapter';
+import { makeTrack } from '@/test/fixtures';
 
-const TRACK: MediaTrack = {
+const TRACK = makeTrack({
   id: 't1',
-  provider: 'spotify',
   playbackRef: { provider: 'spotify', ref: 'spotify:track:t1' },
   name: 'Track',
   artists: 'Artist',
   album: 'Album',
   durationMs: 180000,
-};
+});
 
 describe('SpotifyCatalogAdapter.listTracks', () => {
   let adapter: SpotifyCatalogAdapter;

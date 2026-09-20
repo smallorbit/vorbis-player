@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createGitHubService } from '../githubService';
 import type { BugReport } from '@/types/devbug';
+import { defined } from '@/test/defined';
 
 const BASE_REPORT: BugReport = {
   id: 'report-uuid-5678',
@@ -229,9 +230,9 @@ describe('GitHubService.createIssue', () => {
     // #then
     expect(result.number).toBe(15);
     const calls = (global.fetch as ReturnType<typeof vi.fn>).mock.calls as [string, RequestInit][];
-    expect(calls[0][0]).toContain('/contents/docs/bug-screenshots/');
-    const issueCall = calls.find(([url]) => url.endsWith('/issues'));
-    const issueBody = JSON.parse(issueCall![1].body as string) as { body: string };
+    expect(defined(defined(calls[0])[0])).toContain('/contents/docs/bug-screenshots/');
+    const issueCall = defined(calls.find(([url]) => url.endsWith('/issues')));
+    const issueBody = JSON.parse(issueCall[1].body as string) as { body: string };
     expect(issueBody.body).toContain('![screenshot]');
   });
 

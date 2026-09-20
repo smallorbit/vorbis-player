@@ -138,7 +138,6 @@ describe('TrackContext', () => {
         handleBackToLibrary: vi.fn(),
         activeDescriptor: undefined,
         getDescriptor: vi.fn().mockReturnValue(undefined),
-        getDrivingProviderDescriptor: vi.fn().mockReturnValue(undefined),
       });
       return { ...ctx, ...queueOps };
     }

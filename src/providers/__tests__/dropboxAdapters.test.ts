@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { DropboxAuthAdapter } from '../dropbox/dropboxAuthAdapter';
 import { DropboxPlaybackAdapter } from '../dropbox/dropboxPlaybackAdapter';
 import { DropboxCatalogAdapter } from '../dropbox/dropboxCatalogAdapter';
+import { defined } from '@/test/defined';
+import { makeMediaTrack } from '@/test/fixtures';
 
 // Mock import.meta.env values
 vi.stubEnv('VITE_DROPBOX_CLIENT_ID', 'test-client-id');
@@ -136,7 +138,7 @@ describe('DropboxPlaybackAdapter', () => {
 
   it('playTrack sets src and calls play', async () => {
     // #when
-    await playback.playTrack({
+    await playback.playTrack(makeMediaTrack({
       id: 'test-id',
       provider: 'dropbox',
       playbackRef: { provider: 'dropbox', ref: '/music/song.mp3' },
@@ -144,7 +146,7 @@ describe('DropboxPlaybackAdapter', () => {
       artists: 'Test Artist',
       album: 'Test Album',
       durationMs: 0,
-    });
+    }));
 
     // #then
     expect(catalog.getTemporaryLink).toHaveBeenCalledWith('/music/song.mp3');
@@ -282,8 +284,8 @@ describe('DropboxCatalogAdapter - listTracks', () => {
 
     // #then — both tracks must carry the album directory as albumId
     expect(tracks).toHaveLength(2);
-    expect(tracks[0].albumId).toBe('/artist/album');
-    expect(tracks[1].albumId).toBe('/artist/album');
+    expect(defined(tracks[0]).albumId).toBe('/artist/album');
+    expect(defined(tracks[1]).albumId).toBe('/artist/album');
   });
 
   it('assigns distinct albumIds when tracks come from different sub-directories', async () => {

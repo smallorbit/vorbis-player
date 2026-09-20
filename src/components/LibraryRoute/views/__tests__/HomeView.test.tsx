@@ -2,7 +2,6 @@
  * Tests for HomeView — renders 6 library sections and wires onNavigate (#1294).
  */
 
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 

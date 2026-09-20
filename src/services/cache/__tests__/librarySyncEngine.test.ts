@@ -4,6 +4,7 @@ import { SpotifyLibrarySyncEngine } from '../librarySyncEngine';
 import * as cache from '../libraryCache';
 import type { SyncState } from '../cacheTypes';
 import type { MediaCollection, MediaTrack } from '@/types/domain';
+import { defined } from '@/test/defined';
 
 // Mock the spotify module
 vi.mock('../../spotify', () => ({
@@ -143,9 +144,9 @@ describe('SpotifyLibrarySyncEngine', () => {
       await engine.start();
 
       expect(emittedPlaylists).toHaveLength(1);
-      expect(emittedPlaylists![0].name).toBe('Cached Playlist');
+      expect(defined(defined(emittedPlaylists)[0]).name).toBe('Cached Playlist');
       expect(emittedAlbums).toHaveLength(1);
-      expect(emittedAlbums![0].name).toBe('Cached Album');
+      expect(defined(defined(emittedAlbums)[0]).name).toBe('Cached Album');
     });
   });
 
@@ -160,7 +161,7 @@ describe('SpotifyLibrarySyncEngine', () => {
       });
       mockGetLikedSongsCount.mockResolvedValue(3);
 
-      let latestState: SyncState | null = null;
+      let latestState: SyncState | undefined;
       let emittedPlaylists: MediaCollection[] | undefined;
 
       engine.subscribe((state, pl) => {
@@ -170,9 +171,9 @@ describe('SpotifyLibrarySyncEngine', () => {
 
       await engine.start();
 
-      expect(latestState!.isInitialLoadComplete).toBe(true);
+      expect(defined(latestState).isInitialLoadComplete).toBe(true);
       expect(emittedPlaylists).toHaveLength(1);
-      expect(emittedPlaylists![0].name).toBe('Fresh');
+      expect(defined(defined(emittedPlaylists)[0]).name).toBe('Fresh');
       expect(mockGetUserLibraryInterleaved).toHaveBeenCalledOnce();
     });
 
@@ -349,7 +350,7 @@ describe('SpotifyLibrarySyncEngine', () => {
       // #then
       const playlists = await cache.getAllPlaylists();
       expect(playlists).toHaveLength(1);
-      expect(playlists[0].id).toBe('p1');
+      expect(defined(playlists[0]).id).toBe('p1');
     });
 
     it('should invalidate track list when revision changes', async () => {
@@ -464,7 +465,7 @@ describe('SpotifyLibrarySyncEngine', () => {
       // #then
       const albums = await cache.getAllAlbums();
       expect(albums).toHaveLength(1);
-      expect(albums[0].id).toBe('a1');
+      expect(defined(albums[0]).id).toBe('a1');
     });
 
     it('should decrement the album totalCount in cache metadata', async () => {

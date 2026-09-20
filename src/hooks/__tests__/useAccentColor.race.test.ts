@@ -17,6 +17,7 @@ vi.mock('@/contexts/ProfilingContext', () => ({
 
 import { useAccentColor } from '../useAccentColor';
 import { makeTrack } from '@/test/fixtures';
+import { defined } from '@/test/defined';
 
 function color(hex: string): Extracted {
   return { hex, rgb: hex, hsl: hex };
@@ -64,7 +65,7 @@ describe('useAccentColor — auto re-extract stale-write race', () => {
 
     // #then the last committed accent color must be B's, not the stale A that
     // resolved last. Without a generation guard the late auto(A) clobbers B.
-    const committed = setAccentColor.mock.calls.map((c: [string]) => c[0]);
+    const committed = setAccentColor.mock.calls.map((c) => defined(c[0]));
     expect(committed.at(-1)).toBe('#B0B0B0');
     expect(committed).not.toContain('#A0A0A0');
   });

@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { ThemeProvider } from 'styled-components';
@@ -6,6 +5,13 @@ import { theme } from '@/styles/theme';
 import QuickAccessPanel from '../index';
 import type { ProviderId } from '@/types/domain';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
+import { defined } from '@/test/defined';
+import {
+  makeLibrarySyncResult,
+  makePinnedItemsResult,
+  makeProviderDescriptor,
+  makeUnifiedLikedResult,
+} from '@/test/fixtures';
 
 vi.mock('@/hooks/useLibrarySync', () => ({
   useLibrarySync: vi.fn(),
@@ -46,51 +52,48 @@ const mockUsePinnedItemsContext = vi.mocked(usePinnedItemsContext);
 const mockUseProviderContext = vi.mocked(useProviderContext);
 
 function setupProviderContext(connectedProviderIds: ProviderId[]) {
+  const activeId = connectedProviderIds[0] ?? 'spotify';
   mockUseProviderContext.mockReturnValue({
-    connectedProviderIds,
-    getDescriptor: (id: ProviderId) => ({
-      id,
-      name: id === 'spotify' ? 'Spotify' : 'Dropbox',
-      capabilities: { hasSaveTrack: true, hasExternalLink: true, hasLikedCollection: true },
-      auth: { providerId: id, isAuthenticated: vi.fn(() => true), getAccessToken: vi.fn(), beginLogin: vi.fn(), handleCallback: vi.fn(), logout: vi.fn() },
-      catalog: { providerId: id, listCollections: vi.fn(), listTracks: vi.fn() },
-      playback: { providerId: id, initialize: vi.fn(), playTrack: vi.fn(), pause: vi.fn(), resume: vi.fn(), seek: vi.fn(), next: vi.fn(), previous: vi.fn(), setVolume: vi.fn(), getState: vi.fn(), subscribe: vi.fn(() => vi.fn()), getLastPlayTime: vi.fn() },
-    }),
+    chosenProviderId: connectedProviderIds[0] ?? null,
+    activeProviderId: activeId,
+    getDescriptor: (id: ProviderId) =>
+      makeProviderDescriptor({
+        id,
+        name: id === 'spotify' ? 'Spotify' : 'Dropbox',
+      }),
     enabledProviderIds: connectedProviderIds,
-    activeDescriptor: null,
-    storedProviderId: null,
+    activeDescriptor: makeProviderDescriptor({ id: activeId }),
     setActiveProviderId: vi.fn(),
     toggleProvider: vi.fn(),
     isProviderEnabled: vi.fn(),
-    allProviders: [],
     setProviderSwitchInterceptor: vi.fn(),
     needsProviderSelection: false,
-    authRevision: 0,
-  } as ReturnType<typeof useProviderContext>);
+    connectedProviderIds,
+    hasMultipleProviders: connectedProviderIds.length > 1,
+    registry: {
+      get: vi.fn(),
+      getAll: vi.fn(() => []),
+      has: vi.fn(() => false),
+    },
+  });
 }
 
 function setupLibrarySync(likedSongsPerProvider: { provider: ProviderId; count: number }[]) {
-  mockUseLibrarySync.mockReturnValue({
-    playlists: [],
-    albums: [],
-    likedSongsCount: likedSongsPerProvider.reduce((s, e) => s + e.count, 0),
-    likedSongsPerProvider,
-    isInitialLoadComplete: true,
-    isSyncing: false,
-    lastSyncTimestamp: null,
-    syncError: null,
-    refreshNow: vi.fn(),
-    removeCollection: vi.fn(),
-  } as ReturnType<typeof useLibrarySync>);
+  mockUseLibrarySync.mockReturnValue(
+    makeLibrarySyncResult({
+      likedSongsCount: likedSongsPerProvider.reduce((s, e) => s + e.count, 0),
+      likedSongsPerProvider,
+    }),
+  );
 }
 
 function setupUnifiedLiked(isUnifiedLikedActive: boolean, totalCount: number) {
-  mockUseUnifiedLikedTracks.mockReturnValue({
-    isUnifiedLikedActive,
-    totalCount,
-    unifiedTracks: [],
-    isLoading: false,
-  } as ReturnType<typeof useUnifiedLikedTracks>);
+  mockUseUnifiedLikedTracks.mockReturnValue(
+    makeUnifiedLikedResult({
+      isUnifiedLikedActive,
+      totalCount,
+    }),
+  );
 }
 
 interface RenderPanelOptions {
@@ -99,16 +102,7 @@ interface RenderPanelOptions {
 }
 
 function renderPanel(options: RenderPanelOptions = {}) {
-  mockUsePinnedItemsContext.mockReturnValue({
-    pinnedPlaylistIds: [],
-    pinnedAlbumIds: [],
-    togglePlaylistPin: vi.fn(),
-    toggleAlbumPin: vi.fn(),
-    isPlaylistPinned: vi.fn(() => false),
-    isAlbumPinned: vi.fn(() => false),
-    canPinMorePlaylists: true,
-    canPinMoreAlbums: true,
-  } as ReturnType<typeof usePinnedItemsContext>);
+  mockUsePinnedItemsContext.mockReturnValue(makePinnedItemsResult());
 
   return render(
     <ThemeProvider theme={theme}>
@@ -141,7 +135,8 @@ function makeSession(overrides: Partial<SessionSnapshot> = {}): SessionSnapshot 
 function getLikedCount(): number {
   const el = screen.getByLabelText(/Liked Songs/);
   const match = el.getAttribute('aria-label')?.match(/\((\d+)\)/);
-  return match ? parseInt(match[1], 10) : 0;
+  if (!match) return 0;
+  return parseInt(defined(match[1]), 10);
 }
 
 describe('QuickAccessPanel effectiveLikedCount', () => {

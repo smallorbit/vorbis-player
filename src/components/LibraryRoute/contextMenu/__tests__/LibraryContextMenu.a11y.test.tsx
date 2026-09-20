@@ -11,13 +11,14 @@
  *  - onClose is called on pointer-outside dismiss (not onReturnFocusClose)
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
 import type { ContextMenuRequest } from '../../types';
-import type { ProviderId } from '@/types/domain';
+import type { CollectionRef, CollectionSelection, ProviderId } from '@/types/domain';
+import { defined } from '@/test/defined';
+import { makeCollectionSelection } from '@/test/fixtures';
 
 const { mockPinned, mockLikedSection, mockRecent, mockLoadLiked } = vi.hoisted(() => ({
   mockPinned: vi.fn(),
@@ -60,15 +61,50 @@ vi.mock('../useAlbumSavedStatus', () => ({
 
 import LibraryContextMenu, { type LibraryContextMenuProps } from '../LibraryContextMenu';
 
-function makeRequest(overrides: Partial<ContextMenuRequest> = {}): ContextMenuRequest {
-  return {
-    kind: 'playlist',
-    id: 'p1',
-    name: 'My Playlist',
-    provider: 'spotify' as ProviderId,
+interface MakeRequestOptions {
+  kind?: 'playlist' | 'album' | 'liked' | 'recently-played';
+  id?: string;
+  name?: string;
+  provider?: ProviderId | undefined;
+  selection?: CollectionSelection;
+  originalKind?: 'playlist' | 'album' | 'liked';
+  recentRef?: CollectionRef;
+}
+
+function makeRequest(overrides: MakeRequestOptions = {}): ContextMenuRequest {
+  const kind = overrides.kind ?? 'playlist';
+  const id = overrides.id ?? 'p1';
+  const name = overrides.name ?? 'My Playlist';
+  const provider: ProviderId | undefined =
+    'provider' in overrides ? overrides.provider : 'spotify';
+
+  const effectiveKind = kind === 'recently-played' ? (overrides.originalKind ?? 'playlist') : kind;
+  const selection: CollectionSelection =
+    overrides.selection ??
+    (effectiveKind === 'liked'
+      ? makeCollectionSelection('liked', id, provider ?? 'spotify')
+      : makeCollectionSelection(effectiveKind, id, provider ?? 'spotify'));
+
+  const base = {
+    id,
+    name,
+    selection,
     anchorRect: new DOMRect(10, 10, 100, 40),
-    ...overrides,
+    ...(provider !== undefined && { provider }),
   };
+
+  if (kind === 'recently-played') {
+    return {
+      ...base,
+      kind: 'recently-played',
+      originalKind: overrides.originalKind ?? 'playlist',
+      recentRef:
+        overrides.recentRef ?? { provider: provider ?? 'spotify', kind: 'playlist', id },
+    };
+  }
+  if (kind === 'album') return { ...base, kind: 'album' };
+  if (kind === 'liked') return { ...base, kind: 'liked' };
+  return { ...base, kind: 'playlist' };
 }
 
 const defaultMocks = {
@@ -116,7 +152,7 @@ describe('LibraryContextMenu — arrow-key navigation', () => {
   it('ArrowDown moves focus to the next item', () => {
     renderMenu({ request: makeRequest() });
     const items = getMenuItems();
-    items[0].focus();
+    defined(items[0]).focus();
     fireEvent.keyDown(screen.getByRole('menu'), { key: 'ArrowDown' });
     expect(document.activeElement).toBe(items[1]);
   });
@@ -124,7 +160,7 @@ describe('LibraryContextMenu — arrow-key navigation', () => {
   it('ArrowDown wraps from last item to first', () => {
     renderMenu({ request: makeRequest() });
     const items = getMenuItems().filter((b) => !b.disabled);
-    items[items.length - 1].focus();
+    defined(items[items.length - 1]).focus();
     fireEvent.keyDown(screen.getByRole('menu'), { key: 'ArrowDown' });
     expect(document.activeElement).toBe(items[0]);
   });
@@ -132,7 +168,7 @@ describe('LibraryContextMenu — arrow-key navigation', () => {
   it('ArrowUp moves focus to the previous item', () => {
     renderMenu({ request: makeRequest() });
     const items = getMenuItems();
-    items[1].focus();
+    defined(items[1]).focus();
     fireEvent.keyDown(screen.getByRole('menu'), { key: 'ArrowUp' });
     expect(document.activeElement).toBe(items[0]);
   });
@@ -140,7 +176,7 @@ describe('LibraryContextMenu — arrow-key navigation', () => {
   it('ArrowUp wraps from first item to last enabled item', () => {
     renderMenu({ request: makeRequest() });
     const items = getMenuItems().filter((b) => !b.disabled);
-    items[0].focus();
+    defined(items[0]).focus();
     fireEvent.keyDown(screen.getByRole('menu'), { key: 'ArrowUp' });
     expect(document.activeElement).toBe(items[items.length - 1]);
   });
@@ -148,7 +184,7 @@ describe('LibraryContextMenu — arrow-key navigation', () => {
   it('Home moves focus to the first enabled item', () => {
     renderMenu({ request: makeRequest() });
     const items = getMenuItems().filter((b) => !b.disabled);
-    items[items.length - 1].focus();
+    defined(items[items.length - 1]).focus();
     fireEvent.keyDown(screen.getByRole('menu'), { key: 'Home' });
     expect(document.activeElement).toBe(items[0]);
   });
@@ -156,7 +192,7 @@ describe('LibraryContextMenu — arrow-key navigation', () => {
   it('End moves focus to the last enabled item', () => {
     renderMenu({ request: makeRequest() });
     const items = getMenuItems().filter((b) => !b.disabled);
-    items[0].focus();
+    defined(items[0]).focus();
     fireEvent.keyDown(screen.getByRole('menu'), { key: 'End' });
     expect(document.activeElement).toBe(items[items.length - 1]);
   });

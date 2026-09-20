@@ -9,11 +9,11 @@
  *    (regression guard for composite key `${kind}:${provider}:${id}`)
  */
 
-import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { LibraryContextMenuOpenContext } from '../../contextMenu/LibraryContextMenuOpenContext';
 import LibraryCard from '../LibraryCard';
+import { makeCollectionSelection } from '@/test/fixtures';
 
 vi.mock('@/components/ProviderIcon', () => ({
   default: ({ provider }: { provider: string }) => (
@@ -26,12 +26,13 @@ const baseProps = {
   provider: 'spotify' as const,
   name: 'Test Item',
   variant: 'grid' as const,
+  selection: makeCollectionSelection('album', 'a1'),
   onSelect: vi.fn(),
   onContextMenuRequest: vi.fn(),
 };
 
 function renderCard(
-  kind: 'playlist' | 'album' | 'liked' | 'recently-played',
+  kind: 'playlist' | 'album' | 'liked',
   openKey: string | null,
 ) {
   return render(
@@ -63,17 +64,17 @@ describe('LibraryCard — open-state (data-context-menu-open)', () => {
   it('does not light up a non-triggering card with the same id but different kind', () => {
     // #given a recently-played album with id 'a1' AND an albums-section album with id 'a1'
     // #when the open key targets the recently-played card
-    const openKey = 'recently-played:spotify:a1';
+    const openKey = 'playlist:spotify:a1';
     render(
       <LibraryContextMenuOpenContext.Provider value={openKey}>
-        <LibraryCard {...baseProps} kind="recently-played" data-testid-override="recent" />
+        <LibraryCard {...baseProps} kind="playlist" />
         <LibraryCard {...baseProps} kind="album" />
       </LibraryContextMenuOpenContext.Provider>,
     );
 
-    // #then the recently-played card has the open attribute
-    const recentCard = screen.getByTestId('library-card-recently-played-a1');
-    expect(recentCard).toHaveAttribute('data-context-menu-open');
+    // #then the playlist card has the open attribute
+    const playlistCard = screen.getByTestId('library-card-playlist-a1');
+    expect(playlistCard).toHaveAttribute('data-context-menu-open');
 
     // #then the album card does NOT have the attribute
     const albumCard = screen.getByTestId('library-card-album-a1');

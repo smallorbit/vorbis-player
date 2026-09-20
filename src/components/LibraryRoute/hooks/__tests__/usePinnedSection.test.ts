@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { usePinnedSection } from '../usePinnedSection';
 import type { MediaCollection, ProviderId } from '@/types/domain';
+import { defined } from '@/test/defined';
+import { makeLibrarySyncResult, makePinnedItemsResult, makeUnifiedLikedResult } from '@/test/fixtures';
 
 vi.mock('@/hooks/useLibrarySync', () => ({
   useLibrarySync: vi.fn(),
@@ -48,32 +50,11 @@ const makeAlbum = (id: string, name = 'Album', provider: ProviderId = 'spotify')
   genres: [],
 });
 
-const defaultPinnedItems = {
-  pinnedPlaylistIds: [] as string[],
-  pinnedAlbumIds: [] as string[],
-  isPlaylistPinned: vi.fn(() => false),
-  isAlbumPinned: vi.fn(() => false),
-  togglePinPlaylist: vi.fn(),
-  togglePinAlbum: vi.fn(),
-  canPinMorePlaylists: true,
-  canPinMoreAlbums: true,
-} as ReturnType<typeof usePinnedItems>;
+const defaultPinnedItems = makePinnedItemsResult();
 
-const defaultLibrarySyncReturn = {
-  playlists: [],
-  albums: [],
-  likedSongsCount: 0,
-  likedSongsPerProvider: [],
-  isInitialLoadComplete: true,
-  isLikedSongsSyncing: false,
-} as ReturnType<typeof useLibrarySync>;
+const defaultLibrarySyncReturn = makeLibrarySyncResult();
 
-const defaultUnifiedLikedReturn = {
-  unifiedTracks: [],
-  isUnifiedLikedActive: false,
-  totalCount: 0,
-  isLoading: false,
-} as ReturnType<typeof useUnifiedLikedTracks>;
+const defaultUnifiedLikedReturn = makeUnifiedLikedResult();
 
 describe('usePinnedSection', () => {
   beforeEach(() => {
@@ -141,8 +122,8 @@ describe('usePinnedSection', () => {
 
       // #then
       expect(result.current.pinnedPlaylists).toHaveLength(1);
-      expect(result.current.pinnedPlaylists[0].id).toBe('pl-1');
-      expect(result.current.combined[0].kind).toBe('playlist');
+      expect(defined(result.current.pinnedPlaylists[0]).id).toBe('pl-1');
+      expect(defined(result.current.combined[0]).kind).toBe('playlist');
     });
 
     it('exposes imageUrl on pinned playlist', () => {
@@ -160,7 +141,7 @@ describe('usePinnedSection', () => {
       const { result } = renderHook(() => usePinnedSection());
 
       // #then — combined items surface the collection's imageUrl
-      expect(result.current.combined[0].imageUrl).toBe('https://img.example/pl-1.jpg');
+      expect(defined(result.current.combined[0]).imageUrl).toBe('https://img.example/pl-1.jpg');
     });
   });
 
@@ -181,8 +162,8 @@ describe('usePinnedSection', () => {
 
       // #then
       expect(result.current.pinnedAlbums).toHaveLength(1);
-      expect(result.current.pinnedAlbums[0].id).toBe('alb-1');
-      expect(result.current.combined[0].kind).toBe('album');
+      expect(defined(result.current.pinnedAlbums[0]).id).toBe('alb-1');
+      expect(defined(result.current.combined[0]).kind).toBe('album');
     });
   });
 
@@ -205,8 +186,8 @@ describe('usePinnedSection', () => {
 
       // #then
       expect(result.current.combined).toHaveLength(2);
-      expect(result.current.combined[0].kind).toBe('playlist');
-      expect(result.current.combined[1].kind).toBe('album');
+      expect(defined(result.current.combined[0]).kind).toBe('playlist');
+      expect(defined(result.current.combined[1]).kind).toBe('album');
     });
 
     it('isEmpty is false when combined has items', () => {
@@ -284,9 +265,9 @@ describe('usePinnedSection', () => {
       const { result } = renderHook(() => usePinnedSection());
 
       // #then
-      expect(result.current.combined[0].kind).toBe('liked');
-      expect(result.current.combined[0].id).toBe('liked-songs');
-      expect(result.current.combined[0].subtitle).toBe('42 songs');
+      expect(defined(result.current.combined[0]).kind).toBe('liked');
+      expect(defined(result.current.combined[0]).id).toBe('liked-songs');
+      expect(defined(result.current.combined[0]).subtitle).toBe('42 songs');
     });
 
     it('expands into per-provider liked entries when not unified and multiple providers', () => {
@@ -312,12 +293,12 @@ describe('usePinnedSection', () => {
       // #then — two liked entries, one per provider
       const liked = result.current.combined.filter((i) => i.kind === 'liked');
       expect(liked).toHaveLength(2);
-      expect(liked[0].id).toBe('liked-spotify');
-      expect(liked[0].provider).toBe('spotify');
-      expect(liked[0].subtitle).toBe('40 songs');
-      expect(liked[1].id).toBe('liked-dropbox');
-      expect(liked[1].provider).toBe('dropbox');
-      expect(liked[1].subtitle).toBe('20 songs');
+      expect(defined(liked[0]).id).toBe('liked-spotify');
+      expect(defined(liked[0]).provider).toBe('spotify');
+      expect(defined(liked[0]).subtitle).toBe('40 songs');
+      expect(defined(liked[1]).id).toBe('liked-dropbox');
+      expect(defined(liked[1]).provider).toBe('dropbox');
+      expect(defined(liked[1]).subtitle).toBe('20 songs');
     });
 
     it('omits liked entries when totalCount is 0', () => {
@@ -388,8 +369,8 @@ describe('usePinnedSection', () => {
       const { result } = renderHook(() => usePinnedSection());
 
       // #then
-      expect(result.current.combined[0].kind).toBe('liked');
-      expect(result.current.combined[1].kind).toBe('playlist');
+      expect(defined(result.current.combined[0]).kind).toBe('liked');
+      expect(defined(result.current.combined[1]).kind).toBe('playlist');
     });
 
     it('subtitle uses singular "song" for count of 1', () => {
@@ -409,7 +390,7 @@ describe('usePinnedSection', () => {
       const { result } = renderHook(() => usePinnedSection());
 
       // #then
-      expect(result.current.combined[0].subtitle).toBe('1 song');
+      expect(defined(result.current.combined[0]).subtitle).toBe('1 song');
     });
   });
 });

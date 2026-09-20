@@ -15,8 +15,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render } from '@testing-library/react';
 import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
-import type { MediaTrack } from '@/types/domain';
 import type { BottomBarActionsValue } from '@/contexts/BottomBarActionsContext';
+import { makeTrack } from '@/test/fixtures';
 
 // ---- capture spy: mocked BottomBarActionsProvider records its value ------- //
 
@@ -135,19 +135,6 @@ vi.mock('../styled', () => ({
 }));
 
 import { PlayerControlsSection } from '../PlayerControlsSection';
-
-function makeTrack(): MediaTrack {
-  return {
-    id: 't1',
-    name: 'Track',
-    artists: 'Artist',
-    album: 'Album',
-    duration_ms: 1000,
-    image: 'https://example.com/art.png',
-    provider: 'spotify',
-    uri: 'spotify:track:t1',
-  } as MediaTrack;
-}
 
 interface Scenario {
   showLibrary: boolean;

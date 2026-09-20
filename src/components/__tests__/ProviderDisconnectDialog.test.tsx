@@ -4,17 +4,19 @@ import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
 import ProviderDisconnectDialog from '../ProviderDisconnectDialog';
 
-function renderDialog(overrides?: {
+function renderDialog(overrides: {
   providerName?: string;
-  affectedQueueCount?: number;
+  affectedQueueCount?: number | undefined;
   onConfirm?: () => void;
   onCancel?: () => void;
-}) {
+} = {}) {
   const props = {
-    providerName: 'Spotify',
-    onConfirm: vi.fn(),
-    onCancel: vi.fn(),
-    ...overrides,
+    providerName: overrides.providerName ?? 'Spotify',
+    onConfirm: overrides.onConfirm ?? vi.fn(),
+    onCancel: overrides.onCancel ?? vi.fn(),
+    ...('affectedQueueCount' in overrides
+      ? { affectedQueueCount: overrides.affectedQueueCount }
+      : {}),
   };
   const result = render(
     <ThemeProvider theme={theme}>

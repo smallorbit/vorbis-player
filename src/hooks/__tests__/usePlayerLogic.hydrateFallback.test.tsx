@@ -17,6 +17,7 @@ import { UnavailableTrackError } from '@/providers/errors';
 import { deferred } from '@/test/asyncRace';
 import { queueStore } from '@/stores/queueStore';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
+import { defined } from '@/test/defined';
 
 const playTrackSpy = vi.fn();
 const mockPrepareTrack = vi.fn();
@@ -190,8 +191,8 @@ describe('usePlayerLogic — restoreSession (hydrate) fallback', () => {
     expect(hydrateResult.skipped).toBe(true);
     expect(hydrateResult.totalFailure).toBe(false);
     expect(mockPrepareTrack).toHaveBeenCalledTimes(2);
-    expect(mockPrepareTrack.mock.calls[0][0].id).toBe('track-a');
-    expect(mockPrepareTrack.mock.calls[1][0].id).toBe('track-b');
+    expect(defined(defined(mockPrepareTrack.mock.calls[0])[0]).id).toBe('track-a');
+    expect(defined(defined(mockPrepareTrack.mock.calls[1])[0]).id).toBe('track-b');
   });
 
   it('omits the saved positionMs when falling back to a later track', async () => {
@@ -208,8 +209,8 @@ describe('usePlayerLogic — restoreSession (hydrate) fallback', () => {
     });
 
     // #then — first call had positionMs, second had undefined
-    expect(mockPrepareTrack.mock.calls[0][1]).toEqual({ positionMs: 120_000 });
-    expect(mockPrepareTrack.mock.calls[1][1]).toBeUndefined();
+    expect(defined(mockPrepareTrack.mock.calls[0])[1]).toEqual({ positionMs: 120_000 });
+    expect(defined(mockPrepareTrack.mock.calls[1])[1]).toBeUndefined();
   });
 
   it('updates currentTrackIndex to the first playable candidate', async () => {
@@ -234,7 +235,7 @@ describe('usePlayerLogic — restoreSession (hydrate) fallback', () => {
       expect(result.current.state.tracks).toHaveLength(3);
     });
     expect(mockPrepareTrack).toHaveBeenCalledTimes(3);
-    expect(mockPrepareTrack.mock.calls[2][0].id).toBe('track-c');
+    expect(defined(defined(mockPrepareTrack.mock.calls[2])[0]).id).toBe('track-c');
   });
 
   it('routes to the library and flags total failure when every track fails', async () => {
@@ -323,7 +324,7 @@ describe('usePlayerLogic — restoreSession (hydrate) fallback', () => {
     expect(hydrateResult.skipped).toBe(true);
     expect(mockProbePlayable).toHaveBeenCalledTimes(2);
     expect(mockPrepareTrack).toHaveBeenCalledTimes(1);
-    expect(mockPrepareTrack.mock.calls[0][0].id).toBe('track-b');
+    expect(defined(defined(mockPrepareTrack.mock.calls[0])[0]).id).toBe('track-b');
   });
 
   it('aborts to library when probePlayable throws AuthExpiredError on every candidate', async () => {
@@ -364,10 +365,10 @@ describe('usePlayerLogic — restoreSession (hydrate) fallback', () => {
 
     // #then — handlePlay consumed the pending-play ref at index 1 with no positionMs
     expect(playTrackSpy).toHaveBeenCalledTimes(1);
-    const [idx, skipOnError, options] = playTrackSpy.mock.calls[0];
-    expect(idx).toBe(1);
-    expect(skipOnError).toBe(false);
-    expect(options).toBeUndefined();
+    const playCall = defined(playTrackSpy.mock.calls[0]);
+    expect(defined(playCall[0])).toBe(1);
+    expect(playCall[1]).toBe(false);
+    expect(playCall[2]).toBeUndefined();
   });
 });
 
@@ -396,10 +397,10 @@ describe('usePlayerLogic — restoreSession (autoplay/resume) fallback', () => {
     expect(restoreResult.track?.id).toBe('track-a');
     expect(restoreResult.skipped).toBe(false);
     expect(playTrackSpy).toHaveBeenCalledTimes(1);
-    const [idx, skipOnError, options] = playTrackSpy.mock.calls[0];
-    expect(idx).toBe(0);
-    expect(skipOnError).toBe(false);
-    expect(options).toEqual({ positionMs: 42_000 });
+    const playCall = defined(playTrackSpy.mock.calls[0]);
+    expect(defined(playCall[0])).toBe(0);
+    expect(playCall[1]).toBe(false);
+    expect(playCall[2]).toEqual({ positionMs: 42_000 });
     expect(mockPrepareTrack).not.toHaveBeenCalled();
   });
 
@@ -422,10 +423,10 @@ describe('usePlayerLogic — restoreSession (autoplay/resume) fallback', () => {
     expect(restoreResult.track?.id).toBe('track-b');
     expect(restoreResult.skipped).toBe(true);
     expect(playTrackSpy).toHaveBeenCalledTimes(1);
-    const [idx, skipOnError, options] = playTrackSpy.mock.calls[0];
-    expect(idx).toBe(1);
-    expect(skipOnError).toBe(false);
-    expect(options).toBeUndefined();
+    const playCall = defined(playTrackSpy.mock.calls[0]);
+    expect(defined(playCall[0])).toBe(1);
+    expect(playCall[1]).toBe(false);
+    expect(playCall[2]).toBeUndefined();
   });
 
   it('reports total failure without playing when no candidate is playable', async () => {
@@ -482,7 +483,7 @@ describe('usePlayerLogic — restoreSession newest-wins guard', () => {
     // silent no-op result (no track, no totalFailure) so callers surface nothing.
     expect(resultB.track?.id).toBe('track-b');
     expect(playTrackSpy).toHaveBeenCalledTimes(1);
-    expect(playTrackSpy.mock.calls[0][0]).toBe(1);
+    expect(defined(defined(playTrackSpy.mock.calls[0])[0])).toBe(1);
     expect(queueStore.getCurrentIndex()).toBe(1);
     expect(resultA.track).toBeNull();
     expect(resultA.totalFailure).toBe(false);

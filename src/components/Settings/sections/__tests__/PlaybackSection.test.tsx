@@ -10,7 +10,7 @@ class ResizeObserverStub {
   unobserve(): void {}
   disconnect(): void {}
 }
-(globalThis as { ResizeObserver?: typeof ResizeObserverStub }).ResizeObserver = ResizeObserverStub;
+globalThis.ResizeObserver = ResizeObserverStub as unknown as typeof ResizeObserver;
 
 // ── Hook mocks ─────────────────────────────────────────────────────────────
 

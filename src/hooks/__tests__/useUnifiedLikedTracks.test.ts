@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
+import { defined } from '@/test/defined';
 
 const mockGetDescriptor = vi.fn();
 const mockConnectedProviderIds: string[] = [];
@@ -22,9 +23,10 @@ vi.mock('@/providers/registry', () => ({
 
 import { useUnifiedLikedTracks, resetUnifiedLikedCache } from '../useUnifiedLikedTracks';
 import type { MediaTrack, ProviderId } from '@/types/domain';
+import { makeTrack as makeFixtureTrack } from '@/test/fixtures';
 
 function makeTrack(id: string, provider: ProviderId, addedAt?: number): MediaTrack {
-  return {
+  return makeFixtureTrack({
     id,
     provider,
     playbackRef: { provider, ref: `ref-${id}` },
@@ -32,8 +34,8 @@ function makeTrack(id: string, provider: ProviderId, addedAt?: number): MediaTra
     artists: `Artist ${id}`,
     album: `Album ${id}`,
     durationMs: 200000,
-    addedAt,
-  };
+    ...(addedAt !== undefined && { addedAt }),
+  });
 }
 
 function makeDescriptor(id: ProviderId, tracks: MediaTrack[], likesChangedEvent?: string) {
@@ -135,8 +137,8 @@ describe('useUnifiedLikedTracks', () => {
     await waitFor(() => {
       expect(result.current.unifiedTracks.length).toBe(2);
     });
-    expect(result.current.unifiedTracks[0].id).toBe('s1');
-    expect(result.current.unifiedTracks[1].id).toBe('d1');
+    expect(defined(result.current.unifiedTracks[0]).id).toBe('s1');
+    expect(defined(result.current.unifiedTracks[1]).id).toBe('d1');
   });
 
   it('handles provider fetch failure gracefully', async () => {
@@ -171,7 +173,7 @@ describe('useUnifiedLikedTracks', () => {
     await waitFor(() => {
       expect(result.current.unifiedTracks.length).toBe(1);
     });
-    expect(result.current.unifiedTracks[0].id).toBe('s1');
+    expect(defined(result.current.unifiedTracks[0]).id).toBe('s1');
   });
 
   it('refreshes when Dropbox likes change event fires', async () => {

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { defined } from '@/test/defined';
 import {
   getSimilarTracks,
   getSimilarArtists,
@@ -61,7 +62,7 @@ describe('getSimilarTracks', () => {
       trackMbid: 'abc123',
       matchScore: 0.91,
     });
-    expect(result[1].trackMbid).toBeNull(); // empty string → null
+    expect(defined(result[1]).trackMbid).toBeNull(); // empty string → null
   });
 
   it('returns empty array when no similar tracks found', async () => {
@@ -112,7 +113,7 @@ describe('getSimilarArtists', () => {
     // #then
     expect(result).toHaveLength(2);
     expect(result[0]).toEqual({ name: 'Muse', mbid: 'muse-mbid', matchScore: 0.75 });
-    expect(result[1].mbid).toBeNull();
+    expect(defined(result[1]).mbid).toBeNull();
   });
 
   it('returns empty array for missing container', async () => {
@@ -139,7 +140,7 @@ describe('URL construction', () => {
     await getSimilarTracks('Radiohead', 'Creep', 100);
 
     // #then
-    const calledUrl = new URL(mockFetch.mock.calls[0][0]);
+    const calledUrl = new URL(defined(defined(mockFetch.mock.calls[0])[0]));
     expect(calledUrl.searchParams.get('method')).toBe('track.getsimilar');
     expect(calledUrl.searchParams.get('artist')).toBe('Radiohead');
     expect(calledUrl.searchParams.get('track')).toBe('Creep');

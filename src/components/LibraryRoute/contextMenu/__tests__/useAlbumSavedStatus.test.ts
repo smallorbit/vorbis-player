@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import type { ProviderDescriptor } from '@/types/providers';
+import { makeCapabilities, makeProviderDescriptor } from '@/test/fixtures';
 
 const mockGetDescriptor = vi.fn();
 const mockActiveDescriptor = vi.fn();
@@ -25,23 +26,8 @@ vi.mock('@/services/cache/librarySyncEngine', () => ({
 import { useAlbumSavedStatus } from '../useAlbumSavedStatus';
 
 function makeDescriptor(overrides?: Partial<ProviderDescriptor>): ProviderDescriptor {
-  return {
-    id: 'spotify',
-    name: 'Spotify',
-    capabilities: {
-      hasSaveTrack: true,
-      hasExternalLink: true,
-      hasLikedCollection: true,
-      hasSaveAlbum: true,
-    },
-    auth: {
-      providerId: 'spotify',
-      isAuthenticated: vi.fn().mockReturnValue(true),
-      getAccessToken: vi.fn(),
-      beginLogin: vi.fn(),
-      handleCallback: vi.fn(),
-      logout: vi.fn(),
-    },
+  return makeProviderDescriptor({
+    capabilities: makeCapabilities({ hasSaveAlbum: true }),
     catalog: {
       providerId: 'spotify',
       listCollections: vi.fn().mockResolvedValue([]),
@@ -49,22 +35,8 @@ function makeDescriptor(overrides?: Partial<ProviderDescriptor>): ProviderDescri
       isAlbumSaved: vi.fn().mockResolvedValue(false),
       setAlbumSaved: vi.fn().mockResolvedValue(undefined),
     },
-    playback: {
-      providerId: 'spotify',
-      initialize: vi.fn().mockResolvedValue(undefined),
-      playTrack: vi.fn().mockResolvedValue(undefined),
-      pause: vi.fn().mockResolvedValue(undefined),
-      resume: vi.fn().mockResolvedValue(undefined),
-      seek: vi.fn().mockResolvedValue(undefined),
-      next: vi.fn().mockResolvedValue(undefined),
-      previous: vi.fn().mockResolvedValue(undefined),
-      setVolume: vi.fn().mockResolvedValue(undefined),
-      getState: vi.fn().mockResolvedValue(null),
-      subscribe: vi.fn().mockReturnValue(vi.fn()),
-      getLastPlayTime: vi.fn().mockReturnValue(Date.now()),
-    },
     ...overrides,
-  };
+  });
 }
 
 describe('useAlbumSavedStatus — undeclared capability guard', () => {
@@ -76,7 +48,7 @@ describe('useAlbumSavedStatus — undeclared capability guard', () => {
     // #given — provider with isAlbumSaved method present but hasSaveAlbum capability false
     const isAlbumSaved = vi.fn().mockResolvedValue(true);
     const descriptor = makeDescriptor({
-      capabilities: { hasSaveTrack: true, hasExternalLink: true, hasLikedCollection: true, hasSaveAlbum: false },
+      capabilities: makeCapabilities({ hasSaveAlbum: false }),
       catalog: {
         providerId: 'spotify',
         listCollections: vi.fn().mockResolvedValue([]),
@@ -101,7 +73,7 @@ describe('useAlbumSavedStatus — undeclared capability guard', () => {
     const setAlbumSaved = vi.fn().mockResolvedValue(undefined);
     const isAlbumSaved = vi.fn().mockResolvedValue(true);
     const descriptor = makeDescriptor({
-      capabilities: { hasSaveTrack: true, hasExternalLink: true, hasLikedCollection: true, hasSaveAlbum: false },
+      capabilities: makeCapabilities({ hasSaveAlbum: false }),
       catalog: {
         providerId: 'spotify',
         listCollections: vi.fn().mockResolvedValue([]),

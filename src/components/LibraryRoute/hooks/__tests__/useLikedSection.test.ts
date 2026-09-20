@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useLikedSection } from '../useLikedSection';
 import type { ProviderId } from '@/types/domain';
+import { makeLibrarySyncResult, makeUnifiedLikedResult } from '@/test/fixtures';
 
 vi.mock('@/hooks/useLibrarySync', () => ({
   useLibrarySync: vi.fn(),
@@ -19,21 +20,9 @@ import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 const mockUseLibrarySync = vi.mocked(useLibrarySync);
 const mockUseUnifiedLikedTracks = vi.mocked(useUnifiedLikedTracks);
 
-const defaultLibraryReturn = {
-  playlists: [],
-  albums: [],
-  likedSongsCount: 0,
-  likedSongsPerProvider: [],
-  isInitialLoadComplete: true,
-  isLikedSongsSyncing: false,
-} as ReturnType<typeof useLibrarySync>;
+const defaultLibraryReturn = makeLibrarySyncResult();
 
-const defaultUnifiedReturn = {
-  tracks: [],
-  totalCount: 0,
-  isLoading: false,
-  isUnifiedLikedActive: false,
-} as ReturnType<typeof useUnifiedLikedTracks>;
+const defaultUnifiedReturn = makeUnifiedLikedResult();
 
 describe('useLikedSection', () => {
   beforeEach(() => {

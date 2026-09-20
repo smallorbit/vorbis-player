@@ -6,7 +6,7 @@ import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
 import { ColorProvider } from '@/contexts/ColorContext';
 import { STORAGE_KEYS } from '@/constants/storage';
-import type { MediaTrack } from '@/types/domain';
+import { makeTrack } from '@/test/fixtures';
 
 /**
  * Issue #1467 integration test — locks in the fix for the Settings v2
@@ -30,17 +30,15 @@ import type { MediaTrack } from '@/types/domain';
  * registry (Translucence/Visualizer contexts, lazy-loaded providers, etc.).
  */
 
-const mockCurrentTrack: MediaTrack = {
+const mockCurrentTrack = makeTrack({
   id: 't1',
-  provider: 'spotify',
-  playbackRef: { provider: 'spotify', ref: 'spotify:track:t1' },
   name: 'Test Track',
   artists: 'Test Artist',
   album: 'Test Album',
   albumId: 'album-123',
   durationMs: 1000,
   image: 'https://example.com/image.jpg',
-};
+});
 
 vi.mock('@/contexts/PlayerSizingContext', () => ({
   usePlayerSizingContext: () => ({ isMobile: false }),
@@ -108,15 +106,12 @@ describe('Settings + real EyedropperOverlay (issue #1467)', () => {
      * minimal 2D context — drawImage is a no-op and getImageData returns a
      * deterministic pixel so the eyedropper produces #abcdef when picked.
      */
-    HTMLCanvasElement.prototype.getContext = vi.fn(
-      () =>
-        ({
-          drawImage: vi.fn(),
-          getImageData: vi.fn(() => ({
-            data: new Uint8ClampedArray([0xab, 0xcd, 0xef, 0xff]),
-          })),
-        }) as unknown as CanvasRenderingContext2D,
-    ) as typeof HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
+      drawImage: vi.fn(),
+      getImageData: vi.fn(() => ({
+        data: new Uint8ClampedArray([0xab, 0xcd, 0xef, 0xff]),
+      })),
+    })) as unknown as typeof HTMLCanvasElement.prototype.getContext;
   });
 
   beforeEach(() => {

@@ -77,8 +77,9 @@ vi.mock('@/hooks/useRecentlyPlayedCollections', () => ({
 
 import LibraryRoute from '../LibraryRoute';
 
-const baseProps = {
-  onPlaylistSelect: vi.fn(),
+const baseProps: React.ComponentProps<typeof LibraryRoute> = {
+  onSelectCollection: vi.fn(),
+  onAddToQueue: vi.fn().mockResolvedValue(null),
   lastSession: null,
   isPlaying: false,
   onMiniPlay: vi.fn(),
@@ -86,7 +87,6 @@ const baseProps = {
   onMiniNext: vi.fn(),
   onMiniPrevious: vi.fn(),
   onMiniExpand: vi.fn(),
-  onAddToQueue: vi.fn().mockResolvedValue(null),
 };
 
 /**

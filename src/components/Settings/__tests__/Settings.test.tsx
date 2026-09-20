@@ -4,8 +4,9 @@ import userEvent from '@testing-library/user-event';
 import { ThemeProvider } from 'styled-components';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { theme } from '@/styles/theme';
+import { defined } from '@/test/defined';
 
-const mockUsePlayerSizingContext = vi.fn<[], { isMobile: boolean }>();
+const mockUsePlayerSizingContext = vi.fn<() => { isMobile: boolean }>();
 
 vi.mock('@/contexts/PlayerSizingContext', () => ({
   usePlayerSizingContext: () => mockUsePlayerSizingContext(),
@@ -93,12 +94,12 @@ describe('Settings', () => {
       );
 
       // #when
-      const appearanceButton = screen.getAllByRole('button', { name: 'Appearance' })[0];
+      const appearanceButton = defined(screen.getAllByRole('button', { name: 'Appearance' })[0]);
       fireEvent.click(appearanceButton);
 
       // #then
       expect(pushStateSpy).toHaveBeenCalled();
-      const lastCall = pushStateSpy.mock.calls[pushStateSpy.mock.calls.length - 1];
+      const lastCall = defined(pushStateSpy.mock.calls[pushStateSpy.mock.calls.length - 1]);
       expect(String(lastCall[2])).toContain('settings=appearance');
       pushStateSpy.mockRestore();
     });

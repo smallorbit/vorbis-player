@@ -13,9 +13,10 @@ import { TrackProvider } from '@/contexts/TrackContext';
 import { VisualEffectsProvider } from '@/contexts/visualEffects';
 import { ColorProvider } from '@/contexts/ColorContext';
 import { ProviderProvider } from '@/contexts/ProviderContext';
-import { makeMediaTrack } from '@/test/fixtures';
+import { makeMediaTrack, makeProviderDescriptor, makePlaybackProvider, makeCapabilities } from '@/test/fixtures';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
-import type { ProviderId } from '@/types/domain';
+import type { ProviderId, PlaybackState } from '@/types/domain';
+import { defined } from '@/test/defined';
 
 const playTrackSpy = vi.fn();
 
@@ -51,27 +52,31 @@ vi.mock('@/hooks/useRadio', () => ({
   })),
 }));
 
-const makeMockDescriptor = (id: ProviderId) => ({
-  id,
-  catalog: { listTracks: vi.fn().mockResolvedValue([]) },
-  auth: {
-    isAuthenticated: vi.fn().mockReturnValue(true),
-    beginLogin: vi.fn(),
-    logout: vi.fn(),
-    handleCallback: vi.fn().mockResolvedValue(false),
-  },
-  playback: {
-    initialize: vi.fn().mockResolvedValue(undefined),
-    pause: vi.fn().mockResolvedValue(undefined),
-    resume: vi.fn().mockResolvedValue(undefined),
-    playTrack: vi.fn().mockResolvedValue(undefined),
-    getState: vi.fn().mockResolvedValue(null),
-    subscribe: vi.fn(() => vi.fn()),
-    prepareTrack: vi.fn(),
-    probePlayable: vi.fn().mockResolvedValue(true),
-  },
-  capabilities: { hasSaveTrack: true, hasExternalLink: true, hasLikedCollection: true },
-});
+const makeMockDescriptor = (id: ProviderId) => {
+  const resume = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+  const subscribe = vi.fn<(listener: (state: PlaybackState | null) => void) => () => void>().mockReturnValue(vi.fn());
+  const descriptor = makeProviderDescriptor({
+    id,
+    name: id === 'dropbox' ? 'Dropbox' : 'Spotify',
+    capabilities: makeCapabilities({ hasSaveTrack: true, hasExternalLink: true, hasLikedCollection: true }),
+    auth: {
+      providerId: id,
+      isAuthenticated: vi.fn().mockReturnValue(true),
+      getAccessToken: vi.fn(),
+      beginLogin: vi.fn(),
+      handleCallback: vi.fn().mockResolvedValue(false),
+      logout: vi.fn(),
+    },
+    playback: makePlaybackProvider({
+      providerId: id,
+      resume,
+      subscribe,
+      prepareTrack: vi.fn(),
+      probePlayable: vi.fn().mockResolvedValue(true),
+    }),
+  });
+  return { descriptor, resume, subscribe };
+};
 
 const spotifyDescriptor = makeMockDescriptor('spotify');
 const dropboxDescriptor = makeMockDescriptor('dropbox');
@@ -83,16 +88,16 @@ vi.mock('@/contexts/ProviderContext', async (importOriginal) => {
   return {
     ...actual,
     useProviderContext: vi.fn(() => ({
-      activeDescriptor,
+      activeDescriptor: activeDescriptor.descriptor,
       setActiveProviderId: vi.fn(),
-      getDescriptor: vi.fn((id: string) => (id === activeDescriptor.id ? activeDescriptor : undefined)),
-      connectedProviderIds: [activeDescriptor.id],
-      chosenProviderId: activeDescriptor.id,
-      activeProviderId: activeDescriptor.id,
+      getDescriptor: vi.fn((id: string) => (id === activeDescriptor.descriptor.id ? activeDescriptor.descriptor : undefined)),
+      connectedProviderIds: [activeDescriptor.descriptor.id],
+      chosenProviderId: activeDescriptor.descriptor.id,
+      activeProviderId: activeDescriptor.descriptor.id,
       setProviderSwitchInterceptor: vi.fn(),
       registry: {},
       needsProviderSelection: false,
-      enabledProviderIds: [activeDescriptor.id],
+      enabledProviderIds: [activeDescriptor.descriptor.id],
       toggleProvider: vi.fn(),
       isProviderEnabled: vi.fn(() => true),
       hasMultipleProviders: false,
@@ -128,13 +133,13 @@ vi.mock('@/services/spotifyPlayer', () => ({
 vi.mock('@/providers/registry', () => ({
   providerRegistry: {
     get: vi.fn((id?: ProviderId) => {
-      if (id === 'spotify') return spotifyDescriptor;
-      if (id === 'dropbox') return dropboxDescriptor;
-      return activeDescriptor;
+      if (id === 'spotify') return spotifyDescriptor.descriptor;
+      if (id === 'dropbox') return dropboxDescriptor.descriptor;
+      return activeDescriptor.descriptor;
     }),
     // playbackStore.attach() fans out over getAll() — the descriptors must be
     // registered here for their subscribe() to feed the store's pipeline.
-    getAll: vi.fn(() => [spotifyDescriptor, dropboxDescriptor]),
+    getAll: vi.fn(() => [spotifyDescriptor.descriptor, dropboxDescriptor.descriptor]),
     has: vi.fn((id: ProviderId) => id === 'spotify' || id === 'dropbox'),
     register: vi.fn(),
   },
@@ -153,13 +158,16 @@ const AllProviders = ({ children }: { children: React.ReactNode }) => (
 );
 
 function makeSession(overrides?: Partial<SessionSnapshot>): SessionSnapshot {
-  const trackA = makeMediaTrack({ id: 'track-a', name: 'Song A', artists: 'Artist A', provider: activeDescriptor.id });
-  const trackB = makeMediaTrack({ id: 'track-b', name: 'Song B', artists: 'Artist B', provider: activeDescriptor.id });
-  const trackC = makeMediaTrack({ id: 'track-c', name: 'Song C', artists: 'Artist C', provider: activeDescriptor.id });
+  const trackA = makeMediaTrack({ id: 'track-a', name: 'Song A', artists: 'Artist A', provider: activeDescriptor.descriptor.id });
+  const trackB = makeMediaTrack({ id: 'track-b', name: 'Song B', artists: 'Artist B', provider: activeDescriptor.descriptor.id });
+  const trackC = makeMediaTrack({ id: 'track-c', name: 'Song C', artists: 'Artist C', provider: activeDescriptor.descriptor.id });
   return {
-    collectionId: 'playlist-xyz',
+    selection: {
+      type: 'collection',
+      ref: { provider: activeDescriptor.descriptor.id, kind: 'playlist', id: 'playlist-xyz' },
+      name: 'My Playlist',
+    },
     collectionName: 'My Playlist',
-    collectionProvider: activeDescriptor.id,
     trackIndex: 1,
     trackId: 'track-b',
     queueTracks: [trackA, trackB, trackC],
@@ -169,14 +177,15 @@ function makeSession(overrides?: Partial<SessionSnapshot>): SessionSnapshot {
 }
 
 async function setupPausedQueue(startIndex = 1) {
-  const session = makeSession({ trackIndex: startIndex, trackId: ['track-a', 'track-b', 'track-c'][startIndex] });
+  const ids = ['track-a', 'track-b', 'track-c'] as const;
+  const session = makeSession({ trackIndex: startIndex, trackId: defined(ids[startIndex]) });
   const { result } = renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
   await act(async () => {
     await result.current.handlers.restoreSession(session, { autoplay: false });
   });
   // After hydrate, queue is loaded but isPlaying is false (paused).
   playTrackSpy.mockClear();
-  activeDescriptor.playback.resume.mockClear();
+  activeDescriptor.resume.mockClear();
   return result;
 }
 
@@ -202,7 +211,7 @@ describe.each([
 
     // #then — playTrack was called with the next index, advancing the track
     expect(playTrackSpy).toHaveBeenCalledTimes(1);
-    expect(playTrackSpy.mock.calls[0][0]).toBe(2);
+    expect(defined(defined(playTrackSpy.mock.calls[0])[0])).toBe(2);
   });
 
   it('handleNext auto-resumes via the driving provider when previously paused', async () => {
@@ -215,7 +224,7 @@ describe.each([
     });
 
     // #then — resume() is invoked so the new track plays without a second tap
-    expect(descriptor.playback.resume).toHaveBeenCalled();
+    expect(descriptor.resume).toHaveBeenCalled();
   });
 
   it('handlePrevious from paused state moves to the previous track via playTrack', async () => {
@@ -229,7 +238,7 @@ describe.each([
 
     // #then
     expect(playTrackSpy).toHaveBeenCalledTimes(1);
-    expect(playTrackSpy.mock.calls[0][0]).toBe(1);
+    expect(defined(defined(playTrackSpy.mock.calls[0])[0])).toBe(1);
   });
 
   it('handlePrevious auto-resumes via the driving provider when previously paused', async () => {
@@ -242,7 +251,7 @@ describe.each([
     });
 
     // #then
-    expect(descriptor.playback.resume).toHaveBeenCalled();
+    expect(descriptor.resume).toHaveBeenCalled();
   });
 
   it('handleNext is a no-op at the end of the queue', async () => {
@@ -256,7 +265,7 @@ describe.each([
 
     // #then — queue is finite: no playback initiated, index unchanged
     expect(playTrackSpy).not.toHaveBeenCalled();
-    expect(descriptor.playback.resume).not.toHaveBeenCalled();
+    expect(descriptor.resume).not.toHaveBeenCalled();
   });
 
   it('handlePrevious restarts the first track from index 0', async () => {
@@ -269,8 +278,8 @@ describe.each([
     });
 
     // #then — clamps at the queue start and replays track 0
-    expect(playTrackSpy.mock.calls[0][0]).toBe(0);
-    expect(descriptor.playback.resume).toHaveBeenCalled();
+    expect(defined(defined(playTrackSpy.mock.calls[0])[0])).toBe(0);
+    expect(descriptor.resume).toHaveBeenCalled();
   });
 
   it('handleNext is a no-op on an empty queue', async () => {
@@ -284,13 +293,13 @@ describe.each([
 
     // #then
     expect(playTrackSpy).not.toHaveBeenCalled();
-    expect(descriptor.playback.resume).not.toHaveBeenCalled();
+    expect(descriptor.resume).not.toHaveBeenCalled();
   });
 
   it('handleNext still advances when descriptor.playback.resume rejects', async () => {
     // #given — paused player; resume rejects with an autoplay-policy-style error
     const result = await setupPausedQueue(0);
-    descriptor.playback.resume.mockRejectedValueOnce(new Error('autoplay-blocked'));
+    descriptor.resume.mockRejectedValueOnce(new Error('autoplay-blocked'));
 
     // #when — handleNext awaits resume, but the rejection is swallowed by
     // ensurePlaybackResumed's try/catch and must not bubble out of handleNext.
@@ -307,7 +316,7 @@ describe.each([
     // was invoked exactly once for the next slot
     expect(thrown).toBeNull();
     expect(playTrackSpy).toHaveBeenCalledTimes(1);
-    expect(playTrackSpy.mock.calls[0][0]).toBe(1);
+    expect(defined(defined(playTrackSpy.mock.calls[0])[0])).toBe(1);
   });
 
   it('handleNext invokes resume *after* playTrack (preserves ordering)', async () => {
@@ -325,9 +334,9 @@ describe.each([
     // optimisation that races resume ahead of playTrack and leaves the
     // adapter pointed at the prior track.
     expect(playTrackSpy).toHaveBeenCalledTimes(1);
-    expect(descriptor.playback.resume).toHaveBeenCalledTimes(1);
-    const playTrackOrder = playTrackSpy.mock.invocationCallOrder[0];
-    const resumeOrder = descriptor.playback.resume.mock.invocationCallOrder[0];
+    expect(descriptor.resume).toHaveBeenCalledTimes(1);
+    const playTrackOrder = defined(playTrackSpy.mock.invocationCallOrder[0]);
+    const resumeOrder = defined(descriptor.resume.mock.invocationCallOrder[0]);
     expect(resumeOrder).toBeGreaterThan(playTrackOrder);
   });
 
@@ -336,20 +345,17 @@ describe.each([
     // before the user-initiated skip lands
     const result = await setupPausedQueue(0);
 
-    expect(descriptor.playback.subscribe).toHaveBeenCalled();
-    const subscribeCall = descriptor.playback.subscribe.mock.calls[0];
-    const stateCallback = subscribeCall?.[0] as
-      | ((state: { isPlaying: boolean; positionMs: number; durationMs: number; currentTrackId: string; currentPlaybackRef: { provider: string; ref: string } }) => void)
-      | undefined;
+    expect(descriptor.subscribe).toHaveBeenCalled();
+    const stateCallback = defined(defined(descriptor.subscribe.mock.calls[0])[0]);
     expect(typeof stateCallback).toBe('function');
 
     await act(async () => {
-      stateCallback?.({
+      stateCallback({
         isPlaying: true,
         positionMs: 1000,
         durationMs: 60_000,
         currentTrackId: 'track-a',
-        currentPlaybackRef: { provider: descriptor.id, ref: `${descriptor.id}:track:track-a` },
+        currentPlaybackRef: { provider: descriptor.descriptor.id, ref: `${descriptor.descriptor.id}:track:track-a` },
       });
     });
 
@@ -366,6 +372,6 @@ describe.each([
     // in the prior track's resumed-at-position state on adapters that don't
     // auto-fire resume from playTrack.
     expect(playTrackSpy).toHaveBeenCalledTimes(1);
-    expect(descriptor.playback.resume).toHaveBeenCalledTimes(1);
+    expect(descriptor.resume).toHaveBeenCalledTimes(1);
   });
 });

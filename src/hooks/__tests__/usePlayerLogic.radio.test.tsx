@@ -14,6 +14,7 @@ import { ColorProvider } from '@/contexts/ColorContext';
 import { ProviderProvider } from '@/contexts/ProviderContext';
 import { makeTrack } from '@/test/fixtures';
 import type { MediaTrack } from '@/types/domain';
+import { defined } from '@/test/defined';
 
 const playTrackSpy = vi.fn();
 
@@ -109,16 +110,11 @@ vi.mock('@/providers/registry', () => ({
 }));
 
 function makeMediaTrack(overrides: Partial<MediaTrack> & { name: string; artists: string }): MediaTrack {
-  return {
+  return makeTrack({
     id: `mt-${overrides.name}-${overrides.artists}`.toLowerCase().replace(/\s+/g, '-'),
-    provider: 'spotify',
     playbackRef: { provider: 'spotify', ref: `spotify:track:${overrides.name}` },
-    name: overrides.name,
-    artists: overrides.artists,
-    album: 'Test Album',
-    durationMs: 200000,
     ...overrides,
-  };
+  });
 }
 
 const defaultRadioReturn = {
@@ -215,8 +211,8 @@ describe('usePlayerLogic — radio start', () => {
     // #then
     const tracks = result.current.state.tracks;
     expect(tracks.length).toBe(3);
-    expect(tracks[0].id).toBe(seedTrack.id);
-    expect(tracks[0].name).toBe('Creep');
+    expect(defined(tracks[0]).id).toBe(seedTrack.id);
+    expect(defined(tracks[0]).name).toBe('Creep');
     const generatedNames = tracks.slice(1).map((t) => t.name);
     expect(generatedNames).toContain('Karma Police');
     expect(generatedNames).toContain('No Surprises');
@@ -252,9 +248,9 @@ describe('usePlayerLogic — radio start', () => {
 
     // #then
     expect(result.current.state.tracks.length).toBe(2);
-    expect(result.current.state.tracks[0].id).toBe('seed-1');
-    expect(result.current.state.tracks[0].name).toBe('Creep');
-    expect(result.current.state.tracks[1].name).toBe('No Surprises');
+    expect(defined(result.current.state.tracks[0]).id).toBe('seed-1');
+    expect(defined(result.current.state.tracks[0]).name).toBe('Creep');
+    expect(defined(result.current.state.tracks[1]).name).toBe('No Surprises');
   });
 
   it('deduplicates seed by normalized artist+title when recommendation has different id', async () => {
@@ -286,9 +282,9 @@ describe('usePlayerLogic — radio start', () => {
 
     // #then
     expect(result.current.state.tracks.length).toBe(2);
-    expect(result.current.state.tracks[0].id).toBe('seed-1');
-    expect(result.current.state.tracks[0].name).toBe('Creep');
-    expect(result.current.state.tracks[1].name).toBe('No Surprises');
+    expect(defined(result.current.state.tracks[0]).id).toBe('seed-1');
+    expect(defined(result.current.state.tracks[0]).name).toBe('Creep');
+    expect(defined(result.current.state.tracks[1]).name).toBe('No Surprises');
   });
 
   it('uses currentTrack as fallback seed when the queue entry does not match (Spotify flow)', async () => {
@@ -320,8 +316,8 @@ describe('usePlayerLogic — radio start', () => {
     // #then
     expect(playTrackSpy).not.toHaveBeenCalled();
     expect(result.current.state.tracks.length).toBe(2);
-    expect(result.current.state.tracks[0].id).toBe('seed-1');
-    expect(result.current.state.tracks[0].name).toBe('Creep');
-    expect(result.current.state.tracks[1].name).toBe('Karma Police');
+    expect(defined(result.current.state.tracks[0]).id).toBe('seed-1');
+    expect(defined(result.current.state.tracks[0]).name).toBe('Creep');
+    expect(defined(result.current.state.tracks[1]).name).toBe('Karma Police');
   });
 });

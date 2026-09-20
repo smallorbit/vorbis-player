@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { MediaTrack } from '@/types/domain';
 import type { LikedEntry, Tombstone } from '../dropboxLikesCache';
 import type { RemoteLikesFile } from '../dropboxLikesSync';
+import { defined } from '@/test/defined';
+import { makeTrack as makeTrackFixture } from '@/test/fixtures';
+import { DropboxAuthAdapter } from '../dropboxAuthAdapter';
 
 vi.mock('../dropboxLikesCache', () => ({
   getLikedEntries: vi.fn(),
@@ -26,7 +29,7 @@ import { ensureVorbisFolder } from '../dropboxSyncFolder';
 import { DropboxLikesSyncService } from '../dropboxLikesSync';
 
 function makeTrack(id: string, name?: string): MediaTrack {
-  return {
+  return makeTrackFixture({
     id,
     provider: 'dropbox',
     playbackRef: { provider: 'dropbox', ref: `/artist/album/${id}.mp3` },
@@ -35,7 +38,7 @@ function makeTrack(id: string, name?: string): MediaTrack {
     album: 'Test Album',
     albumId: '/artist/album',
     durationMs: 180000,
-  };
+  });
 }
 
 function makeLikedEntry(id: string, likedAt: number, name?: string): LikedEntry {
@@ -50,18 +53,42 @@ function makeTombstone(trackId: string, deletedAt: number): Tombstone {
   return { trackId, deletedAt };
 }
 
-function createMockAuth(token = 'test-token') {
-  return {
+/** Public methods DropboxLikesSyncService actually uses on the auth adapter. */
+type DropboxAuthPublic = Pick<
+  DropboxAuthAdapter,
+  | 'providerId'
+  | 'isAuthenticated'
+  | 'getAccessToken'
+  | 'beginLogin'
+  | 'handleCallback'
+  | 'logout'
+  | 'ensureValidToken'
+  | 'refreshAccessToken'
+  | 'reportUnauthorized'
+>;
+
+function createMockAuth(token = 'test-token'): DropboxAuthAdapter {
+  const methods = {
     providerId: 'dropbox' as const,
-    isAuthenticated: vi.fn().mockReturnValue(true),
-    getAccessToken: vi.fn().mockResolvedValue(token),
-    beginLogin: vi.fn(),
-    handleCallback: vi.fn(),
-    logout: vi.fn(),
-    ensureValidToken: vi.fn().mockResolvedValue(token),
-    refreshAccessToken: vi.fn().mockResolvedValue(token),
-    reportUnauthorized: vi.fn(),
-  };
+    isAuthenticated: vi.fn<() => boolean>().mockReturnValue(true),
+    getAccessToken: vi.fn<() => Promise<string | null>>().mockResolvedValue(token),
+    beginLogin: vi.fn<() => Promise<void>>(),
+    handleCallback: vi.fn<(url: URL) => Promise<boolean>>(),
+    logout: vi.fn<() => Promise<void>>(),
+    ensureValidToken: vi.fn<() => Promise<string | null>>().mockResolvedValue(token),
+    refreshAccessToken: vi.fn<() => Promise<string | null>>().mockResolvedValue(token),
+    reportUnauthorized: vi.fn<() => void>(),
+  } satisfies DropboxAuthPublic;
+  const auth = new DropboxAuthAdapter();
+  auth.isAuthenticated = methods.isAuthenticated;
+  auth.getAccessToken = methods.getAccessToken;
+  auth.beginLogin = methods.beginLogin;
+  auth.handleCallback = methods.handleCallback;
+  auth.logout = methods.logout;
+  auth.ensureValidToken = methods.ensureValidToken;
+  auth.refreshAccessToken = methods.refreshAccessToken;
+  auth.reportUnauthorized = methods.reportUnauthorized;
+  return Object.assign(auth, methods);
 }
 
 describe('DropboxLikesSyncService', () => {
@@ -71,8 +98,7 @@ describe('DropboxLikesSyncService', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     mockAuth = createMockAuth();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    service = new DropboxLikesSyncService(mockAuth as any);
+    service = new DropboxLikesSyncService(mockAuth);
     vi.mocked(getLikedEntries).mockResolvedValue([]);
     vi.mocked(getTombstones).mockResolvedValue([]);
     vi.mocked(replaceLikes).mockResolvedValue(undefined);
@@ -106,7 +132,7 @@ describe('DropboxLikesSyncService', () => {
 
       // #then
       expect(result.mergedLikes).toHaveLength(1);
-      expect(result.mergedLikes[0].trackId).toBe('a');
+      expect(defined(result.mergedLikes[0]).trackId).toBe('a');
       expect(result.changed).toBe(false);
     });
 
@@ -124,7 +150,7 @@ describe('DropboxLikesSyncService', () => {
 
       // #then
       expect(result.mergedLikes).toHaveLength(1);
-      expect(result.mergedLikes[0].trackId).toBe('b');
+      expect(defined(result.mergedLikes[0]).trackId).toBe('b');
       expect(result.changed).toBe(true);
     });
 
@@ -144,8 +170,8 @@ describe('DropboxLikesSyncService', () => {
       // #then
       expect(result.mergedLikes).toHaveLength(1);
       // Local entry is newer, should win
-      expect(result.mergedLikes[0].likedAt).toBe(3000);
-      expect(result.mergedLikes[0].track.name).toBe('Local Name');
+      expect(defined(result.mergedLikes[0]).likedAt).toBe(3000);
+      expect(defined(result.mergedLikes[0]).track.name).toBe('Local Name');
       expect(result.changed).toBe(false);
       expect(result.remoteChanged).toBe(true);
     });
@@ -173,7 +199,7 @@ describe('DropboxLikesSyncService', () => {
 
       // #then
       expect(result.mergedLikes).toHaveLength(1);
-      expect(result.mergedLikes[0].trackId).toBe('a');
+      expect(defined(result.mergedLikes[0]).trackId).toBe('a');
     });
 
     it('remote tombstone removes local like', () => {
@@ -205,7 +231,7 @@ describe('DropboxLikesSyncService', () => {
 
       // #then
       expect(result.mergedTombstones).toHaveLength(1);
-      expect(result.mergedTombstones[0].trackId).toBe('recent');
+      expect(defined(result.mergedTombstones[0]).trackId).toBe('recent');
     });
 
     it('merges both local and remote likes and tombstones', () => {
@@ -231,7 +257,7 @@ describe('DropboxLikesSyncService', () => {
 
   describe('downloadLikesFile', () => {
     it('returns null when not authenticated', async () => {
-      mockAuth.ensureValidToken.mockResolvedValue(null);
+      vi.mocked(mockAuth.ensureValidToken).mockResolvedValue(null);
       const result = await service.downloadLikesFile();
       expect(result).toBeNull();
     });
@@ -290,13 +316,13 @@ describe('DropboxLikesSyncService', () => {
       // #then
       expect(result).toEqual(remoteData);
       expect(fetchMock).toHaveBeenCalledTimes(2);
-      expect(mockAuth.refreshAccessToken).toHaveBeenCalled();
+      expect(vi.mocked(mockAuth.refreshAccessToken)).toHaveBeenCalled();
     });
   });
 
   describe('uploadLikesFile', () => {
     it('returns false when not authenticated', async () => {
-      mockAuth.ensureValidToken.mockResolvedValue(null);
+      vi.mocked(mockAuth.ensureValidToken).mockResolvedValue(null);
       const data: RemoteLikesFile = {
         version: 1,
         updatedAt: new Date().toISOString(),

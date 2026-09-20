@@ -1,17 +1,16 @@
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect } from 'vitest';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../accordion';
 
 function renderAccordion(options?: {
-  title?: string;
-  content?: string;
-  defaultValue?: string;
+  title?: string | undefined;
+  content?: string | undefined;
+  defaultValue?: string | undefined;
 }) {
   const { title = 'Section Title', content = 'Section content body', defaultValue } = options ?? {};
   return render(
-    <Accordion type="single" collapsible defaultValue={defaultValue}>
+    <Accordion type="single" collapsible {...(defaultValue !== undefined ? { defaultValue } : {})}>
       <AccordionItem value="item1">
         <AccordionTrigger>{title}</AccordionTrigger>
         <AccordionContent>{content}</AccordionContent>

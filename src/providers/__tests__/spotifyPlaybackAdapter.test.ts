@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SpotifyPlaybackAdapter } from '@/providers/spotify/spotifyPlaybackAdapter';
-import type { MediaTrack } from '@/types/domain';
 import type { CollectionRef } from '@/types/domain';
 import { spotifyPlayer, waitForSpotifyReady } from '@/services/spotifyPlayer';
+import { makeTrack } from '@/test/fixtures';
 
 vi.mock('@/services/spotifyPlayer', () => ({
   spotifyPlayer: {
@@ -38,9 +38,8 @@ vi.mock('@/providers/spotify/spotifyQueueSync', () => ({
   },
 }));
 
-const makeSpotifyTrack = (): MediaTrack => ({
+const makeSpotifyTrack = () => makeTrack({
   id: 'track-1',
-  provider: 'spotify',
   playbackRef: { provider: 'spotify', ref: 'spotify:track:abc123' },
   name: 'Track',
   artists: 'Artist',

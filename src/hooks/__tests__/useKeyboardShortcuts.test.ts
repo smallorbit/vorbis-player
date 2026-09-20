@@ -1,6 +1,7 @@
 import { renderHook } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { useKeyboardShortcuts } from '../useKeyboardShortcuts';
+import { defined } from '@/test/defined';
 
 // Helper to create keyboard event with proper target
 const createKeyboardEvent = (code: string, target: EventTarget = document.body) => {
@@ -8,6 +9,16 @@ const createKeyboardEvent = (code: string, target: EventTarget = document.body) 
   Object.defineProperty(event, 'target', { value: target, enumerable: true });
   return event;
 };
+
+function getKeydownHandler(spy: { mock: { calls: unknown[][] } }): (event: Event) => void {
+  const listener = defined(defined(spy.mock.calls[0])[1]);
+  if (typeof listener !== 'function') {
+    throw new Error('expected function keydown listener');
+  }
+  return (event: Event) => {
+    listener(event);
+  };
+}
 
 describe('useKeyboardShortcuts', () => {
   beforeEach(() => {
@@ -45,7 +56,7 @@ describe('useKeyboardShortcuts', () => {
 
     renderHook(() => useKeyboardShortcuts({ onPlayPause }));
 
-    const handler = addEventListenerSpy.mock.calls[0][1] as EventListener;
+    const handler = getKeydownHandler(addEventListenerSpy);
     const event = createKeyboardEvent('Space');
 
     // #when
@@ -63,7 +74,7 @@ describe('useKeyboardShortcuts', () => {
 
     renderHook(() => useKeyboardShortcuts({ onNext }));
 
-    const handler = addEventListenerSpy.mock.calls[0][1] as EventListener;
+    const handler = getKeydownHandler(addEventListenerSpy);
     const event = createKeyboardEvent('ArrowRight');
 
     // #when
@@ -81,7 +92,7 @@ describe('useKeyboardShortcuts', () => {
 
     renderHook(() => useKeyboardShortcuts({ onPrevious }));
 
-    const handler = addEventListenerSpy.mock.calls[0][1] as EventListener;
+    const handler = getKeydownHandler(addEventListenerSpy);
     const event = createKeyboardEvent('ArrowLeft');
 
     // #when
@@ -101,7 +112,7 @@ describe('useKeyboardShortcuts', () => {
 
     renderHook(() => useKeyboardShortcuts({ onMute }));
 
-    const handler = addEventListenerSpy.mock.calls[0][1] as EventListener;
+    const handler = getKeydownHandler(addEventListenerSpy);
     const event = createKeyboardEvent('KeyM');
 
     // #when
@@ -119,7 +130,7 @@ describe('useKeyboardShortcuts', () => {
 
     renderHook(() => useKeyboardShortcuts({ onToggleGlow }));
 
-    const handler = addEventListenerSpy.mock.calls[0][1] as EventListener;
+    const handler = getKeydownHandler(addEventListenerSpy);
     const event = createKeyboardEvent('KeyG');
 
     // #when
@@ -137,7 +148,7 @@ describe('useKeyboardShortcuts', () => {
 
     renderHook(() => useKeyboardShortcuts({ onCycleVisualizerStyle }));
 
-    const handler = addEventListenerSpy.mock.calls[0][1] as EventListener;
+    const handler = getKeydownHandler(addEventListenerSpy);
     const event = createKeyboardEvent('KeyV');
 
     // #when
@@ -155,7 +166,7 @@ describe('useKeyboardShortcuts', () => {
 
     renderHook(() => useKeyboardShortcuts({ onToggleShuffle }));
 
-    const handler = addEventListenerSpy.mock.calls[0][1] as EventListener;
+    const handler = getKeydownHandler(addEventListenerSpy);
     const event = new KeyboardEvent('keydown', { code: 'KeyS', bubbles: true });
     Object.defineProperty(event, 'target', { value: document.body, enumerable: true });
 
@@ -174,7 +185,7 @@ describe('useKeyboardShortcuts', () => {
 
     renderHook(() => useKeyboardShortcuts({ onToggleVisualEffectsMenu }));
 
-    const handler = addEventListenerSpy.mock.calls[0][1] as EventListener;
+    const handler = getKeydownHandler(addEventListenerSpy);
     const event = new KeyboardEvent('keydown', { code: 'KeyS', shiftKey: true, bubbles: true });
     Object.defineProperty(event, 'target', { value: document.body, enumerable: true });
 
@@ -193,7 +204,7 @@ describe('useKeyboardShortcuts', () => {
 
     renderHook(() => useKeyboardShortcuts({ onToggleHelp }));
 
-    const handler = addEventListenerSpy.mock.calls[0][1] as EventListener;
+    const handler = getKeydownHandler(addEventListenerSpy);
     const event = createKeyboardEvent('Slash');
 
     // #when
@@ -211,7 +222,7 @@ describe('useKeyboardShortcuts', () => {
 
     renderHook(() => useKeyboardShortcuts({ onPlayPause }));
 
-    const handler = addEventListenerSpy.mock.calls[0][1] as EventListener;
+    const handler = getKeydownHandler(addEventListenerSpy);
     const input = document.createElement('input');
     const event = createKeyboardEvent('Space', input);
 
@@ -230,7 +241,7 @@ describe('useKeyboardShortcuts', () => {
 
     renderHook(() => useKeyboardShortcuts({ onPlayPause }));
 
-    const handler = addEventListenerSpy.mock.calls[0][1] as EventListener;
+    const handler = getKeydownHandler(addEventListenerSpy);
     const textarea = document.createElement('textarea');
     const event = createKeyboardEvent('Space', textarea);
 
@@ -249,7 +260,7 @@ describe('useKeyboardShortcuts', () => {
 
     renderHook(() => useKeyboardShortcuts({ onPlayPause }));
 
-    const handler = addEventListenerSpy.mock.calls[0][1] as EventListener;
+    const handler = getKeydownHandler(addEventListenerSpy);
     const event = createKeyboardEvent('Space');
     const preventDefaultSpy = vi.spyOn(event, 'preventDefault');
 
@@ -267,7 +278,7 @@ describe('useKeyboardShortcuts', () => {
 
     renderHook(() => useKeyboardShortcuts({}));
 
-    const handler = addEventListenerSpy.mock.calls[0][1] as EventListener;
+    const handler = getKeydownHandler(addEventListenerSpy);
     const event = createKeyboardEvent('KeyL');
 
     // #when / #then - should not throw

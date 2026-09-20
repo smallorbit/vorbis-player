@@ -5,7 +5,10 @@ import { STALE_SESSION_MS } from '@/services/sessionPersistence';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
 
 const makeSession = (overrides?: Partial<SessionSnapshot>): SessionSnapshot => ({
-  collectionId: 'col-1',
+  selection: {
+    type: 'collection',
+    ref: { provider: 'spotify', kind: 'playlist', id: 'col-1' },
+  },
   collectionName: 'Test Playlist',
   trackIndex: 0,
   savedAt: Date.now(),

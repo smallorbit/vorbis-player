@@ -2,7 +2,6 @@
  * Tests for SeeAllView — full-grid view for a single section with a back button (#1294).
  */
 
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 

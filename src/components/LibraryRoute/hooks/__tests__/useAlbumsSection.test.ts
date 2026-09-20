@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useAlbumsSection } from '../useAlbumsSection';
 import type { MediaCollection, ProviderId } from '@/types/domain';
+import { defined } from '@/test/defined';
+import { makeLibrarySyncResult, makePinnedItemsResult } from '@/test/fixtures';
 
 vi.mock('@/hooks/useLibrarySync', () => ({
   useLibrarySync: vi.fn(),
@@ -31,26 +33,12 @@ const makeAlbum = (id: string, provider: ProviderId = 'spotify'): MediaCollectio
   genres: [],
 });
 
-const defaultPinnedItems = {
-  pinnedPlaylistIds: [] as string[],
-  pinnedAlbumIds: [] as string[],
-  isPlaylistPinned: vi.fn(() => false),
-  isAlbumPinned: vi.fn(() => false),
-  togglePinPlaylist: vi.fn(),
-  togglePinAlbum: vi.fn(),
-  canPinMorePlaylists: true,
-  canPinMoreAlbums: true,
-} as ReturnType<typeof usePinnedItems>;
+const defaultPinnedItems = makePinnedItemsResult();
 
-const makeLibraryReturn = (albums: ReturnType<typeof useLibrarySync>['albums'], overrides = {}) => ({
-  playlists: [],
-  albums,
-  likedSongsCount: 0,
-  likedSongsPerProvider: [],
-  isInitialLoadComplete: true,
-  isLikedSongsSyncing: false,
-  ...overrides,
-} as ReturnType<typeof useLibrarySync>);
+const makeLibraryReturn = (
+  albums: ReturnType<typeof makeLibrarySyncResult>['albums'],
+  overrides: Parameters<typeof makeLibrarySyncResult>[0] = {},
+) => makeLibrarySyncResult({ playlists: [], albums, ...overrides });
 
 describe('useAlbumsSection', () => {
   beforeEach(() => {
@@ -143,7 +131,7 @@ describe('useAlbumsSection', () => {
 
       // #then — the dropbox-stamped album matches the dropbox filter
       expect(result.current.items).toHaveLength(1);
-      expect(result.current.items[0].provider).toBe('dropbox');
+      expect(defined(result.current.items[0]).provider).toBe('dropbox');
     });
   });
 
@@ -158,7 +146,7 @@ describe('useAlbumsSection', () => {
 
       // #then
       expect(result.current.items).toHaveLength(1);
-      expect(result.current.items[0].id).toBe('alb-2');
+      expect(defined(result.current.items[0]).id).toBe('alb-2');
     });
 
     it('includes pinned albums when excludePinned is false', () => {
@@ -189,7 +177,7 @@ describe('useAlbumsSection', () => {
 
       // #then — only alb-2 remains
       expect(result.current.items).toHaveLength(1);
-      expect(result.current.items[0].id).toBe('alb-2');
+      expect(defined(result.current.items[0]).id).toBe('alb-2');
     });
   });
 });

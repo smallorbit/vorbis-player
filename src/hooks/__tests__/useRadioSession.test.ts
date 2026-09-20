@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useRadioSession } from '../useRadioSession';
-import type { RadioProgress, RadioResult } from '@/types/radio';
-import { makeMediaTrack, makeProviderDescriptor } from '@/test/fixtures';
+import type { RadioResult } from '@/types/radio';
+import { makeMediaTrack, makeProviderDescriptor, makeCapabilities, makePlaybackProvider } from '@/test/fixtures';
 import type { MediaTrack } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';
 import { createDeferredFn } from '@/test/asyncRace';
@@ -192,7 +192,10 @@ describe('useRadioSession', () => {
     });
 
     // #then
-    const phases = mockOnProgress.mock.calls.map((c: [RadioProgress | null]) => c[0]?.phase ?? null);
+    const phases = mockOnProgress.mock.calls.map((c) => {
+      const progress = c[0];
+      return progress == null ? null : progress.phase;
+    });
     expect(phases).toEqual(['fetching-catalog', 'generating', 'done']);
     // Committing the radio queue marks the playback selection as radio mode.
     expect(trackOps.setSelection).toHaveBeenCalledWith({ type: 'radio' });
@@ -202,7 +205,7 @@ describe('useRadioSession', () => {
     // #given
     const searchProvider = makeProviderDescriptor({
       id: 'spotify',
-      capabilities: { hasSaveTrack: true, hasExternalLink: true, hasLikedCollection: true, hasTrackSearch: true },
+      capabilities: makeCapabilities({ hasSaveTrack: true, hasExternalLink: true, hasLikedCollection: true, hasTrackSearch: true }),
       auth: {
         providerId: 'spotify',
         isAuthenticated: vi.fn().mockReturnValue(true),
@@ -233,7 +236,10 @@ describe('useRadioSession', () => {
     });
 
     // #then
-    const phases = mockOnProgress.mock.calls.map((c: [RadioProgress | null]) => c[0]?.phase ?? null);
+    const phases = mockOnProgress.mock.calls.map((c) => {
+      const progress = c[0];
+      return progress == null ? null : progress.phase;
+    });
     expect(phases).toContain('resolving');
   });
 
@@ -242,7 +248,7 @@ describe('useRadioSession', () => {
     const resolvedTrack = track('resolved-1', 'Fake Plastic Trees', 'Radiohead');
     const searchProvider = makeProviderDescriptor({
       id: 'spotify',
-      capabilities: { hasSaveTrack: true, hasExternalLink: true, hasLikedCollection: true, hasTrackSearch: true },
+      capabilities: makeCapabilities({ hasSaveTrack: true, hasExternalLink: true, hasLikedCollection: true, hasTrackSearch: true }),
       auth: {
         providerId: 'spotify',
         isAuthenticated: vi.fn().mockReturnValue(true),
@@ -284,7 +290,7 @@ describe('useRadioSession', () => {
     const duplicateResolved = track('resolved-dup', 'Karma Police', 'Radiohead');
     const searchProvider = makeProviderDescriptor({
       id: 'spotify',
-      capabilities: { hasSaveTrack: true, hasExternalLink: true, hasLikedCollection: true, hasTrackSearch: true },
+      capabilities: makeCapabilities({ hasSaveTrack: true, hasExternalLink: true, hasLikedCollection: true, hasTrackSearch: true }),
       auth: {
         providerId: 'spotify',
         isAuthenticated: vi.fn().mockReturnValue(true),
@@ -420,7 +426,7 @@ describe('useRadioSession', () => {
     const initMock = vi.fn().mockResolvedValue(undefined);
     const searchProvider = makeProviderDescriptor({
       id: 'spotify',
-      capabilities: { hasSaveTrack: true, hasExternalLink: true, hasLikedCollection: true, hasTrackSearch: true },
+      capabilities: makeCapabilities({ hasSaveTrack: true, hasExternalLink: true, hasLikedCollection: true, hasTrackSearch: true }),
       auth: {
         providerId: 'spotify',
         isAuthenticated: vi.fn().mockReturnValue(true),
@@ -429,20 +435,18 @@ describe('useRadioSession', () => {
         handleCallback: vi.fn(),
         logout: vi.fn(),
       },
-      playback: {
+      playback: makePlaybackProvider({
         providerId: 'spotify',
         initialize: initMock,
         playTrack: vi.fn(),
         pause: vi.fn(),
         resume: vi.fn(),
         seek: vi.fn(),
-        next: vi.fn(),
-        previous: vi.fn(),
         setVolume: vi.fn(),
         getState: vi.fn(),
         subscribe: vi.fn().mockReturnValue(vi.fn()),
         getLastPlayTime: vi.fn(),
-      },
+      }),
     });
     vi.mocked(providerRegistry.getAll).mockReturnValue([searchProvider]);
 
@@ -480,7 +484,7 @@ describe('useRadioSession', () => {
     const asResult = (queue: MediaTrack[]): RadioResult => ({
       queue,
       seedDescription: 'seed',
-      matchStats: { requested: queue.length, matched: queue.length, unmatched: 0 },
+      matchStats: { lastfmCandidates: queue.length, matched: queue.length, byMbid: 0, byName: queue.length },
       unmatchedSuggestions: [],
     });
 
@@ -540,7 +544,7 @@ describe('useRadioSession', () => {
       gen.resolve(0, {
         queue,
         seedDescription: 'seed',
-        matchStats: { requested: 1, matched: 1, unmatched: 0 },
+        matchStats: { lastfmCandidates: 1, matched: 1, byMbid: 0, byName: 1 },
         unmatchedSuggestions: [],
       });
       await started;
@@ -555,7 +559,7 @@ describe('useRadioSession', () => {
     const searchTrack = vi.fn().mockResolvedValue(track('resolved-1', 'Fake Plastic Trees', 'Radiohead'));
     const nonSearchProvider = makeProviderDescriptor({
       id: 'spotify',
-      capabilities: { hasSaveTrack: true, hasExternalLink: true, hasLikedCollection: true, hasTrackSearch: false },
+      capabilities: makeCapabilities({ hasSaveTrack: true, hasExternalLink: true, hasLikedCollection: true, hasTrackSearch: false }),
       auth: {
         providerId: 'spotify',
         isAuthenticated: vi.fn().mockReturnValue(true),
