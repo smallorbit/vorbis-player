@@ -300,13 +300,20 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
     removeFromEnabled(expiredId);
 
     // UI layer owns toast copy — emit structured fallthrough detail.
+    // StrictMode may double-invoke this effect when the fallthrough condition is
+    // already true at mount; removeFromEnabled is idempotent, and AudioPlayer
+    // toasts use a fixed id (FALLTHROUGH_TOAST_ID) so sonner de-dupes. Future
+    // listeners with non-idempotent side effects must guard similarly.
     dispatchAppEvent(PROVIDER_SESSION_FALLTHROUGH_EVENT, {
       expiredProviderId: expiredId,
       expiredProviderName: expiredName,
       fallbackProviderId: fallback,
       fallbackProviderName: fallbackDesc.name,
     });
-  }, [storedProviderId, activeDescriptor, enabledProviderIds, validProviderId, setStoredProviderId, removeFromEnabled]);
+    // authRevision: re-evaluate when isAuthenticated flips without changing the
+    // descriptor object identity (AUTH_STATE_CHANGED / popup / provider auth events).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storedProviderId, activeDescriptor, enabledProviderIds, validProviderId, setStoredProviderId, removeFromEnabled, authRevision]);
 
   // ── Auto-switch when active provider is disabled ──────────────────────
   useEffect(() => {

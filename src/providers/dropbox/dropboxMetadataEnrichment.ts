@@ -151,8 +151,8 @@ export function hydrateAlbumArtFromCache(
       if (!cachedImage) return;
       onResolved(cachedImage);
     })
-    .catch(() => {
-      // Best-effort cache hydration.
+    .catch((err) => {
+      logCaughtError('dropboxMetadataEnrichment.hydrateAlbumArtFromCache', err);
     });
 }
 
@@ -171,5 +171,7 @@ export function resolveFolderAlbumArt(
       if (!imageUrl) return;
       onResolved(imageUrl);
     })
-    .catch(() => {});
+    .catch((err) => {
+      logCaughtError('dropboxMetadataEnrichment.resolveFolderAlbumArt', err);
+    });
 }
