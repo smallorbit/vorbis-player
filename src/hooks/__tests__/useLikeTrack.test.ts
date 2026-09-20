@@ -36,7 +36,7 @@ import { useLikeTrack } from '../useLikeTrack';
 import { checkTrackSaved, saveTrack, unsaveTrack } from '@/services/spotify';
 import { ProviderWrapper } from '@/test/providerTestUtils';
 import { providerRegistry } from '@/providers/registry';
-import type { ProviderDescriptor } from '@/types/providers';
+import { makeProviderDescriptor, makePlaybackProvider, makeCapabilities } from '@/test/fixtures';
 
 const opts = { wrapper: ProviderWrapper };
 
@@ -208,10 +208,10 @@ describe('useLikeTrack — cross-provider guard', () => {
   const dropboxIsTrackSaved = vi.fn();
   const dropboxSetTrackSaved = vi.fn();
 
-  const dropboxDescriptor: ProviderDescriptor = {
+  const dropboxDescriptor = makeProviderDescriptor({
     id: 'dropbox',
     name: 'Dropbox',
-    capabilities: { hasSaveTrack: true, hasLikedCollection: true, hasExternalLink: false },
+    capabilities: makeCapabilities({ hasSaveTrack: true, hasLikedCollection: true, hasExternalLink: false }),
     auth: {
       providerId: 'dropbox',
       isAuthenticated: vi.fn().mockReturnValue(true),
@@ -227,21 +227,8 @@ describe('useLikeTrack — cross-provider guard', () => {
       isTrackSaved: dropboxIsTrackSaved,
       setTrackSaved: dropboxSetTrackSaved,
     },
-    playback: {
-      providerId: 'dropbox',
-      initialize: vi.fn().mockResolvedValue(undefined),
-      playTrack: vi.fn().mockResolvedValue(undefined),
-      pause: vi.fn().mockResolvedValue(undefined),
-      resume: vi.fn().mockResolvedValue(undefined),
-      seek: vi.fn().mockResolvedValue(undefined),
-      next: vi.fn().mockResolvedValue(undefined),
-      previous: vi.fn().mockResolvedValue(undefined),
-      setVolume: vi.fn().mockResolvedValue(undefined),
-      getState: vi.fn().mockResolvedValue(null),
-      subscribe: vi.fn().mockReturnValue(vi.fn()),
-      getLastPlayTime: vi.fn().mockReturnValue(Date.now()),
-    },
-  };
+    playback: makePlaybackProvider({ providerId: 'dropbox' }),
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();

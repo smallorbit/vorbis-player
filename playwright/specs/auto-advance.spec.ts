@@ -23,7 +23,11 @@ test.describe('Auto-advance: natural-end signal', () => {
     const firstTrackName = await page.locator('[data-testid="player-track-info-name"]').textContent();
 
     // #when — trigger the natural-end signal (paused @ position 0 with stale lastPlayTime)
-    await page.evaluate(() => window.__mockTest!.triggerNaturalEnd('spotify'));
+    await page.evaluate(() => {
+      const api = window.__mockTest;
+      if (!api) throw new Error('window.__mockTest is not installed');
+      return api.triggerNaturalEnd('spotify');
+    });
 
     // #then — the player advances to the next track (track name changes)
     await expect(page.locator('[data-testid="player-track-info-name"]')).not.toHaveText(firstTrackName ?? '', { timeout: 10_000 });

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { defined } from '@/test/defined';
 import {
   PHI,
   waveLayerPhaseSpeed,
@@ -124,7 +125,7 @@ describe('waveLayerPhaseSpeed', () => {
 
     // #then
     for (let i = 1; i < speeds.length; i++) {
-      expect(speeds[i]).toBeGreaterThan(speeds[i - 1]);
+      expect(defined(speeds[i])).toBeGreaterThan(defined(speeds[i - 1]));
     }
   });
 

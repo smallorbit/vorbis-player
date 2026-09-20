@@ -6,7 +6,6 @@
  * instead of the legacy LIKED_SONGS_ID string remapping.
  */
 
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { CollectionSelection } from '@/types/domain';

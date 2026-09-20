@@ -12,6 +12,7 @@ import { ColorProvider } from '@/contexts/ColorContext';
 import { ProviderProvider } from '@/contexts/ProviderContext';
 import { makeMediaTrack } from '@/test/fixtures';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
+import { defined } from '@/test/defined';
 
 const playTrackSpy = vi.fn();
 const mockPrepareTrack = vi.fn();
@@ -172,8 +173,8 @@ describe('usePlayerLogic — restoreSession (hydrate)', () => {
 
     // #then
     expect(result.current.state.tracks).toHaveLength(2);
-    expect(result.current.state.tracks[0].id).toBe('track-a');
-    expect(result.current.state.tracks[1].id).toBe('track-b');
+    expect(defined(result.current.state.tracks[0]).id).toBe('track-a');
+    expect(defined(result.current.state.tracks[1]).id).toBe('track-b');
     expect(result.current.state.selection).toEqual({
       type: 'collection',
       ref: { provider: 'spotify', kind: 'playlist', id: 'playlist-xyz' },
@@ -196,7 +197,9 @@ describe('usePlayerLogic — restoreSession (hydrate)', () => {
 
     // #then
     expect(mockPrepareTrack).toHaveBeenCalledTimes(1);
-    const [passedTrack, passedOptions] = mockPrepareTrack.mock.calls[0];
+    const call = defined(mockPrepareTrack.mock.calls[0]);
+    const passedTrack = defined(call[0]);
+    const passedOptions = call[1];
     expect(passedTrack.id).toBe('track-b');
     expect(passedOptions).toEqual({ positionMs: 42_000 });
   });
@@ -214,7 +217,7 @@ describe('usePlayerLogic — restoreSession (hydrate)', () => {
     // #then
     expect(result.current.state.playbackPosition).toBe(0);
     expect(mockPrepareTrack).toHaveBeenCalledTimes(1);
-    const passedOptions = mockPrepareTrack.mock.calls[0][1];
+    const passedOptions = defined(mockPrepareTrack.mock.calls[0])[1];
     expect(passedOptions).toBeUndefined();
   });
 
@@ -229,7 +232,7 @@ describe('usePlayerLogic — restoreSession (hydrate)', () => {
     });
 
     // #then
-    expect(mockPrepareTrack.mock.calls[0][0].id).toBe('track-b');
+    expect(defined(defined(mockPrepareTrack.mock.calls[0])[0]).id).toBe('track-b');
   });
 
   it('triggers playTrack with saved positionMs on the next handlePlay', async () => {
@@ -249,10 +252,10 @@ describe('usePlayerLogic — restoreSession (hydrate)', () => {
 
     // #then
     expect(playTrackSpy).toHaveBeenCalledTimes(1);
-    const [index, skipOnError, options] = playTrackSpy.mock.calls[0];
-    expect(index).toBe(1);
-    expect(skipOnError).toBe(false);
-    expect(options).toEqual({ positionMs: 42_000 });
+    const playCall = defined(playTrackSpy.mock.calls[0]);
+    expect(defined(playCall[0])).toBe(1);
+    expect(playCall[1]).toBe(false);
+    expect(playCall[2]).toEqual({ positionMs: 42_000 });
   });
 
   it('does not re-trigger playTrack on a second handlePlay after hydrate', async () => {

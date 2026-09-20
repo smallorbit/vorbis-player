@@ -324,8 +324,8 @@ describe('sessionPersistence', () => {
     });
 
     it('returns true when savedAt is undefined explicitly', () => {
-      // #given
-      const session: SessionSnapshot = { ...baseSnapshot, savedAt: undefined };
+      // #given — omit savedAt; exactOptionalPropertyTypes forbids assigning undefined
+      const session: SessionSnapshot = { ...baseSnapshot };
 
       // #when / #then
       expect(isSessionStale(session, now)).toBe(true);

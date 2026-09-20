@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { clipUrlForTrack, clipIndexForTrack, AUDIO_CLIP_COUNT } from '../audioMapping';
+import { defined } from '@/test/defined';
 
 describe('audioMapping', () => {
   it('returns a valid clip URL', () => {
@@ -27,7 +28,7 @@ describe('audioMapping', () => {
     const counts = new Array<number>(AUDIO_CLIP_COUNT).fill(0);
     for (let i = 0; i < 1000; i++) {
       const idx = clipIndexForTrack(`track-${i}`);
-      counts[idx]++;
+      counts[idx] = defined(counts[idx]) + 1;
     }
     const min = Math.min(...counts);
     const max = Math.max(...counts);

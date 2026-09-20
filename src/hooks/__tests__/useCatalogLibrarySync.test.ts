@@ -2,6 +2,7 @@ import 'fake-indexeddb/auto';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import type { MediaCollection, ProviderId } from '@/types/domain';
+import { defined } from '@/test/defined';
 
 const mockGetDescriptor = vi.fn();
 
@@ -204,7 +205,7 @@ describe('useCatalogLibrarySync', () => {
 
     // #then
     expect(descriptor.catalog.listCollections).toHaveBeenCalledTimes(2);
-    expect(descriptor.catalog.listCollections.mock.calls[1][1]).toEqual({ forceRefresh: true });
+    expect(defined(defined(descriptor.catalog.listCollections.mock.calls[1])[1])).toEqual({ forceRefresh: true });
   });
 
   it('refresh scoped to one provider does not refetch other providers', async () => {

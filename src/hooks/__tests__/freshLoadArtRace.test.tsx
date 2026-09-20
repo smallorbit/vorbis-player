@@ -20,18 +20,16 @@ import { useProviderPlayback } from '../useProviderPlayback';
 import { providerRegistry } from '@/providers/registry';
 import { playbackStore } from '@/stores/playbackStore';
 import { queueStore } from '@/stores/queueStore';
+import { makeTrack, makePlaybackProvider, makeProviderDescriptor } from '@/test/fixtures';
 
-function makeTrack(id: string, image: string): MediaTrack {
-  return {
+function raceTrack(id: string, image: string): MediaTrack {
+  return makeTrack({
     id,
-    provider: 'spotify',
-    playbackRef: { provider: 'spotify', ref: `spotify:track:${id}` },
     name: `Track ${id}`,
-    artists: 'Test Artist',
-    album: 'Test Album',
     durationMs: 200_000,
     image,
-  };
+    playbackRef: { provider: 'spotify', ref: `spotify:track:${id}` },
+  });
 }
 
 type RaceDescriptor = {
@@ -45,17 +43,7 @@ function makeRaceDescriptor(): RaceDescriptor {
     for (const cb of subscribers) cb(state);
   };
 
-  const playback: PlaybackProvider = {
-    providerId: 'spotify',
-    initialize: vi.fn().mockResolvedValue(undefined),
-    playTrack: vi.fn().mockResolvedValue(undefined),
-    pause: vi.fn().mockResolvedValue(undefined),
-    resume: vi.fn().mockResolvedValue(undefined),
-    seek: vi.fn().mockResolvedValue(undefined),
-    next: vi.fn().mockResolvedValue(undefined),
-    previous: vi.fn().mockResolvedValue(undefined),
-    setVolume: vi.fn().mockResolvedValue(undefined),
-    getState: vi.fn().mockResolvedValue(null),
+  const playback: PlaybackProvider = makePlaybackProvider({
     subscribe: vi.fn().mockImplementation((cb: (state: PlaybackState | null) => void) => {
       subscribers.push(cb);
       return () => {
@@ -73,16 +61,9 @@ function makeRaceDescriptor(): RaceDescriptor {
       });
     }),
     getLastPlayTime: vi.fn().mockReturnValue(0),
-  };
+  });
 
-  const descriptor: ProviderDescriptor = {
-    id: 'spotify',
-    name: 'Spotify',
-    capabilities: {
-      hasLikedCollection: true,
-      hasSaveTrack: true,
-      hasExternalLink: true,
-    },
+  const descriptor: ProviderDescriptor = makeProviderDescriptor({
     auth: {
       providerId: 'spotify',
       isAuthenticated: vi.fn().mockReturnValue(true),
@@ -91,13 +72,8 @@ function makeRaceDescriptor(): RaceDescriptor {
       handleCallback: vi.fn().mockResolvedValue(true),
       logout: vi.fn(),
     },
-    catalog: {
-      providerId: 'spotify',
-      listCollections: vi.fn().mockResolvedValue([]),
-      listTracks: vi.fn().mockResolvedValue([]),
-    },
     playback,
-  };
+  });
 
   return { descriptor, emit };
 }
@@ -148,7 +124,7 @@ describe('fresh-load album-art race', () => {
     // #given — a newly loaded two-track queue; the pre-warm of track 1 fires
     // a PlaybackState with currentTrackId = track-1.id, exactly reproducing
     // the fresh-load race introduced by commit f5689a4.
-    const tracks = [makeTrack('track-0', 'art-0'), makeTrack('track-1', 'art-1')];
+    const tracks = [raceTrack('track-0', 'art-0'), raceTrack('track-1', 'art-1')];
     queueStore.replaceQueue(tracks);
     const { result } = renderHook(() => useHarness());
 
@@ -174,7 +150,7 @@ describe('fresh-load album-art race', () => {
 
   it('records at least one explicit setCurrentIndex(0) commit so the assertion is not vacuously true', async () => {
     // #given — same two-track fresh-load setup.
-    const tracks = [makeTrack('track-0', 'art-0'), makeTrack('track-1', 'art-1')];
+    const tracks = [raceTrack('track-0', 'art-0'), raceTrack('track-1', 'art-1')];
     queueStore.replaceQueue(tracks);
     const { result } = renderHook(() => useHarness());
 

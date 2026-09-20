@@ -4,7 +4,6 @@ import { useQueueBundlePrefetch } from '../useQueueBundlePrefetch';
 
 describe('useQueueBundlePrefetch', () => {
   let ricMock: ReturnType<typeof vi.fn>;
-  let setTimeoutSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -20,7 +19,7 @@ describe('useQueueBundlePrefetch', () => {
       configurable: true,
     });
 
-    setTimeoutSpy = vi.spyOn(window, 'setTimeout');
+    vi.spyOn(window, 'setTimeout');
   });
 
   afterEach(() => {
@@ -149,7 +148,7 @@ describe('useQueueBundlePrefetch', () => {
       rerender({ isPlaying: true });
 
       // #then
-      expect(setTimeoutSpy).toHaveBeenCalled();
+      expect(window.setTimeout).toHaveBeenCalled();
       expect(ricMock).not.toHaveBeenCalled();
     });
 
@@ -171,7 +170,7 @@ describe('useQueueBundlePrefetch', () => {
       vi.runAllTimers();
 
       // #then — no exception thrown means the deferred callback executed successfully
-      expect(setTimeoutSpy).toHaveBeenCalledTimes(1);
+      expect(window.setTimeout).toHaveBeenCalledTimes(1);
     });
 
     it('does not re-schedule via setTimeout on subsequent play/pause toggles', () => {
@@ -194,7 +193,7 @@ describe('useQueueBundlePrefetch', () => {
       rerender({ isPlaying: true });
 
       // #then
-      expect(setTimeoutSpy).toHaveBeenCalledTimes(1);
+      expect(window.setTimeout).toHaveBeenCalledTimes(1);
     });
   });
 });

@@ -11,6 +11,8 @@ import {
   type BottomBarActionsValue,
 } from '@/contexts/BottomBarActionsContext';
 import { useZenMode } from '@/contexts/visualEffects';
+import { defined } from '@/test/defined';
+import { makePlayerSizingValue } from '@/test/fixtures';
 
 vi.mock('@/services/spotifyPlayer', () => ({
   spotifyPlayer: {
@@ -44,15 +46,13 @@ vi.mock('@/services/spotify', () => ({
   getUserLibraryInterleaved: vi.fn(),
 }));
 
-const mockSizingContext = {
+const mockSizingContext = makePlayerSizingValue({
   isMobile: false,
   isTablet: false,
   isDesktop: true,
   isTouchDevice: false,
   hasPointerInput: true,
-  viewport: { width: 1024, height: 768, ratio: 1024 / 768 },
-  dimensions: { width: 600, height: 600 },
-};
+});
 
 vi.mock('@/contexts/PlayerSizingContext', () => ({
   PlayerSizingProvider: ({ children }: { children: React.ReactNode }) => children,
@@ -361,7 +361,7 @@ describe('BottomBar — zen mode show/hide state machine', () => {
     // portal structure: [RTL-container, ZenTriggerZone, BottomBarContainer]
     // ZenTriggerZone is the second-to-last body child
     const getBodyChildren = () => Array.from(document.body.children) as HTMLElement[];
-    const triggerZone = getBodyChildren()[getBodyChildren().length - 2];
+    const triggerZone = defined(getBodyChildren()[getBodyChildren().length - 2]);
 
     // #when — non-touch device hovers over trigger zone (showBar fires for pointer devices)
     act(() => { fireEvent.mouseEnter(triggerZone); });
@@ -384,7 +384,7 @@ describe('BottomBar — zen mode show/hide state machine', () => {
 
     // ZenTriggerZone is second-to-last (BottomBarContainer is last)
     const getBodyChildren = () => Array.from(document.body.children) as HTMLElement[];
-    const triggerZone = getBodyChildren()[getBodyChildren().length - 2];
+    const triggerZone = defined(getBodyChildren()[getBodyChildren().length - 2]);
 
     // #when — touch tap on trigger zone toggles bar visible
     act(() => { fireEvent.touchStart(triggerZone); });
@@ -403,14 +403,14 @@ describe('BottomBar — zen mode show/hide state machine', () => {
     renderBottomBar({ zenModeEnabled: true });
 
     const getBodyChildren = () => Array.from(document.body.children) as HTMLElement[];
-    const triggerZone = getBodyChildren()[getBodyChildren().length - 2];
+    const triggerZone = defined(getBodyChildren()[getBodyChildren().length - 2]);
 
     // show the bar via touch tap
     act(() => { fireEvent.touchStart(triggerZone); });
     const countWithBackdrop = document.body.childElementCount;
 
     // backdrop is now the second body child (after RTL-div, before ZenTriggerZone)
-    const backdrop = getBodyChildren()[1];
+    const backdrop = defined(getBodyChildren()[1]);
 
     // #when — user taps the backdrop to dismiss
     act(() => { fireEvent.click(backdrop); });
@@ -429,7 +429,7 @@ describe('BottomBar — zen mode show/hide state machine', () => {
     renderBottomBar({ zenModeEnabled: true });
 
     const getBodyChildren = () => Array.from(document.body.children) as HTMLElement[];
-    const triggerZone = () => getBodyChildren()[getBodyChildren().length - 2];
+    const triggerZone = () => defined(getBodyChildren()[getBodyChildren().length - 2]);
 
     // first tap shows bar and adds backdrop
     act(() => { fireEvent.touchStart(triggerZone()); });

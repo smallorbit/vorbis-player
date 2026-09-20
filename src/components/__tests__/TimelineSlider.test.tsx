@@ -3,6 +3,7 @@ import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
 import TimelineSlider from '../TimelineSlider';
+import { defined } from '@/test/defined';
 
 vi.mock('@/contexts/PlayerSizingContext', () => ({
   usePlayerSizingContext: () => ({ isMobile: false, isTablet: false }),
@@ -65,8 +66,8 @@ describe('TimelineSlider', () => {
     expect(onScrubEnd).toHaveBeenCalledOnce();
 
     // The bumped position is one step (1ms) above the starting 30_000ms.
-    const seekedTo = onSeek.mock.calls[0][0] as number;
-    const committedAt = onScrubEnd.mock.calls[0][0] as number;
+    const seekedTo = defined(defined(onSeek.mock.calls[0])[0]) as number;
+    const committedAt = defined(defined(onScrubEnd.mock.calls[0])[0]) as number;
     expect(seekedTo).toBeGreaterThan(30_000);
     expect(committedAt).toBe(seekedTo);
   });
@@ -83,7 +84,7 @@ describe('TimelineSlider', () => {
 
     // #then — Radix clamps to max; if onSeek fires it must not exceed duration
     if (onSeek.mock.calls.length > 0) {
-      expect(onSeek.mock.calls[0][0]).toBeLessThanOrEqual(180_000);
+      expect(defined(defined(onSeek.mock.calls[0])[0])).toBeLessThanOrEqual(180_000);
     }
   });
 });

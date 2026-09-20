@@ -54,7 +54,9 @@ test.describe('Provider re-authentication — re-prime current track at saved po
     // listener re-primes at the live PlaybackStore cursor (session was cleared
     // by hydrate's resetLastSession).
     await page.evaluate(async () => {
-      await window.__mockTest!.expireAuth('spotify');
+      const api = window.__mockTest;
+      if (!api) throw new Error('window.__mockTest is not installed');
+      await api.expireAuth('spotify');
     });
 
     // Wait until the adapter reports unauthenticated AND React has had a
@@ -70,7 +72,9 @@ test.describe('Provider re-authentication — re-prime current track at saved po
     );
 
     await page.evaluate(async () => {
-      await window.__mockTest!.restoreAuth('spotify');
+      const api = window.__mockTest;
+      if (!api) throw new Error('window.__mockTest is not installed');
+      await api.restoreAuth('spotify');
     });
 
     // #then — aria-valuemax remains > 1 (real duration painted) and

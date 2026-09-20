@@ -11,7 +11,6 @@
  *  - Clear-all is enabled when isSearching even without filters
  */
 
-import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ThemeProvider } from 'styled-components';

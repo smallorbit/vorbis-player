@@ -71,7 +71,8 @@ describe('useAccentColor', () => {
   });
 
   it('falls back to theme color when track has no image', () => {
-    const track = makeTrack({ albumId: 'album-4', image: undefined });
+    const { image: _image, ...track } = makeTrack({ albumId: 'album-4' });
+    void _image;
 
     renderHook(() =>
       useAccentColor(track, {}, setAccentColor, setAccentColorOverrides)

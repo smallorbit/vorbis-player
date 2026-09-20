@@ -12,14 +12,14 @@
  *  - closeAfter error handling: label + cause surfaced in toast
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
 import type { ContextMenuRequest } from '../../types';
-import type { ProviderId } from '@/types/domain';
+import type { CollectionRef, CollectionSelection, ProviderId } from '@/types/domain';
 import { createMenuActionError } from '../menuItemsForKind';
+import { makeCollectionSelection } from '@/test/fixtures';
 
 const mockToast = vi.fn();
 vi.mock('sonner', () => ({ toast: (...args: unknown[]) => mockToast(...args) }));
@@ -57,15 +57,50 @@ vi.mock('../useAlbumSavedStatus', () => ({
 
 import LibraryContextMenu, { type LibraryContextMenuProps } from '../LibraryContextMenu';
 
-function makeRequest(overrides: Partial<ContextMenuRequest> = {}): ContextMenuRequest {
-  return {
-    kind: 'playlist',
-    id: 'p1',
-    name: 'My Playlist',
-    provider: 'spotify' as ProviderId,
+interface MakeRequestOptions {
+  kind?: 'playlist' | 'album' | 'liked' | 'recently-played';
+  id?: string;
+  name?: string;
+  provider?: ProviderId | undefined;
+  selection?: CollectionSelection;
+  originalKind?: 'playlist' | 'album' | 'liked';
+  recentRef?: CollectionRef;
+}
+
+function makeRequest(overrides: MakeRequestOptions = {}): ContextMenuRequest {
+  const kind = overrides.kind ?? 'playlist';
+  const id = overrides.id ?? 'p1';
+  const name = overrides.name ?? 'My Playlist';
+  const provider: ProviderId | undefined =
+    'provider' in overrides ? overrides.provider : 'spotify';
+
+  const effectiveKind = kind === 'recently-played' ? (overrides.originalKind ?? 'playlist') : kind;
+  const selection: CollectionSelection =
+    overrides.selection ??
+    (effectiveKind === 'liked'
+      ? makeCollectionSelection('liked', id, provider ?? 'spotify')
+      : makeCollectionSelection(effectiveKind, id, provider ?? 'spotify'));
+
+  const base = {
+    id,
+    name,
+    selection,
     anchorRect: new DOMRect(10, 10, 100, 40),
-    ...overrides,
+    ...(provider !== undefined && { provider }),
   };
+
+  if (kind === 'recently-played') {
+    return {
+      ...base,
+      kind: 'recently-played',
+      originalKind: overrides.originalKind ?? 'playlist',
+      recentRef:
+        overrides.recentRef ?? { provider: provider ?? 'spotify', kind: 'playlist', id },
+    };
+  }
+  if (kind === 'album') return { ...base, kind: 'album' };
+  if (kind === 'liked') return { ...base, kind: 'liked' };
+  return { ...base, kind: 'playlist' };
 }
 
 function defaultMocks() {
@@ -218,12 +253,12 @@ describe('LibraryContextMenu edges', () => {
     it('recently-played without recentRef does NOT render Remove from history', () => {
       // #given — recently-played but recentRef missing (defensive path)
       // #when
-      renderMenu({
-        request: makeRequest({
-          kind: 'recently-played',
-          originalKind: 'playlist',
-        }),
+      const request = makeRequest({
+        kind: 'recently-played',
+        originalKind: 'playlist',
       });
+      Reflect.deleteProperty(request, 'recentRef');
+      renderMenu({ request });
 
       // #then
       expect(screen.queryByTestId('menu-remove-from-history')).toBeNull();

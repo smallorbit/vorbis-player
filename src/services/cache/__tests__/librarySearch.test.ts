@@ -1,5 +1,6 @@
 import 'fake-indexeddb/auto';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { defined } from '@/test/defined';
 
 import {
   initCache,
@@ -308,7 +309,7 @@ describe('searchLibraryCache', () => {
 
       // #then — deduplicated to a single result despite appearing in two lists
       expect(result.tracks).toHaveLength(1);
-      expect(result.tracks[0].id).toBe('t1');
+      expect(defined(result.tracks[0]).id).toBe('t1');
     });
 
     it('keeps same-id tracks from different providers distinct', async () => {

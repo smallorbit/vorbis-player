@@ -3,7 +3,8 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { ThemeProvider } from 'styled-components';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { theme } from '@/styles/theme';
-import { makeProviderDescriptor } from '@/test/fixtures';
+import { makeCapabilities, makeProviderDescriptor } from '@/test/fixtures';
+import { defined } from '@/test/defined';
 
 const mockSetActiveProviderId = vi.fn();
 const mockToggleProvider = vi.fn();
@@ -24,7 +25,7 @@ function buildProviderContext(overrides: Record<string, unknown> = {}) {
   const dropboxDesc = makeProviderDescriptor({
     id: 'dropbox' as 'spotify',
     name: 'Dropbox',
-    capabilities: { hasSaveTrack: true, hasExternalLink: false, hasLikedCollection: true },
+    capabilities: makeCapabilities({ hasSaveTrack: true, hasExternalLink: false, hasLikedCollection: true }),
   });
 
   return {
@@ -162,7 +163,7 @@ describe('ProviderSetupScreen', () => {
       render(<Wrapper><ProviderSetupScreen /></Wrapper>);
 
       // #when
-      fireEvent.click(screen.getAllByText('Connect')[0]);
+      fireEvent.click(defined(screen.getAllByText('Connect')[0]));
 
       // #then
       expect(spotifyDesc.auth.beginLogin).toHaveBeenCalledWith({ popup: true });
@@ -271,7 +272,7 @@ describe('ProviderSetupScreen', () => {
       render(<Wrapper><ProviderSetupScreen /></Wrapper>);
 
       // #when
-      fireEvent.click(screen.getAllByText('Reconnect')[0]);
+      fireEvent.click(defined(screen.getAllByText('Reconnect')[0]));
 
       // #then
       expect(mockSetActiveProviderId).toHaveBeenCalled();

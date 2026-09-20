@@ -3,7 +3,8 @@ import { SpotifyPlaybackAdapter } from '@/providers/spotify/spotifyPlaybackAdapt
 import { spotifyPlayer, waitForSpotifyReady } from '@/services/spotifyPlayer';
 import { AuthExpiredError } from '@/providers/errors';
 import { SESSION_EXPIRED_EVENT, dispatchAppEvent } from '@/constants/events';
-import type { MediaTrack, PlaybackState } from '@/types/domain';
+import type { PlaybackState } from '@/types/domain';
+import { makeTrack as makeTrackFixture } from '@/test/fixtures';
 
 vi.mock('@/services/spotifyPlayer', () => ({
   spotifyPlayer: {
@@ -24,16 +25,16 @@ vi.mock('@/services/spotify', () => ({
   },
 }));
 
-const makeTrack = (overrides: Partial<MediaTrack> = {}): MediaTrack => ({
-  id: 'track-1',
-  provider: 'spotify',
-  playbackRef: { provider: 'spotify', ref: 'spotify:track:abc' },
-  name: 'Track',
-  artists: 'Artist',
-  album: 'Album',
-  durationMs: 210_000,
-  ...overrides,
-});
+const makeTrack = (overrides: Parameters<typeof makeTrackFixture>[0] = {}) =>
+  makeTrackFixture({
+    id: 'track-1',
+    playbackRef: { provider: 'spotify', ref: 'spotify:track:abc' },
+    name: 'Track',
+    artists: 'Artist',
+    album: 'Album',
+    durationMs: 210_000,
+    ...overrides,
+  });
 
 describe('SpotifyPlaybackAdapter.prepareTrack', () => {
   let adapter: SpotifyPlaybackAdapter;

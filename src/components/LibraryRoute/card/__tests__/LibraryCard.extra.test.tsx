@@ -3,16 +3,18 @@
  * Supplements card/__tests__/LibraryCard.test.tsx written by the builder.
  */
 
-import React from 'react';
 import { render, screen, createEvent, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import LibraryCard from '../LibraryCard';
+import { makeCollectionSelection } from '@/test/fixtures';
+import { defined } from '@/test/defined';
 
 const baseProps = {
   kind: 'playlist' as const,
   id: 'p1',
   name: 'Sample Playlist',
   variant: 'row' as const,
+  selection: makeCollectionSelection('playlist', 'p1'),
   onSelect: vi.fn(),
 };
 
@@ -57,7 +59,7 @@ describe('LibraryCard (extra)', () => {
 
       // #then
       expect(onContextMenuRequest).toHaveBeenCalledTimes(1);
-      const req = onContextMenuRequest.mock.calls[0][0];
+      const req = defined(defined(onContextMenuRequest.mock.calls[0])[0]);
       expect(req.kind).toBe('playlist');
       expect(req.id).toBe('p1');
     });

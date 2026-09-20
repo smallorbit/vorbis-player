@@ -14,8 +14,8 @@ const mockSetOriginalTracks = vi.fn();
 const mockSetCurrentTrackIndex = vi.fn();
 
 const mockRegistry = {
-  getAll: vi.fn<[], ProviderDescriptor[]>(() => []),
-  get: vi.fn<[string], ProviderDescriptor | undefined>(() => undefined),
+  getAll: vi.fn<() => ProviderDescriptor[]>(() => []),
+  get: vi.fn<(arg0: string) => ProviderDescriptor | undefined>(() => undefined),
   has: vi.fn(() => true),
 };
 
@@ -44,7 +44,7 @@ vi.mock('@/contexts/TrackContext', () => ({
 }));
 
 vi.mock('@/hooks/useLocalStorage', () => ({
-  useLocalStorage: vi.fn((key: string, defaultValue: unknown) => [defaultValue, vi.fn()]),
+  useLocalStorage: vi.fn((_key: string, defaultValue: unknown) => [defaultValue, vi.fn()]),
 }));
 
 // Import after mocks are set up

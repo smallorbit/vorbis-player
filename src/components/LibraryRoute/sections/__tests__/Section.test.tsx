@@ -3,7 +3,6 @@
  * Section is a pure rendering component (#1294).
  */
 
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import Section from '../Section';

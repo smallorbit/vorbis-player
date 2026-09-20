@@ -1,7 +1,8 @@
-import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { defined } from '@/test/defined';
 import LibraryCard from '../LibraryCard';
+import { makeCollectionSelection } from '@/test/fixtures';
 
 vi.mock('@/components/ProviderIcon', () => ({
   default: ({ provider }: { provider: string }) => (
@@ -14,6 +15,7 @@ const baseProps = {
   id: 'p1',
   name: 'Sample Playlist',
   variant: 'row' as const,
+  selection: makeCollectionSelection('playlist', 'p1'),
   onSelect: vi.fn(),
 };
 
@@ -69,7 +71,7 @@ describe('LibraryCard', () => {
 
     // #then
     expect(onContextMenuRequest).toHaveBeenCalledTimes(1);
-    const req = onContextMenuRequest.mock.calls[0][0];
+    const req = defined(defined(onContextMenuRequest.mock.calls[0])[0]);
     expect(req.kind).toBe('playlist');
     expect(req.id).toBe('p1');
     expect(req.anchorRect.x).toBe(50);

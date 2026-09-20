@@ -1,5 +1,6 @@
 import 'fake-indexeddb/auto';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { defined } from '@/test/defined';
 import {
   initCache,
   closeCache,
@@ -126,7 +127,7 @@ describe('libraryCache', () => {
 
       // #then
       expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('p3');
+      expect(defined(result[0]).id).toBe('p3');
     });
 
     it('should leave other providers\' playlists intact when replacing one provider', async () => {
@@ -164,7 +165,7 @@ describe('libraryCache', () => {
 
       // #then
       expect(result).toHaveLength(1);
-      expect(result[0].name).toBe('New Name');
+      expect(defined(result[0]).name).toBe('New Name');
     });
 
     it('should remove a playlist', async () => {
@@ -177,7 +178,7 @@ describe('libraryCache', () => {
 
       // #then
       expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('p2');
+      expect(defined(result[0]).id).toBe('p2');
     });
 
     it('should return empty array when no playlists', async () => {
@@ -188,7 +189,7 @@ describe('libraryCache', () => {
     it('should preserve revision', async () => {
       await putPlaylist(makePlaylist('p1', 'Rock', 'snap123'));
       const result = await getAllPlaylists();
-      expect(result[0].revision).toBe('snap123');
+      expect(defined(result[0]).revision).toBe('snap123');
     });
   });
 
@@ -215,7 +216,7 @@ describe('libraryCache', () => {
 
       // #then
       expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('a3');
+      expect(defined(result[0]).id).toBe('a3');
     });
 
     it('should leave other providers\' albums intact when replacing one provider', async () => {
@@ -253,7 +254,7 @@ describe('libraryCache', () => {
 
       // #then
       expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('a2');
+      expect(defined(result[0]).id).toBe('a2');
     });
   });
 
@@ -403,7 +404,7 @@ describe('libraryCache', () => {
 
       // #then
       expect(result).toHaveLength(1);
-      expect(result[0].name).toBe('Survive');
+      expect(defined(result[0]).name).toBe('Survive');
     });
   });
 
@@ -498,11 +499,11 @@ describe('libraryCache', () => {
     function mockWriteTransactionFailure(db: IDBDatabase): () => void {
       const original = db.transaction.bind(db);
       const spy = vi.spyOn(db, 'transaction').mockImplementation(
-        (storeNames: string | string[], mode?: IDBTransactionMode) => {
+        (storeNames: string | string[] | Iterable<string>, mode?: IDBTransactionMode) => {
           if (mode === 'readwrite') {
             throw new DOMException('QuotaExceededError', 'QuotaExceededError');
           }
-          return original(storeNames, mode);
+          return mode !== undefined ? original(storeNames, mode) : original(storeNames);
         },
       );
       return () => spy.mockRestore();

@@ -1,16 +1,22 @@
 import { Linter } from 'eslint';
+import type { Rule } from 'eslint';
 import tsParser from '@typescript-eslint/parser';
 import { describe, expect, it } from 'vitest';
+import { createRequire } from 'node:module';
 
-import propsExplicitUndefined from '../props-explicit-undefined.js';
+const propsExplicitUndefined: Rule.RuleModule = createRequire(import.meta.url)(
+  '../props-explicit-undefined.js',
+);
 
 const RULE_ID = 'vorbis/props-explicit-undefined';
 
-const flatConfig = [
+const linter = new Linter({ configType: 'flat' });
+
+const flatConfig: Linter.Config[] = [
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
-      parser: tsParser as unknown as Linter.Parser,
+      parser: tsParser,
       parserOptions: {
         ecmaVersion: 2020,
         sourceType: 'module',
@@ -20,21 +26,20 @@ const flatConfig = [
     plugins: {
       vorbis: {
         rules: {
-          'props-explicit-undefined':
-            propsExplicitUndefined as unknown as Linter.RuleModule,
+          'props-explicit-undefined': propsExplicitUndefined,
         },
       },
     },
-    rules: { [RULE_ID]: 'error' as const },
+    rules: { [RULE_ID]: 'error' },
   },
 ];
 
 function lint(code: string) {
-  return new Linter().verify(code, flatConfig, { filename: 'test.tsx' });
+  return linter.verify(code, flatConfig, { filename: 'test.tsx' });
 }
 
 function fix(code: string) {
-  return new Linter().verifyAndFix(code, flatConfig, { filename: 'test.tsx' });
+  return linter.verifyAndFix(code, flatConfig, { filename: 'test.tsx' });
 }
 
 describe('props-explicit-undefined', () => {

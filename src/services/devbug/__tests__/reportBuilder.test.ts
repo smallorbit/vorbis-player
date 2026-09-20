@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { buildBugReport, collectBrowserInfo, extractElementInfo, getReactComponentName } from '../reportBuilder';
 import type { SelectedElement } from '@/types/devbug';
+import { defined } from '@/test/defined';
 
 const FIXED_UUID = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
 const FIXED_ISO = '2026-04-06T12:00:00.000Z';
@@ -72,7 +73,7 @@ describe('buildBugReport', () => {
 
     // #then
     expect(report.elements).toHaveLength(1);
-    expect(report.elements[0].cssSelector).toBe('#my-el');
+    expect(defined(report.elements[0]).cssSelector).toBe('#my-el');
   });
 
   it('defaults screenshotDataUrl to empty string when not provided', () => {
@@ -143,7 +144,7 @@ describe('buildBugReport', () => {
 
     // #then
     expect(report.consoleLogs).toHaveLength(1);
-    expect(report.consoleLogs[0].level).toBe('error');
+    expect(defined(report.consoleLogs[0]).level).toBe('error');
   });
 
   it('defaults performanceMetrics with null values when not provided', () => {

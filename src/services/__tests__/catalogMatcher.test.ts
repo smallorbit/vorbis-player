@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { defined } from '@/test/defined';
 import {
   normalizeForMatching,
   buildIndexes,
@@ -15,6 +16,7 @@ function makeTrack(overrides: Partial<MediaTrack> & { name: string; artists: str
     playbackRef: { provider: 'dropbox', ref: `/music/${overrides.name}.mp3` },
     album: overrides.album ?? 'Test Album',
     durationMs: 200000,
+    genres: [],
     ...overrides,
   };
 }
@@ -252,7 +254,7 @@ describe('findTracksByArtist', () => {
   it('falls back to name when no MBID', () => {
     const result = findTracksByArtist('Muse', null, indexes);
     expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('t3');
+    expect(defined(result[0]).id).toBe('t3');
   });
 
   it('returns empty array when artist not found', () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { DropboxAuthAdapter } from '../dropboxAuthAdapter';
+import { DropboxAuthAdapter } from '../dropboxAuthAdapter';
 
 vi.mock('../dropboxSyncFolder', () => ({
   ensureVorbisFolder: vi.fn(),
@@ -20,18 +20,42 @@ interface SampleFile extends VersionedJson {
   value: string;
 }
 
+/** Public methods RemoteJsonFileStore actually uses on the auth adapter. */
+type DropboxAuthPublic = Pick<
+  DropboxAuthAdapter,
+  | 'providerId'
+  | 'isAuthenticated'
+  | 'getAccessToken'
+  | 'beginLogin'
+  | 'handleCallback'
+  | 'logout'
+  | 'ensureValidToken'
+  | 'refreshAccessToken'
+  | 'reportUnauthorized'
+>;
+
 function createMockAuth(token = 'test-token'): DropboxAuthAdapter {
-  return {
-    providerId: 'dropbox',
-    isAuthenticated: vi.fn().mockReturnValue(true),
-    getAccessToken: vi.fn().mockResolvedValue(token),
-    beginLogin: vi.fn(),
-    handleCallback: vi.fn(),
-    logout: vi.fn(),
-    ensureValidToken: vi.fn().mockResolvedValue(token),
-    refreshAccessToken: vi.fn().mockResolvedValue(token),
-    reportUnauthorized: vi.fn(),
-  } satisfies DropboxAuthAdapter;
+  const methods = {
+    providerId: 'dropbox' as const,
+    isAuthenticated: vi.fn<() => boolean>().mockReturnValue(true),
+    getAccessToken: vi.fn<() => Promise<string | null>>().mockResolvedValue(token),
+    beginLogin: vi.fn<() => Promise<void>>(),
+    handleCallback: vi.fn<(url: URL) => Promise<boolean>>(),
+    logout: vi.fn<() => Promise<void>>(),
+    ensureValidToken: vi.fn<() => Promise<string | null>>().mockResolvedValue(token),
+    refreshAccessToken: vi.fn<() => Promise<string | null>>().mockResolvedValue(token),
+    reportUnauthorized: vi.fn<() => void>(),
+  } satisfies DropboxAuthPublic;
+  const auth = new DropboxAuthAdapter();
+  auth.isAuthenticated = methods.isAuthenticated;
+  auth.getAccessToken = methods.getAccessToken;
+  auth.beginLogin = methods.beginLogin;
+  auth.handleCallback = methods.handleCallback;
+  auth.logout = methods.logout;
+  auth.ensureValidToken = methods.ensureValidToken;
+  auth.refreshAccessToken = methods.refreshAccessToken;
+  auth.reportUnauthorized = methods.reportUnauthorized;
+  return Object.assign(auth, methods);
 }
 
 function makeSample(value = 'x'): SampleFile {

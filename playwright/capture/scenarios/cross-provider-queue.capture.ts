@@ -20,12 +20,22 @@ test.describe('Cross-Provider Queue', () => {
     await waitForPlayerReady(capturePage);
 
     await capturePage.evaluate(async (ids: string[]) => {
-      await window.__mockTest!.setQueue(ids);
+      const api = window.__mockTest;
+      if (!api) throw new Error('window.__mockTest is not installed');
+      await api.setQueue(ids);
     }, queueIds);
 
+    const trackId = queueIds[0];
+    if (trackId === undefined) {
+      test.skip();
+      return;
+    }
+
     await capturePage.evaluate(async (state: { trackId: string; positionMs: number; isPlaying: boolean }) => {
-      await window.__mockTest!.setPlaybackState(state);
-    }, { trackId: queueIds[0], positionMs: 7500, isPlaying: true });
+      const api = window.__mockTest;
+      if (!api) throw new Error('window.__mockTest is not installed');
+      await api.setPlaybackState(state);
+    }, { trackId, positionMs: 7500, isPlaying: true });
 
     await capturePage.keyboard.press('q');
     await animationSettle(capturePage, 800);

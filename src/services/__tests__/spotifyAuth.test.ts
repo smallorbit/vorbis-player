@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { defined } from '@/test/defined';
 
 const mockPurgeProviderPersistedData = vi.hoisted(() =>
   vi.fn().mockResolvedValue(undefined),
@@ -197,7 +198,7 @@ describe('SpotifyAuth', () => {
       await auth.refreshAccessToken();
 
       // #then
-      const [url, options] = vi.mocked(global.fetch).mock.calls[0];
+      const [url, options] = defined(vi.mocked(global.fetch).mock.calls[0]);
       expect(url).toBe('https://accounts.spotify.com/api/token');
       expect(options?.method).toBe('POST');
       const body = options?.body as URLSearchParams;
@@ -344,7 +345,7 @@ describe('SpotifyAuth', () => {
       await auth.handleAuthCallback('test-code');
 
       // #then
-      const [url, options] = vi.mocked(global.fetch).mock.calls[0];
+      const [url, options] = defined(vi.mocked(global.fetch).mock.calls[0]);
       expect(url).toBe('https://accounts.spotify.com/api/token');
       const body = options?.body as URLSearchParams;
       expect(body.get('grant_type')).toBe('authorization_code');

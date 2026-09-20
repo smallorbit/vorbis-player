@@ -12,6 +12,9 @@
 import { describe, it, expect, vi } from 'vitest';
 import { buildMenuItems, type MenuActions } from '../menuItemsForKind';
 import type { ContextMenuRequest } from '../../types';
+import type { CollectionRef, CollectionSelection, ProviderId } from '@/types/domain';
+import { defined } from '@/test/defined';
+import { makeCollectionSelection } from '@/test/fixtures';
 
 function makeActions(overrides: Partial<MenuActions> = {}): MenuActions {
   return {
@@ -24,14 +27,50 @@ function makeActions(overrides: Partial<MenuActions> = {}): MenuActions {
   };
 }
 
-function makeRequest(overrides: Partial<ContextMenuRequest> = {}): ContextMenuRequest {
-  return {
-    kind: 'playlist',
-    id: 'p1',
-    name: 'Test',
+interface MakeRequestOptions {
+  kind?: 'playlist' | 'album' | 'liked' | 'recently-played';
+  id?: string;
+  name?: string;
+  provider?: ProviderId | undefined;
+  selection?: CollectionSelection;
+  originalKind?: 'playlist' | 'album' | 'liked';
+  recentRef?: CollectionRef;
+}
+
+function makeRequest(overrides: MakeRequestOptions = {}): ContextMenuRequest {
+  const kind = overrides.kind ?? 'playlist';
+  const id = overrides.id ?? 'p1';
+  const name = overrides.name ?? 'Test';
+  const provider: ProviderId | undefined =
+    'provider' in overrides ? overrides.provider : 'spotify';
+
+  const effectiveKind = kind === 'recently-played' ? (overrides.originalKind ?? 'playlist') : kind;
+  const selection: CollectionSelection =
+    overrides.selection ??
+    (effectiveKind === 'liked'
+      ? makeCollectionSelection('liked', id, provider ?? 'spotify')
+      : makeCollectionSelection(effectiveKind, id, provider ?? 'spotify'));
+
+  const base = {
+    id,
+    name,
+    selection,
     anchorRect: new DOMRect(0, 0, 0, 0),
-    ...overrides,
+    ...(provider !== undefined && { provider }),
   };
+
+  if (kind === 'recently-played') {
+    return {
+      ...base,
+      kind: 'recently-played',
+      originalKind: overrides.originalKind ?? 'playlist',
+      recentRef:
+        overrides.recentRef ?? { provider: provider ?? 'spotify', kind: 'playlist', id },
+    };
+  }
+  if (kind === 'album') return { ...base, kind: 'album' };
+  if (kind === 'liked') return { ...base, kind: 'liked' };
+  return { ...base, kind: 'playlist' };
 }
 
 describe('buildMenuItems edges', () => {
@@ -57,7 +96,7 @@ describe('buildMenuItems edges', () => {
         'play-liked-spotify',
         'remove-from-history',
       ]);
-      expect(items[items.length - 1].variant).toBe('destructive');
+      expect(defined(items[items.length - 1]).variant).toBe('destructive');
     });
   });
 
@@ -71,7 +110,7 @@ describe('buildMenuItems edges', () => {
 
       // #then
       expect(items).toHaveLength(1);
-      expect(items[0].id).toBe('play-all');
+      expect(defined(items[0]).id).toBe('play-all');
     });
 
     it('returns only Play All when likedProviderActions=undefined', () => {
@@ -83,7 +122,7 @@ describe('buildMenuItems edges', () => {
 
       // #then
       expect(items).toHaveLength(1);
-      expect(items[0].id).toBe('play-all');
+      expect(defined(items[0]).id).toBe('play-all');
     });
   });
 

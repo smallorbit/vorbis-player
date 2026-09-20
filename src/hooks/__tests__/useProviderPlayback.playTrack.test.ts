@@ -44,18 +44,16 @@ vi.mock('@/services/sessionPersistence', () => ({
 
 import { useProviderPlayback } from '../useProviderPlayback';
 import { queueStore } from '@/stores/queueStore';
+import { makeTrack as makeFixtureTrack } from '@/test/fixtures';
 
-function makeTrack(id = 'track-1', provider: ProviderId = 'spotify' as ProviderId): MediaTrack {
-  return {
+function makeTrack(id = 'track-1', provider: ProviderId = 'spotify'): MediaTrack {
+  return makeFixtureTrack({
     id,
     provider,
     playbackRef: { provider, ref: `spotify:track:${id}` },
-    name: 'Test Track',
-    artists: 'Test Artist',
-    album: 'Test Album',
     durationMs: 180000,
     image: '',
-  };
+  });
 }
 
 describe('useProviderPlayback — onQueueChanged capability gate', () => {

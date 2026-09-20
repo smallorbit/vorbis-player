@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { defined } from '@/test/defined';
 
 const refreshAccessToken = vi.fn();
 const getAccessToken = vi.fn();
@@ -80,7 +81,7 @@ describe('spotifyApiRequest — structured errors and retry-after-refresh', () =
     expect(reportUnauthorized).not.toHaveBeenCalled();
 
     // #and the retry used the freshly-refreshed token
-    const retryInit = fetchMock.mock.calls[1][1] as RequestInit;
+    const retryInit = defined(defined(fetchMock.mock.calls[1])[1]);
     expect((retryInit.headers as Record<string, string>).Authorization).toBe(
       'Bearer token-2-fresh',
     );

@@ -21,18 +21,17 @@ vi.mock('@/services/sessionPersistence', () => ({
 }));
 
 import { useProviderPlayback } from '../useProviderPlayback';
+import { makeTrack as makeFixtureTrack } from '@/test/fixtures';
 
-function makeTrack(id: string, provider: ProviderId = 'spotify' as ProviderId): MediaTrack {
-  return {
+function makeTrack(id: string, provider: ProviderId = 'spotify'): MediaTrack {
+  return makeFixtureTrack({
     id,
     provider,
     playbackRef: { provider, ref: `spotify:track:${id}` },
     name: `Track ${id}`,
-    artists: 'Test Artist',
-    album: 'Test Album',
     durationMs: 180000,
     image: '',
-  };
+  });
 }
 
 function makeDescriptor() {

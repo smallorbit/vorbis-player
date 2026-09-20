@@ -3,12 +3,13 @@
  * Tests core playback operations: initialize, playTrack, seek, pause/resume, subscribe.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { DropboxPlaybackAdapter } from '../dropboxPlaybackAdapter';
 import type { DropboxCatalogAdapter } from '../dropboxCatalogAdapter';
 import { makeMediaTrack } from '@/test/fixtures';
 import type { PlaybackState } from '@/types/domain';
 import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
+import { defined } from '@/test/defined';
 
 // Mock DropboxCatalogAdapter
 const mockCatalog: Partial<DropboxCatalogAdapter> = {
@@ -65,7 +66,7 @@ vi.mock('@/providers/dropbox/dropboxArtCache', () => ({
 
 describe('DropboxPlaybackAdapter', () => {
   let adapter: DropboxPlaybackAdapter;
-  let listeners: Map<string, vi.Mock>;
+  let listeners: Map<string, Mock>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -151,7 +152,7 @@ describe('DropboxPlaybackAdapter', () => {
   it('subscribe receives state updates and returns unsubscribe', async () => {
     // #given
     const track = makeMediaTrack({ id: 'track-1', name: 'Test Track', artists: 'Test Artist' });
-    const listener = vi.fn();
+    const listener = vi.fn<(state: PlaybackState | null) => void>();
 
     await adapter.initialize();
     await adapter.playTrack(track);
@@ -166,9 +167,10 @@ describe('DropboxPlaybackAdapter', () => {
 
     // #then
     expect(listener).toHaveBeenCalled();
-    const state = listener.mock.calls[0][0] as PlaybackState;
-    expect(state.currentTrackId).toBe('track-1');
-    expect(state.isPlaying).toBe(true);
+    const state = defined(defined(listener.mock.calls[0])[0]);
+    expect(state).not.toBeNull();
+    expect(state?.currentTrackId).toBe('track-1');
+    expect(state?.isPlaying).toBe(true);
 
     unsubscribe();
     listener.mockClear();

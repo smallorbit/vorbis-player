@@ -17,6 +17,7 @@ vi.mock('@/lib/debugLog', () => ({
 }));
 
 import { generateRadioQueue } from '@/services/radioService';
+import type { RadioMatchStats } from '@/types/radio';
 
 const seed: RadioSeed = { type: 'track', artist: 'Radiohead', track: 'Creep' };
 
@@ -24,11 +25,15 @@ function track(id: string, name: string): MediaTrack {
   return makeMediaTrack({ id, name, provider: 'spotify' });
 }
 
+function matchStats(matched: number): RadioMatchStats {
+  return { lastfmCandidates: matched, matched, byMbid: 0, byName: matched };
+}
+
 function result(queue: MediaTrack[], seedDescription: string): RadioResult {
   return {
     queue,
     seedDescription,
-    matchStats: { requested: queue.length, matched: queue.length, unmatched: 0 },
+    matchStats: matchStats(queue.length),
     unmatchedSuggestions: [],
   };
 }
@@ -52,6 +57,9 @@ describe('useRadio', () => {
 
     // #then
     expect(hook.current.radioState.isActive).toBe(true);
+    if (!hook.current.radioState.isActive) {
+      throw new Error('expected radio to be active');
+    }
     expect(hook.current.radioState.seedDescription).toBe('Songs like Creep');
     expect(hook.current.radioState.isGenerating).toBe(false);
   });
@@ -96,7 +104,7 @@ describe('useRadio', () => {
 
     // #then the guard keeps the newer generation's state; the stale resolution
     // returns null and does not overwrite it.
-    expect(hook.current.radioState.seedDescription).toBe('Newer seed');
+    expect(hook.current.radioState).toMatchObject({ isActive: true, seedDescription: 'Newer seed' });
     await expect(older).resolves.toBeNull();
   });
 
@@ -121,7 +129,7 @@ describe('useRadio', () => {
 
     // #then the stale result is dropped and state stays inactive
     expect(hook.current.radioState.isActive).toBe(false);
-    expect(hook.current.radioState.seedDescription).toBeUndefined();
+    expect(hook.current.radioState).toMatchObject({ isActive: false });
     await expect(pending).resolves.toBeNull();
   });
 });

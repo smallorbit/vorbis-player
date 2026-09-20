@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { startPerfCapture, stopPerfCapture, collectPerfData } from '../perfCapture';
 import type { PerfData } from '@/types/devbug';
+import { defined } from '@/test/defined';
 
 type ObserverCallback = (list: { getEntries: () => PerformanceEntry[] }) => void;
 
@@ -319,7 +320,7 @@ describe('long task collection', () => {
 
     // #then
     expect(data.longTasks).toHaveLength(1);
-    expect(data.longTasks[0].duration).toBe(80);
+    expect(defined(data.longTasks[0]).duration).toBe(80);
   });
 
   it('returns empty array when long task observer was not set up', () => {

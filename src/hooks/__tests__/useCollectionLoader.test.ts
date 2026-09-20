@@ -2,9 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useCollectionLoader } from '../useCollectionLoader';
 import { queueStore } from '@/stores/queueStore';
-import { makeTrack } from '@/test/fixtures';
+import { makeTrack, makeProviderDescriptor, makePlaybackProvider, makeCapabilities } from '@/test/fixtures';
 import { LIKED_SONGS_NAME } from '@/constants/playlist';
-import type { CollectionSelection, LoadCollectionResult, MediaTrack } from '@/types/domain';
+import type { CollectionRef, CollectionSelection, LoadCollectionResult, MediaTrack, PlaybackSelection, ProviderId } from '@/types/domain';
+import type { ProviderDescriptor } from '@/types/providers';
+import { defined } from '@/test/defined';
 
 /** Spotify playlist selection, as produced by the library UI. */
 function playlistSel(id: string, name?: string): CollectionSelection {
@@ -25,16 +27,40 @@ function folderSel(id: string, name?: string): CollectionSelection {
 }
 
 function makeMediaTrack(id: string, addedAt?: number): MediaTrack {
-  return {
+  return makeTrack({
     id,
-    provider: 'spotify',
-    playbackRef: { provider: 'spotify', ref: `spotify:track:${id}` },
     name: `Track ${id}`,
     artists: 'Artist',
     album: 'Album',
     durationMs: 180000,
-    addedAt,
-  };
+    playbackRef: { provider: 'spotify', ref: `spotify:track:${id}` },
+    ...(addedAt !== undefined && { addedAt }),
+  });
+}
+
+function stubDescriptor(options: {
+  id?: ProviderId;
+  listTracks?: ProviderDescriptor['catalog']['listTracks'];
+  pause?: ProviderDescriptor['playback']['pause'];
+  playCollection?: ProviderDescriptor['playback']['playCollection'];
+  capabilities?: Parameters<typeof makeCapabilities>[0];
+} = {}): ProviderDescriptor {
+  const id = options.id ?? 'spotify';
+  return makeProviderDescriptor({
+    id,
+    name: id === 'dropbox' ? 'Dropbox' : 'Spotify',
+    capabilities: makeCapabilities(options.capabilities),
+    catalog: {
+      providerId: id,
+      listCollections: vi.fn().mockResolvedValue([]),
+      listTracks: options.listTracks ?? vi.fn().mockResolvedValue([]),
+    },
+    playback: makePlaybackProvider({
+      providerId: id,
+      pause: options.pause ?? vi.fn().mockResolvedValue(undefined),
+      ...(options.playCollection !== undefined && { playCollection: options.playCollection }),
+    }),
+  });
 }
 
 function makeDeferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
@@ -46,17 +72,16 @@ function makeDeferred<T>(): { promise: Promise<T>; resolve: (value: T) => void }
 }
 
 describe('useCollectionLoader', () => {
-  let mockPlayTrack: ReturnType<typeof vi.fn>;
-  let mockSetError: ReturnType<typeof vi.fn>;
-  let mockSetIsLoading: ReturnType<typeof vi.fn>;
-  let mockSetSelection: ReturnType<typeof vi.fn>;
-  let mockSetActiveProviderId: ReturnType<typeof vi.fn>;
-  let mockGetDescriptor: ReturnType<typeof vi.fn>;
-  let mockSpotifyHandlePlaylistSelect: ReturnType<typeof vi.fn>;
-  let mockStopRadioBase: ReturnType<typeof vi.fn>;
-  let mockRecord: ReturnType<typeof vi.fn>;
-  let mockActiveDescriptor: { id: string; [key: string]: unknown };
-  let drivingProviderRef: { current: string | null };
+  let mockPlayTrack: ReturnType<typeof vi.fn<(index: number, isSkip?: boolean | undefined) => Promise<void>>>;
+  let mockSetError: ReturnType<typeof vi.fn<(error: string | null) => void>>;
+  let mockSetIsLoading: ReturnType<typeof vi.fn<(loading: boolean) => void>>;
+  let mockSetSelection: ReturnType<typeof vi.fn<(selection: PlaybackSelection | null) => void>>;
+  let mockSetActiveProviderId: ReturnType<typeof vi.fn<(providerId: ProviderId) => void>>;
+  let mockGetDescriptor: ReturnType<typeof vi.fn<(providerId: ProviderId) => ProviderDescriptor | undefined>>;
+  let mockSpotifyHandlePlaylistSelect: ReturnType<typeof vi.fn<(ref: CollectionRef) => Promise<MediaTrack[]>>>;
+  let mockStopRadioBase: ReturnType<typeof vi.fn<() => void>>;
+  let mockRecord: ReturnType<typeof vi.fn<(ref: CollectionRef, name: string, imageUrl?: string | null | undefined) => void>>;
+  let mockActiveDescriptor: ProviderDescriptor;
 
   beforeEach(() => {
     mockPlayTrack = vi.fn().mockResolvedValue(undefined);
@@ -64,16 +89,15 @@ describe('useCollectionLoader', () => {
     mockSetIsLoading = vi.fn();
     mockSetSelection = vi.fn();
     mockSetActiveProviderId = vi.fn();
-    // Selections always carry an explicit provider now, so resolve the active
-    // descriptor by id unless the test overrides the implementation.
-    mockGetDescriptor = vi.fn((providerId: string) =>
+    mockActiveDescriptor = stubDescriptor({
+      capabilities: { hasContextPlaybackFallback: false },
+    });
+    mockGetDescriptor = vi.fn((providerId: ProviderId) =>
       providerId === mockActiveDescriptor.id ? mockActiveDescriptor : undefined
     );
     mockSpotifyHandlePlaylistSelect = vi.fn().mockResolvedValue([]);
     mockStopRadioBase = vi.fn();
     mockRecord = vi.fn();
-    drivingProviderRef = { current: null };
-    mockActiveDescriptor = { id: 'spotify', capabilities: { hasContextPlaybackFallback: false } };
   });
 
   /**
@@ -81,7 +105,7 @@ describe('useCollectionLoader', () => {
    * overrides. The queue itself lives in `queueStore` (reset by the global
    * beforeEach), so tests seed/assert queue state through the store.
    */
-  function renderLoader(overrides: Record<string, unknown> = {}) {
+  function renderLoader(overrides: Partial<Parameters<typeof useCollectionLoader>[0]> = {}) {
     return renderHook(() =>
       useCollectionLoader({
         trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection },
@@ -90,14 +114,13 @@ describe('useCollectionLoader', () => {
         setActiveProviderId: mockSetActiveProviderId,
         connectedProviderIds: ['spotify'],
         isUnifiedLikedActive: false,
-        drivingProviderRef,
         playTrack: mockPlayTrack,
         spotifyHandlePlaylistSelect: mockSpotifyHandlePlaylistSelect,
         stopRadioBase: mockStopRadioBase,
         record: mockRecord,
         radioStateIsActive: false,
         ...overrides,
-      } as Parameters<typeof useCollectionLoader>[0])
+      })
     );
   }
 
@@ -119,13 +142,11 @@ describe('useCollectionLoader', () => {
         makeMediaTrack('3'),
       ]),
     };
-    mockGetDescriptor.mockReturnValue({
-      id: 'spotify',
-      catalog: mockCatalog,
-      playback: { pause: vi.fn() },
+    mockActiveDescriptor = stubDescriptor({
+      listTracks: mockCatalog.listTracks,
+      pause: vi.fn(),
     });
-    mockActiveDescriptor.catalog = mockCatalog;
-    mockActiveDescriptor.playback = { pause: vi.fn() };
+    mockGetDescriptor.mockReturnValue(mockActiveDescriptor);
 
     const { result } = renderLoader();
 
@@ -159,17 +180,17 @@ describe('useCollectionLoader', () => {
 
     mockGetDescriptor.mockImplementation((id: string) => {
       if (id === 'spotify') {
-        return {
+        return stubDescriptor({
           id: 'spotify',
-          catalog: mockCatalog1,
+          listTracks: mockCatalog1.listTracks,
           capabilities: { hasLikedCollection: true },
-        };
+        });
       }
-      return {
+      return stubDescriptor({
         id: 'dropbox',
-        catalog: mockCatalog2,
+        listTracks: mockCatalog2.listTracks,
         capabilities: { hasLikedCollection: true },
-      };
+      });
     });
 
     const { result } = renderLoader({
@@ -195,8 +216,10 @@ describe('useCollectionLoader', () => {
     const mockCatalog = {
       listTracks: vi.fn().mockResolvedValue([]),
     };
-    mockActiveDescriptor.catalog = mockCatalog;
-    mockActiveDescriptor.playback = { pause: vi.fn(), playCollection: undefined };
+    mockActiveDescriptor = stubDescriptor({
+      listTracks: mockCatalog.listTracks,
+      pause: vi.fn(),
+    });
 
     const { result } = renderLoader();
 
@@ -216,9 +239,12 @@ describe('useCollectionLoader', () => {
     const mockCatalog = {
       listTracks: vi.fn().mockResolvedValue([]),
     };
-    mockActiveDescriptor.catalog = mockCatalog;
-    mockActiveDescriptor.playback = { pause: vi.fn(), playCollection: vi.fn() };
-    mockActiveDescriptor.capabilities = { hasContextPlaybackFallback: false };
+    mockActiveDescriptor = stubDescriptor({
+      listTracks: mockCatalog.listTracks,
+      pause: vi.fn(),
+      playCollection: vi.fn(),
+      capabilities: { hasContextPlaybackFallback: false },
+    });
 
     const { result } = renderLoader();
 
@@ -240,9 +266,12 @@ describe('useCollectionLoader', () => {
     const mockCatalog = {
       listTracks: vi.fn().mockResolvedValue([]),
     };
-    mockActiveDescriptor.catalog = mockCatalog;
-    mockActiveDescriptor.playback = { pause: vi.fn(), playCollection: vi.fn() };
-    mockActiveDescriptor.capabilities = { hasContextPlaybackFallback: true };
+    mockActiveDescriptor = stubDescriptor({
+      listTracks: mockCatalog.listTracks,
+      pause: vi.fn(),
+      playCollection: vi.fn(),
+      capabilities: { hasContextPlaybackFallback: true },
+    });
 
     const { result } = renderLoader();
 
@@ -261,8 +290,10 @@ describe('useCollectionLoader', () => {
     const mockCatalog = {
       listTracks: vi.fn().mockResolvedValue([makeMediaTrack('1')]),
     };
-    mockActiveDescriptor.catalog = mockCatalog;
-    mockActiveDescriptor.playback = { pause: vi.fn() };
+    mockActiveDescriptor = stubDescriptor({
+      listTracks: mockCatalog.listTracks,
+      pause: vi.fn(),
+    });
 
     const { result } = renderLoader({ radioStateIsActive: true });
 
@@ -280,8 +311,10 @@ describe('useCollectionLoader', () => {
     queueStore.__setShuffleForTests(true);
     const tracks = [makeMediaTrack('1'), makeMediaTrack('2'), makeMediaTrack('3')];
     const mockCatalog = { listTracks: vi.fn().mockResolvedValue(tracks) };
-    mockActiveDescriptor.catalog = mockCatalog;
-    mockActiveDescriptor.playback = { pause: vi.fn() };
+    mockActiveDescriptor = stubDescriptor({
+      listTracks: mockCatalog.listTracks,
+      pause: vi.fn(),
+    });
 
     const { result } = renderLoader();
 
@@ -300,13 +333,13 @@ describe('useCollectionLoader', () => {
   it('switches active provider when loading a collection from a different provider', async () => {
     // #given
     const dropboxCatalog = { listTracks: vi.fn().mockResolvedValue([makeMediaTrack('1')]) };
-    const dropboxDescriptor = {
-      id: 'dropbox' as const,
-      catalog: dropboxCatalog,
-      playback: { pause: vi.fn() },
-    };
+    const dropboxDescriptor = stubDescriptor({
+      id: 'dropbox',
+      listTracks: dropboxCatalog.listTracks,
+      pause: vi.fn(),
+    });
     mockGetDescriptor.mockReturnValue(dropboxDescriptor);
-    mockActiveDescriptor.playback = { pause: vi.fn().mockResolvedValue(undefined) };
+    mockActiveDescriptor = stubDescriptor({ pause: vi.fn().mockResolvedValue(undefined) });
 
     const { result } = renderLoader({ connectedProviderIds: ['spotify', 'dropbox'] });
 
@@ -321,8 +354,10 @@ describe('useCollectionLoader', () => {
 
   it('sets error state when catalog throws during collection load', async () => {
     const mockCatalog = { listTracks: vi.fn().mockRejectedValue(new Error('Network error')) };
-    mockActiveDescriptor.catalog = mockCatalog;
-    mockActiveDescriptor.playback = { pause: vi.fn() };
+    mockActiveDescriptor = stubDescriptor({
+      listTracks: mockCatalog.listTracks,
+      pause: vi.fn(),
+    });
 
     const { result } = renderLoader();
 
@@ -337,11 +372,10 @@ describe('useCollectionLoader', () => {
   it('shows empty-collection error when all unified liked catalogs fail or return no tracks', async () => {
     // listTracks rejections are swallowed per-provider (.catch(() => [])); the hook
     // surfaces 'No liked tracks found.' when the merged result is empty.
-    mockGetDescriptor.mockReturnValue({
-      id: 'spotify',
-      catalog: { listTracks: vi.fn().mockRejectedValue(new Error('Auth expired')) },
+    mockGetDescriptor.mockReturnValue(stubDescriptor({
+      listTracks: vi.fn().mockRejectedValue(new Error('Auth expired')),
       capabilities: { hasLikedCollection: true },
-    });
+    }));
 
     const { result } = renderLoader({ isUnifiedLikedActive: true });
 
@@ -371,8 +405,10 @@ describe('useCollectionLoader', () => {
     const mockCatalog = {
       listTracks: vi.fn().mockResolvedValue([makeMediaTrack('1'), makeMediaTrack('2')]),
     };
-    mockActiveDescriptor.catalog = mockCatalog;
-    mockActiveDescriptor.playback = { pause: vi.fn() };
+    mockActiveDescriptor = stubDescriptor({
+      listTracks: mockCatalog.listTracks,
+      pause: vi.fn(),
+    });
 
     const { result } = renderLoader();
 
@@ -396,8 +432,10 @@ describe('useCollectionLoader', () => {
     const mockCatalog = {
       listTracks: vi.fn().mockResolvedValue([trackWithImage, makeMediaTrack('2')]),
     };
-    mockActiveDescriptor.catalog = mockCatalog;
-    mockActiveDescriptor.playback = { pause: vi.fn() };
+    mockActiveDescriptor = stubDescriptor({
+      listTracks: mockCatalog.listTracks,
+      pause: vi.fn(),
+    });
 
     const { result } = renderLoader();
 
@@ -419,8 +457,10 @@ describe('useCollectionLoader', () => {
     const mockCatalog = {
       listTracks: vi.fn().mockRejectedValue(new Error('Network error')),
     };
-    mockActiveDescriptor.catalog = mockCatalog;
-    mockActiveDescriptor.playback = { pause: vi.fn() };
+    mockActiveDescriptor = stubDescriptor({
+      listTracks: mockCatalog.listTracks,
+      pause: vi.fn(),
+    });
 
     const { result } = renderLoader();
 
@@ -438,12 +478,10 @@ describe('useCollectionLoader', () => {
     const mockCatalog = {
       listTracks: vi.fn().mockResolvedValue([makeMediaTrack('1', 1000)]),
     };
-    mockGetDescriptor.mockReturnValue({
-      id: 'spotify',
-      catalog: mockCatalog,
+    mockGetDescriptor.mockReturnValue(stubDescriptor({
+      listTracks: mockCatalog.listTracks,
       capabilities: { hasLikedCollection: true },
-    });
-    mockActiveDescriptor.id = 'spotify';
+    }));
 
     const { result } = renderLoader({ isUnifiedLikedActive: true });
 
@@ -465,13 +503,13 @@ describe('useCollectionLoader', () => {
     // #given — All Music is addressed as dropbox folder with empty id; provide an ordered list we can detect re-ordering on
     const tracks = Array.from({ length: 20 }, (_, i) => makeMediaTrack(String(i + 1)));
     const mockCatalog = { listTracks: vi.fn().mockResolvedValue(tracks) };
-    const dropboxDescriptor = {
-      id: 'dropbox' as const,
-      catalog: mockCatalog,
-      playback: { pause: vi.fn() },
-    };
+    const dropboxDescriptor = stubDescriptor({
+      id: 'dropbox',
+      listTracks: mockCatalog.listTracks,
+      pause: vi.fn(),
+    });
     mockGetDescriptor.mockReturnValue(dropboxDescriptor);
-    mockActiveDescriptor = { id: 'dropbox', playback: { pause: vi.fn() } };
+    mockActiveDescriptor = stubDescriptor({ id: 'dropbox', pause: vi.fn() });
 
     const { result } = renderLoader({ connectedProviderIds: ['dropbox'] });
 
@@ -486,7 +524,7 @@ describe('useCollectionLoader', () => {
     expect(emittedTracks).toHaveLength(tracks.length);
     expect(emittedTracks.map(t => t.id).sort((a, b) => Number(a) - Number(b))).toEqual(tracks.map(t => t.id));
     // With 20 items a Fisher-Yates shuffle reordering equalling the original is vanishingly unlikely
-    const identical = emittedTracks.every((t, i) => t.id === tracks[i].id);
+    const identical = emittedTracks.every((t, i) => t.id === defined(tracks[i]).id);
     expect(identical).toBe(false);
   });
 
@@ -494,13 +532,13 @@ describe('useCollectionLoader', () => {
     // #given — regression guard: a normal dropbox folder (non-empty id) must keep catalog order
     const tracks = Array.from({ length: 20 }, (_, i) => makeMediaTrack(String(i + 1)));
     const mockCatalog = { listTracks: vi.fn().mockResolvedValue(tracks) };
-    const dropboxDescriptor = {
-      id: 'dropbox' as const,
-      catalog: mockCatalog,
-      playback: { pause: vi.fn() },
-    };
+    const dropboxDescriptor = stubDescriptor({
+      id: 'dropbox',
+      listTracks: mockCatalog.listTracks,
+      pause: vi.fn(),
+    });
     mockGetDescriptor.mockReturnValue(dropboxDescriptor);
-    mockActiveDescriptor = { id: 'dropbox', playback: { pause: vi.fn() } };
+    mockActiveDescriptor = stubDescriptor({ id: 'dropbox', pause: vi.fn() });
 
     const { result } = renderLoader({ connectedProviderIds: ['dropbox'] });
 
@@ -515,11 +553,10 @@ describe('useCollectionLoader', () => {
 
   it('does not call record when the unified liked load returns no tracks', async () => {
     // #given
-    mockGetDescriptor.mockReturnValue({
-      id: 'spotify',
-      catalog: { listTracks: vi.fn().mockResolvedValue([]) },
+    mockGetDescriptor.mockReturnValue(stubDescriptor({
+      listTracks: vi.fn().mockResolvedValue([]),
       capabilities: { hasLikedCollection: true },
-    });
+    }));
 
     const { result } = renderLoader({ isUnifiedLikedActive: true });
 
@@ -539,24 +576,22 @@ describe('useCollectionLoader', () => {
 
     mockGetDescriptor.mockImplementation((id: string) => {
       if (id === 'spotify') {
-        return {
-          id: 'spotify',
-          catalog: { listTracks: spotifyListTracks },
+        return stubDescriptor({
+          listTracks: spotifyListTracks,
           capabilities: { hasLikedCollection: true },
-        };
+        });
       }
-      return {
+      return stubDescriptor({
         id: 'dropbox',
-        catalog: { listTracks: dropboxListTracks },
+        listTracks: dropboxListTracks,
         capabilities: { hasLikedCollection: false },
-      };
+      });
     });
     mockPlayTrack.mockResolvedValue(undefined);
-    mockActiveDescriptor = {
-      id: 'spotify',
+    mockActiveDescriptor = stubDescriptor({
       capabilities: { hasContextPlaybackFallback: false },
-      playback: { pause: vi.fn() },
-    };
+      pause: vi.fn(),
+    });
 
     const { result } = renderLoader({
       connectedProviderIds: ['spotify', 'dropbox'],
@@ -586,21 +621,23 @@ describe('useCollectionLoader', () => {
 
     mockGetDescriptor.mockImplementation((id: string) => {
       if (id === 'spotify') {
-        return {
-          id: 'spotify',
-          catalog: emptyCatalog,
+        return stubDescriptor({
+          listTracks: emptyCatalog.listTracks,
+          pause: vi.fn(),
           capabilities: { hasContextPlaybackFallback: true },
-          playback: { pause: vi.fn() },
-        };
+        });
       }
-      return { id: 'dropbox', catalog: fastCatalog, playback: { pause: vi.fn() } };
+      return stubDescriptor({
+        id: 'dropbox',
+        listTracks: fastCatalog.listTracks,
+        pause: vi.fn(),
+      });
     });
-    mockActiveDescriptor = {
-      id: 'spotify',
-      catalog: emptyCatalog,
+    mockActiveDescriptor = stubDescriptor({
+      listTracks: emptyCatalog.listTracks,
+      pause: vi.fn().mockResolvedValue(undefined),
       capabilities: { hasContextPlaybackFallback: true },
-      playback: { pause: vi.fn().mockResolvedValue(undefined) },
-    };
+    });
 
     const { result } = renderLoader({ connectedProviderIds: ['spotify', 'dropbox'] });
 
@@ -630,18 +667,12 @@ describe('useCollectionLoader', () => {
     const mockCatalog = {
       listTracks: vi.fn().mockResolvedValue([]),
     };
-    mockGetDescriptor.mockReturnValue({
-      id: 'spotify',
-      catalog: mockCatalog,
+    mockActiveDescriptor = stubDescriptor({
+      listTracks: mockCatalog.listTracks,
+      pause: vi.fn(),
       capabilities: { hasContextPlaybackFallback: false },
-      playback: { pause: vi.fn() },
     });
-    mockActiveDescriptor = {
-      id: 'spotify',
-      catalog: mockCatalog,
-      capabilities: { hasContextPlaybackFallback: false },
-      playback: { pause: vi.fn() },
-    };
+    mockGetDescriptor.mockReturnValue(mockActiveDescriptor);
 
     const { result } = renderLoader();
 
@@ -657,8 +688,10 @@ describe('useCollectionLoader', () => {
   it('passes an AbortSignal to catalog.listTracks for a provider collection load', async () => {
     // #given
     const mockCatalog = { listTracks: vi.fn().mockResolvedValue([makeMediaTrack('1')]) };
-    mockActiveDescriptor.catalog = mockCatalog;
-    mockActiveDescriptor.playback = { pause: vi.fn() };
+    mockActiveDescriptor = stubDescriptor({
+      listTracks: mockCatalog.listTracks,
+      pause: vi.fn(),
+    });
 
     const { result } = renderLoader();
 
@@ -669,7 +702,7 @@ describe('useCollectionLoader', () => {
 
     // #then — second argument is an AbortSignal
     expect(mockCatalog.listTracks).toHaveBeenCalledTimes(1);
-    const signalArg = mockCatalog.listTracks.mock.calls[0][1] as AbortSignal;
+    const signalArg = defined(defined(mockCatalog.listTracks.mock.calls[0])[1]);
     expect(signalArg).toBeInstanceOf(AbortSignal);
   });
 
@@ -683,10 +716,15 @@ describe('useCollectionLoader', () => {
     const fastCatalog = { listTracks: vi.fn().mockResolvedValue(fastTracks) };
 
     mockGetDescriptor.mockImplementation((id: string) => {
-      if (id === 'spotify') return { id: 'spotify', catalog: slowCatalog, playback: { pause: vi.fn() } };
-      return { id: 'dropbox', catalog: fastCatalog, playback: { pause: vi.fn() } };
+      if (id === 'spotify') {
+        return stubDescriptor({ listTracks: slowCatalog.listTracks, pause: vi.fn() });
+      }
+      return stubDescriptor({ id: 'dropbox', listTracks: fastCatalog.listTracks, pause: vi.fn() });
     });
-    mockActiveDescriptor = { id: 'spotify', catalog: slowCatalog, playback: { pause: vi.fn().mockResolvedValue(undefined) } };
+    mockActiveDescriptor = stubDescriptor({
+      listTracks: slowCatalog.listTracks,
+      pause: vi.fn().mockResolvedValue(undefined),
+    });
 
     const { result } = renderLoader({ connectedProviderIds: ['spotify', 'dropbox'] });
     const { history: queueWrites, unsubscribe } = recordQueueWrites();
@@ -724,10 +762,13 @@ describe('useCollectionLoader', () => {
     const catalogB = { listTracks: vi.fn().mockResolvedValue(tracksB) };
 
     mockGetDescriptor.mockImplementation((id: string) => {
-      if (id === 'spotify') return { id: 'spotify', catalog: catalogA, playback: { pause: vi.fn() } };
-      return { id: 'dropbox', catalog: catalogB, playback: { pause: vi.fn() } };
+      if (id === 'spotify') return stubDescriptor({ listTracks: catalogA.listTracks, pause: vi.fn() });
+      return stubDescriptor({ id: 'dropbox', listTracks: catalogB.listTracks, pause: vi.fn() });
     });
-    mockActiveDescriptor = { id: 'spotify', catalog: catalogA, playback: { pause: vi.fn().mockResolvedValue(undefined) } };
+    mockActiveDescriptor = stubDescriptor({
+      listTracks: catalogA.listTracks,
+      pause: vi.fn().mockResolvedValue(undefined),
+    });
 
     const { result } = renderLoader({ connectedProviderIds: ['spotify', 'dropbox'] });
     const { history: queueWrites, unsubscribe } = recordQueueWrites();
@@ -771,10 +812,15 @@ describe('useCollectionLoader', () => {
     const fastCatalog = { listTracks: vi.fn().mockResolvedValue([makeMediaTrack('B1')]) };
 
     mockGetDescriptor.mockImplementation((id: string) => {
-      if (id === 'spotify') return { id: 'spotify', catalog: slowCatalog, playback: { pause: vi.fn() } };
-      return { id: 'dropbox', catalog: fastCatalog, playback: { pause: vi.fn() } };
+      if (id === 'spotify') {
+        return stubDescriptor({ listTracks: slowCatalog.listTracks, pause: vi.fn() });
+      }
+      return stubDescriptor({ id: 'dropbox', listTracks: fastCatalog.listTracks, pause: vi.fn() });
     });
-    mockActiveDescriptor = { id: 'spotify', catalog: slowCatalog, playback: { pause: vi.fn().mockResolvedValue(undefined) } };
+    mockActiveDescriptor = stubDescriptor({
+      listTracks: slowCatalog.listTracks,
+      pause: vi.fn().mockResolvedValue(undefined),
+    });
 
     const { result } = renderLoader({ connectedProviderIds: ['spotify', 'dropbox'] });
 
@@ -798,11 +844,23 @@ describe('useCollectionLoader', () => {
 
     mockGetDescriptor.mockImplementation((id: string) => {
       if (id === 'spotify') {
-        return { id: 'spotify', catalog: slowLikedCatalog, capabilities: { hasLikedCollection: true }, playback: { pause: vi.fn() } };
+        return stubDescriptor({
+          listTracks: slowLikedCatalog.listTracks,
+          pause: vi.fn(),
+          capabilities: { hasLikedCollection: true },
+        });
       }
-      return { id: 'dropbox', catalog: fastCatalog, capabilities: { hasLikedCollection: false }, playback: { pause: vi.fn() } };
+      return stubDescriptor({
+        id: 'dropbox',
+        listTracks: fastCatalog.listTracks,
+        pause: vi.fn(),
+        capabilities: { hasLikedCollection: false },
+      });
     });
-    mockActiveDescriptor = { id: 'spotify', catalog: slowLikedCatalog, playback: { pause: vi.fn().mockResolvedValue(undefined) } };
+    mockActiveDescriptor = stubDescriptor({
+      listTracks: slowLikedCatalog.listTracks,
+      pause: vi.fn().mockResolvedValue(undefined),
+    });
 
     const { result } = renderLoader({
       connectedProviderIds: ['spotify', 'dropbox'],
@@ -847,11 +905,23 @@ describe('useCollectionLoader', () => {
 
     mockGetDescriptor.mockImplementation((id: string) => {
       if (id === 'spotify') {
-        return { id: 'spotify', catalog: fastSpotifyCatalog, capabilities: { hasLikedCollection: false }, playback: { pause: vi.fn() } };
+        return stubDescriptor({
+          listTracks: fastSpotifyCatalog.listTracks,
+          pause: vi.fn(),
+          capabilities: { hasLikedCollection: false },
+        });
       }
-      return { id: 'dropbox', catalog: slowDropboxCatalog, capabilities: { hasLikedCollection: true }, playback: { pause: vi.fn() } };
+      return stubDescriptor({
+        id: 'dropbox',
+        listTracks: slowDropboxCatalog.listTracks,
+        pause: vi.fn(),
+        capabilities: { hasLikedCollection: true },
+      });
     });
-    mockActiveDescriptor = { id: 'spotify', catalog: fastSpotifyCatalog, playback: { pause: vi.fn().mockResolvedValue(undefined) } };
+    mockActiveDescriptor = stubDescriptor({
+      listTracks: fastSpotifyCatalog.listTracks,
+      pause: vi.fn().mockResolvedValue(undefined),
+    });
 
     const { result } = renderLoader({
       connectedProviderIds: ['spotify', 'dropbox'],

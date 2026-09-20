@@ -58,7 +58,7 @@ test.describe('Persisted-session hydrate (no 0:00 flicker)', () => {
     // user first sees a meaningful timeline; if the flicker regresses, the
     // captured aria-valuenow will be 0 instead of ~45000.
     await page.addInitScript(
-      ([flagName, labelText]: [string, string]) => {
+      ({ flagName, labelText }: { flagName: string; labelText: string }) => {
         const isSeekSlider = (node: Element): boolean => {
           if (node.getAttribute('role') !== 'slider') return false;
           let cursor: Element | null = node;
@@ -114,7 +114,7 @@ test.describe('Persisted-session hydrate (no 0:00 flicker)', () => {
         if (document.documentElement) start();
         else document.addEventListener('DOMContentLoaded', start, { once: true });
       },
-      [FIRST_REAL_FRAME_FLAG, SEEK_TIMELINE_LABEL],
+      { flagName: FIRST_REAL_FRAME_FLAG, labelText: SEEK_TIMELINE_LABEL },
     );
   });
 

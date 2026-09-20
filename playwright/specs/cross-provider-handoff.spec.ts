@@ -37,10 +37,14 @@ async function providerPlayback(page: Page): Promise<{
   spotify: { isPlaying: boolean; trackId: string | null };
   dropbox: { isPlaying: boolean; trackId: string | null };
 }> {
-  return page.evaluate(async () => ({
-    spotify: await window.__mockTest!.getPlaybackState('spotify'),
-    dropbox: await window.__mockTest!.getPlaybackState('dropbox'),
-  }));
+  return page.evaluate(async () => {
+    const api = window.__mockTest;
+    if (!api) throw new Error('window.__mockTest is not installed');
+    return {
+      spotify: await api.getPlaybackState('spotify'),
+      dropbox: await api.getPlaybackState('dropbox'),
+    };
+  });
 }
 
 async function queueDropboxAlbumNext(page: Page): Promise<void> {

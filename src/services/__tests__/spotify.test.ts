@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as libraryCache from '@/services/cache/libraryCache';
+import { defined } from '@/test/defined';
 
 vi.mock('@/services/cache/libraryCache', () => ({
   getTrackList: vi.fn().mockResolvedValue(undefined),
@@ -148,7 +149,7 @@ describe('Spotify API', () => {
 
       // #then
       expect(tracks).toHaveLength(1);
-      expect(tracks[0].name).toBe('Cached Song');
+      expect(defined(tracks[0]).name).toBe('Cached Song');
       expect(vi.mocked(global.fetch).mock.calls.length).toBe(fetchCountAfterFirst);
     });
 
@@ -178,7 +179,7 @@ describe('Spotify API', () => {
 
       // #then
       expect(tracks).toHaveLength(1);
-      expect(tracks[0].name).toBe('From IDB');
+      expect(defined(tracks[0]).name).toBe('From IDB');
       expect(global.fetch).not.toHaveBeenCalled();
     });
 
@@ -208,7 +209,7 @@ describe('Spotify API', () => {
 
       // #then
       expect(tracks).toHaveLength(1);
-      expect(tracks[0].name).toBe('From API');
+      expect(defined(tracks[0]).name).toBe('From API');
       expect(libraryCache.putTrackList).toHaveBeenCalledWith(
         { provider: 'spotify', kind: 'playlist', id: 'api-test' },
         expect.arrayContaining([expect.objectContaining({ name: 'From API' })])
@@ -236,9 +237,9 @@ describe('Spotify API', () => {
       const tracks = await mod.getAlbumTracks('album-1');
 
       // #then
-      expect(tracks[0].trackNumber).toBe(1);
-      expect(tracks[1].trackNumber).toBe(2);
-      expect(tracks[2].trackNumber).toBe(3);
+      expect(defined(tracks[0]).trackNumber).toBe(1);
+      expect(defined(tracks[1]).trackNumber).toBe(2);
+      expect(defined(tracks[2]).trackNumber).toBe(3);
     });
   });
 
@@ -284,8 +285,8 @@ describe('Spotify API', () => {
       expect(await p2).toBe(false);
       expect(await p3).toBe(true);
       expect(global.fetch).toHaveBeenCalledTimes(1);
-      const url = vi.mocked(global.fetch).mock.calls[0][0] as string;
-      expect(url).toContain('ids=track-a,track-b,track-c');
+      const url = defined(defined(vi.mocked(global.fetch).mock.calls[0])[0]);
+      expect(String(url)).toContain('ids=track-a,track-b,track-c');
       vi.useRealTimers();
     });
 
@@ -319,7 +320,7 @@ describe('Spotify API', () => {
       await mod.saveTrack('track-456');
 
       // #then
-      const [url, options] = vi.mocked(global.fetch).mock.calls[0];
+      const [url, options] = defined(vi.mocked(global.fetch).mock.calls[0]);
       expect(url).toBe('https://api.spotify.com/v1/me/tracks');
       expect(options?.method).toBe('PUT');
       const body = JSON.parse(options?.body as string);
@@ -350,7 +351,7 @@ describe('Spotify API', () => {
       await mod.unsaveTrack('track-789');
 
       // #then
-      const [url, options] = vi.mocked(global.fetch).mock.calls[0];
+      const [url, options] = defined(vi.mocked(global.fetch).mock.calls[0]);
       expect(url).toBe('https://api.spotify.com/v1/me/tracks');
       expect(options?.method).toBe('DELETE');
     });
@@ -479,7 +480,7 @@ describe('Spotify API', () => {
 
       // #then
       expect(tracks).toHaveLength(1);
-      expect(tracks[0].name).toBe('Valid Track');
+      expect(defined(tracks[0]).name).toBe('Valid Track');
     });
 
     it('skips items without id', async () => {
@@ -526,7 +527,7 @@ describe('Spotify API', () => {
       const tracks = await mod.getPlaylistTracks('playlist-noartist');
 
       // #then
-      expect(tracks[0].artists).toBe('Unknown Artist');
+      expect(defined(tracks[0]).artists).toBe('Unknown Artist');
     });
 
     it('builds artistsData with correct Spotify URLs', async () => {
@@ -553,7 +554,7 @@ describe('Spotify API', () => {
       const tracks = await mod.getPlaylistTracks('playlist-urls');
 
       // #then
-      expect(tracks[0].artistsData).toEqual([
+      expect(defined(tracks[0]).artistsData).toEqual([
         { name: 'Artist One', url: 'https://open.spotify.com/artist/a1' },
       ]);
     });

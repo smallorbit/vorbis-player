@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useRecentlyPlayedCollections } from '../useRecentlyPlayedCollections';
 import type { CollectionRef } from '@/types/domain';
+import { defined } from '@/test/defined';
 
 const STORAGE_KEY = 'vorbis-player-recently-played';
 
@@ -94,8 +95,8 @@ describe('useRecentlyPlayedCollections', () => {
 
     // #then
     expect(result.current.history).toHaveLength(5);
-    expect(result.current.history[0].ref).toMatchObject({ id: 'playlist-6' });
-    expect(result.current.history[4].ref).toMatchObject({ id: 'playlist-2' });
+    expect(defined(result.current.history[0]).ref).toMatchObject({ id: 'playlist-6' });
+    expect(defined(result.current.history[4]).ref).toMatchObject({ id: 'playlist-2' });
   });
 
   it('persists history under the correct localStorage key', () => {

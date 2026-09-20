@@ -27,8 +27,8 @@ interface UseLibrarySyncResult {
   isLikedSongsSyncing: boolean;
   lastSyncTimestamp: number | null;
   syncError: string | null;
-  /** Force an immediate sync */
-  refreshNow: () => Promise<void>;
+  /** Force an immediate sync. Pass a provider id to refresh only that catalog. */
+  refreshNow: (scopeProviderId?: ProviderId) => Promise<void>;
   /** Optimistically remove a collection from the local list (instant UI update). */
   removeCollection: (collectionId: string) => void;
 }

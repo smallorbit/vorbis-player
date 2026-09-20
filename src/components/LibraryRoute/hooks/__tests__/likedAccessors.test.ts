@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fetchLikedForProvider } from '../likedAccessors';
-import type { ProviderId, MediaTrack } from '@/types/domain';
+import type { ProviderId } from '@/types/domain';
+import { makeTrack } from '@/test/fixtures';
 
 vi.mock('@/providers/registry', () => ({
   providerRegistry: {
@@ -14,15 +15,8 @@ import { providerRegistry } from '@/providers/registry';
 
 const mockRegistry = vi.mocked(providerRegistry);
 
-const makeTrack = (id: string): MediaTrack => ({
-  id,
-  provider: 'spotify',
-  playbackRef: { provider: 'spotify', ref: `spotify:track:${id}` },
-  name: `Track ${id}`,
-  artists: 'Test Artist',
-  album: 'Test Album',
-  durationMs: 180000,
-});
+const track = (id: string) =>
+  makeTrack({ id, name: `Track ${id}`, durationMs: 180000 });
 
 describe('fetchLikedForProvider', () => {
   beforeEach(() => {
@@ -56,7 +50,7 @@ describe('fetchLikedForProvider', () => {
   describe('when provider exists in registry', () => {
     it('delegates to catalog.listTracks', async () => {
       // #given
-      const tracks = [makeTrack('t1'), makeTrack('t2')];
+      const tracks = [track('t1'), track('t2')];
       const listTracks = vi.fn().mockResolvedValue(tracks);
       mockRegistry.get.mockReturnValue({
         id: 'spotify',

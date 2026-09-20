@@ -1,20 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { DropboxAuthAdapter } from '../dropboxAuthAdapter';
-import { contentApiRequest } from '../dropboxContentApiClient';
+import { contentApiRequest, type DropboxRequestAuth } from '../dropboxContentApiClient';
 
-function createMockAuth(overrides: Partial<DropboxAuthAdapter> = {}): DropboxAuthAdapter {
+function createMockAuth(overrides: Partial<DropboxRequestAuth> = {}): DropboxRequestAuth {
   return {
-    providerId: 'dropbox' as const,
-    isAuthenticated: vi.fn().mockReturnValue(true),
-    getAccessToken: vi.fn().mockResolvedValue('initial-token'),
-    beginLogin: vi.fn(),
-    handleCallback: vi.fn(),
-    logout: vi.fn(),
     ensureValidToken: vi.fn().mockResolvedValue('initial-token'),
     refreshAccessToken: vi.fn().mockResolvedValue('refreshed-token'),
     reportUnauthorized: vi.fn(),
     ...overrides,
-  } satisfies DropboxAuthAdapter;
+  };
 }
 
 describe('contentApiRequest', () => {

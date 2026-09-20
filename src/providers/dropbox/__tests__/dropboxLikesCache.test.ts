@@ -1,6 +1,8 @@
 import 'fake-indexeddb/auto';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { MediaTrack } from '@/types/domain';
+import { defined } from '@/test/defined';
+import { makeTrack as makeTrackFixture } from '@/test/fixtures';
 
 vi.mock('../dropboxIdb', () => ({
   getDb: vi.fn(),
@@ -59,7 +61,7 @@ function openTestDb(): Promise<IDBDatabase> {
 }
 
 function makeTrack(id: string, name?: string): MediaTrack {
-  return {
+  return makeTrackFixture({
     id,
     provider: 'dropbox',
     playbackRef: { provider: 'dropbox', ref: `/artist/album/${id}.mp3` },
@@ -68,7 +70,7 @@ function makeTrack(id: string, name?: string): MediaTrack {
     album: 'Test Album',
     albumId: '/artist/album',
     durationMs: 180000,
-  };
+  });
 }
 
 let testDb: IDBDatabase;
@@ -140,8 +142,8 @@ describe('dropboxLikesCache', () => {
 
       // #then
       expect(tracks).toHaveLength(2);
-      expect(tracks[0].name).toBe('Second');
-      expect(tracks[1].name).toBe('First');
+      expect(defined(tracks[0]).name).toBe('Second');
+      expect(defined(tracks[1]).name).toBe('First');
     });
 
     it('returns empty array when no likes', async () => {
@@ -213,7 +215,7 @@ describe('dropboxLikesCache', () => {
       expect(result.removed).toBe(0);
 
       const tracks = await getLikedTracks();
-      expect(tracks[0].name).toBe('New Name');
+      expect(defined(tracks[0]).name).toBe('New Name');
     });
 
     it('removes liked tracks not found in fresh scan', async () => {
@@ -238,9 +240,9 @@ describe('dropboxLikesCache', () => {
       await setTrackLiked('id:1', makeTrack('id:1', 'Song'), true);
       const entries = await getLikedEntries();
       expect(entries).toHaveLength(1);
-      expect(entries[0].trackId).toBe('id:1');
-      expect(entries[0].track.name).toBe('Song');
-      expect(typeof entries[0].likedAt).toBe('number');
+      expect(defined(entries[0]).trackId).toBe('id:1');
+      expect(defined(entries[0]).track.name).toBe('Song');
+      expect(typeof defined(entries[0]).likedAt).toBe('number');
     });
   });
 
@@ -270,8 +272,8 @@ describe('dropboxLikesCache', () => {
       // #then
       const tombstones = await getTombstones();
       expect(tombstones).toHaveLength(1);
-      expect(tombstones[0].trackId).toBe('id:1');
-      expect(typeof tombstones[0].deletedAt).toBe('number');
+      expect(defined(tombstones[0]).trackId).toBe('id:1');
+      expect(typeof defined(tombstones[0]).deletedAt).toBe('number');
     });
 
     it('setTrackLiked(false) creates a tombstone', async () => {
@@ -308,7 +310,7 @@ describe('dropboxLikesCache', () => {
       // #then
       const tombstones = await getTombstones();
       expect(tombstones).toHaveLength(1);
-      expect(tombstones[0].trackId).toBe('id:2');
+      expect(defined(tombstones[0]).trackId).toBe('id:2');
     });
   });
 

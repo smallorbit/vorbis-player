@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { MediaTrack } from '@/types/domain';
 import type { CatalogProvider } from '@/types/providers';
-import type { RadioResult, RadioProgress } from '@/types/radio';
+import type { RadioResult } from '@/types/radio';
 import { runRadioPipeline } from '@/services/radioPipeline';
 import { makeMediaTrack, makeProviderDescriptor } from '@/test/fixtures';
+import { defined } from '@/test/defined';
 
 function makeRadioResult(overrides?: Partial<RadioResult>): RadioResult {
   return {
@@ -190,7 +191,7 @@ describe('runRadioPipeline', () => {
       const catalogProvider = makeCatalogProvider([catalogTrack]);
 
       const searchProvider = makeProviderDescriptor({
-        capabilities: { hasSaveTrack: false, hasExternalLink: false, hasLikedCollection: false, hasTrackSearch: true },
+        capabilities: { hasSaveTrack: false, hasExternalLink: false, hasLikedCollection: false, hasSaveAlbum: false, hasTrackSearch: true },
         auth: {
           providerId: 'spotify',
           isAuthenticated: vi.fn().mockReturnValue(true),
@@ -236,7 +237,7 @@ describe('runRadioPipeline', () => {
       const catalogProvider = makeCatalogProvider([catalogTrack]);
 
       const unauthenticatedProvider = makeProviderDescriptor({
-        capabilities: { hasSaveTrack: false, hasExternalLink: false, hasLikedCollection: false, hasTrackSearch: true },
+        capabilities: { hasSaveTrack: false, hasExternalLink: false, hasLikedCollection: false, hasSaveAlbum: false, hasTrackSearch: true },
         auth: {
           providerId: 'spotify',
           isAuthenticated: vi.fn().mockReturnValue(false),
@@ -283,7 +284,7 @@ describe('runRadioPipeline', () => {
       const catalogProvider = makeCatalogProvider([catalogTrack]);
 
       const searchProvider = makeProviderDescriptor({
-        capabilities: { hasSaveTrack: false, hasExternalLink: false, hasLikedCollection: false, hasTrackSearch: true },
+        capabilities: { hasSaveTrack: false, hasExternalLink: false, hasLikedCollection: false, hasSaveAlbum: false, hasTrackSearch: true },
         auth: {
           providerId: 'spotify',
           isAuthenticated: vi.fn().mockReturnValue(true),
@@ -331,7 +332,7 @@ describe('runRadioPipeline', () => {
       const catalogProvider = makeCatalogProvider([rec]);
 
       const searchProvider = makeProviderDescriptor({
-        capabilities: { hasSaveTrack: false, hasExternalLink: false, hasLikedCollection: false, hasTrackSearch: true },
+        capabilities: { hasSaveTrack: false, hasExternalLink: false, hasLikedCollection: false, hasSaveAlbum: false, hasTrackSearch: true },
         auth: {
           providerId: 'spotify',
           isAuthenticated: vi.fn().mockReturnValue(true),
@@ -365,7 +366,7 @@ describe('runRadioPipeline', () => {
       });
 
       // #then
-      const phases = onProgress.mock.calls.map((call: [RadioProgress]) => call[0]?.phase);
+      const phases = onProgress.mock.calls.map((call) => defined(call[0]).phase);
       expect(phases).toEqual(['fetching-catalog', 'generating', 'resolving', 'done']);
     });
 
@@ -391,7 +392,7 @@ describe('runRadioPipeline', () => {
       });
 
       // #then
-      const phases = onProgress.mock.calls.map((call: [RadioProgress]) => call[0]?.phase);
+      const phases = onProgress.mock.calls.map((call) => defined(call[0]).phase);
       expect(phases).not.toContain('resolving');
       expect(phases).toContain('done');
     });
@@ -407,7 +408,7 @@ describe('runRadioPipeline', () => {
       const catalogProvider = makeCatalogProvider([catalogTrack1, catalogTrack2]);
 
       const searchProvider = makeProviderDescriptor({
-        capabilities: { hasSaveTrack: false, hasExternalLink: false, hasLikedCollection: false, hasTrackSearch: true },
+        capabilities: { hasSaveTrack: false, hasExternalLink: false, hasLikedCollection: false, hasSaveAlbum: false, hasTrackSearch: true },
         auth: {
           providerId: 'spotify',
           isAuthenticated: vi.fn().mockReturnValue(true),

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { MockCatalogAdapter } from '../mockCatalogAdapter';
 import type { ProviderSnapshot } from '../../../../playwright/fixtures/data/snapshot.types';
+import { defined } from '@/test/defined';
 
 const SNAPSHOT_SCHEMA_VERSION = 1;
 
@@ -99,14 +100,14 @@ describe('MockCatalogAdapter (spotify)', () => {
   it('listTracks resolves playlist tracks', async () => {
     const tracks = await adapter.listTracks({ provider: 'spotify', kind: 'playlist', id: 'playlist-1' });
     expect(tracks).toHaveLength(2);
-    expect(tracks[0].id).toBe('track-1');
-    expect(tracks[1].id).toBe('track-2');
+    expect(defined(tracks[0]).id).toBe('track-1');
+    expect(defined(tracks[1]).id).toBe('track-2');
   });
 
   it('listTracks resolves album tracks', async () => {
     const tracks = await adapter.listTracks({ provider: 'spotify', kind: 'album', id: 'album-2' });
     expect(tracks).toHaveLength(1);
-    expect(tracks[0].id).toBe('track-3');
+    expect(defined(tracks[0]).id).toBe('track-3');
   });
 
   it('listTracks returns empty for unknown playlist', async () => {
@@ -119,7 +120,7 @@ describe('MockCatalogAdapter (spotify)', () => {
     const adapter2 = new MockCatalogAdapter(snapshot);
     const tracks = await adapter2.listTracks({ provider: 'spotify', kind: 'liked' });
     expect(tracks).toHaveLength(1);
-    expect(tracks[0].id).toBe('track-1');
+    expect(defined(tracks[0]).id).toBe('track-1');
   });
 
   it('getLikedCount returns correct count', async () => {
@@ -140,17 +141,19 @@ describe('MockCatalogAdapter (spotify)', () => {
   });
 
   it('searchTrack finds by artist+title substring', async () => {
-    const track = await adapter.searchTrack('Artist One', 'Alpha');
+    const track = await defined(adapter.searchTrack)('Artist One', 'Alpha');
     expect(track?.id).toBe('track-1');
   });
 
   it('searchTrack returns null for no match', async () => {
-    const track = await adapter.searchTrack('Unknown', 'Nothing');
+    const track = await defined(adapter.searchTrack)('Unknown', 'Nothing');
     expect(track).toBeNull();
   });
 
   it('resolveDuration returns snapshot durationMs', async () => {
-    const t = (await adapter.listTracks({ provider: 'spotify', kind: 'playlist', id: 'playlist-1' }))[0];
+    const t = defined(
+      (await adapter.listTracks({ provider: 'spotify', kind: 'playlist', id: 'playlist-1' }))[0],
+    );
     const dur = await adapter.resolveDuration(t);
     expect(dur).toBe(180000);
   });
