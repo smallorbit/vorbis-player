@@ -234,7 +234,7 @@ Key fields:
 | `connectedProviderIds` | `ProviderId[]` | Subset of enabled that are authenticated |
 | `needsProviderSelection` | `boolean` | `true` when no provider chosen or stored one not registered |
 
-Auto-fallthrough: if the active provider loses auth, the context auto-switches to the next authenticated enabled provider and shows a notification.
+Auto-fallthrough: if the active provider loses auth, the context auto-switches to the next authenticated enabled provider and emits `PROVIDER_SESSION_FALLTHROUGH_EVENT`. Session expiry (`SESSION_EXPIRED_EVENT`) force-removes the provider via a shared `removeFromEnabled` helper and emits `PROVIDER_DISCONNECTED_EVENT`. Toast copy is rendered by the UI layer (`AudioPlayer`) from those events — not stored on the context value.
 
 ## Active Provider vs Driving Provider
 

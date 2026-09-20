@@ -94,8 +94,6 @@ vi.mock('@/contexts/ProviderContext', async (importOriginal) => {
       toggleProvider: vi.fn(),
       isProviderEnabled: vi.fn(() => true),
       hasMultipleProviders: false,
-      fallthroughNotification: null,
-      dismissFallthroughNotification: vi.fn(),
     })),
   };
 });

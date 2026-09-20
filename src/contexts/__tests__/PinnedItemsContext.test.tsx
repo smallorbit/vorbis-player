@@ -20,6 +20,10 @@ vi.mock('@/providers/dropbox/dropboxPreferencesSync', () => ({
   getPreferencesSync: vi.fn(() => null),
 }));
 
+vi.mock('@/providers/preferencesSync', () => ({
+  schedulePreferencesPush: vi.fn(),
+}));
+
 function wrapper({ children }: { children: React.ReactNode }) {
   return <PinnedItemsProvider>{children}</PinnedItemsProvider>;
 }
@@ -108,6 +112,30 @@ describe('PinnedItemsContext', () => {
 
       // #then — now at capacity
       expect(result.current.canPinMorePlaylists).toBe(false);
+    });
+  });
+
+  describe('StrictMode-safe persistence', () => {
+    it('persists pins once per toggle (side effects outside setState updaters)', async () => {
+      // #given
+      const { setPins } = await import('@/services/settings/pinnedItemsStorage');
+      const { result } = renderHook(() => usePinnedItemsContext(), {
+        wrapper: ({ children }) => (
+          <React.StrictMode>
+            <PinnedItemsProvider>{children}</PinnedItemsProvider>
+          </React.StrictMode>
+        ),
+      });
+
+      // #when
+      act(() => {
+        result.current.togglePinPlaylist('playlist-a');
+      });
+
+      // #then — one durable write for the user gesture (not doubled by StrictMode)
+      expect(setPins).toHaveBeenCalledTimes(1);
+      expect(setPins).toHaveBeenCalledWith('_unified', 'playlists', ['playlist-a']);
+      expect(result.current.pinnedPlaylistIds).toEqual(['playlist-a']);
     });
   });
 });

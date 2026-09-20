@@ -65,8 +65,6 @@ function setupProviderContext(connectedProviderIds: ProviderId[]) {
     allProviders: [],
     setProviderSwitchInterceptor: vi.fn(),
     needsProviderSelection: false,
-    fallthroughNotification: null,
-    dismissFallthroughNotification: vi.fn(),
     authRevision: 0,
   } as ReturnType<typeof useProviderContext>);
 }
