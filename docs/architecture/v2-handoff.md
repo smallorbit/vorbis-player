@@ -2,7 +2,7 @@
 
 **Initiative label:** [`project:vorbis-player-architecture-v2`](https://github.com/smallorbit/vorbis-player/labels/project%3Avorbis-player-architecture-v2) (RFC 0001)  
 **Working mode:** **one workstream (epic) at a time**; within an epic, **one child issue at a time**.  
-**Updated:** 2026-09-20 (after #1731 merge)
+**Updated:** 2026-09-21 (after #1732)
 
 Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tier-codebase.md`, which is **not yet on `main`** — landing that RFC is part of **[WS11](https://github.com/smallorbit/vorbis-player/issues/1757)**.
 
@@ -15,7 +15,7 @@ Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tie
 | WS1 | [#1685](https://github.com/smallorbit/vorbis-player/issues/1685) Neutral domain model | **Done** |
 | WS2 | [#1692](https://github.com/smallorbit/vorbis-player/issues/1692) PlaybackStore + QueueStore | **Done** |
 | WS3 | [#1699](https://github.com/smallorbit/vorbis-player/issues/1699) State, persistence & events | **Done** |
-| WS10 | [#1729](https://github.com/smallorbit/vorbis-player/issues/1729) Close the toolchain blind spots | **In progress** (2/8) |
+| WS10 | [#1729](https://github.com/smallorbit/vorbis-player/issues/1729) Close the toolchain blind spots | **In progress** (3/8) |
 | WS4–WS9, WS11–WS12 | Reliability → DevBug | Open (do not start until WS10 closes) |
 
 Pre-initiative foundations already on `main`: async-race harness, honest e2e, full CI gate (coverage + knip + audit ≥ high).
@@ -24,7 +24,7 @@ Pre-initiative foundations already on `main`: async-race harness, honest e2e, fu
 
 ## Do this next
 
-### Immediate: continue WS10 at #1732
+### Immediate: continue WS10 at #1733
 
 Epic: **[#1729 — Close the toolchain blind spots](https://github.com/smallorbit/vorbis-player/issues/1729)**  
 Principle: P3 — conventions are machine-enforced or they are wishes.
@@ -33,8 +33,8 @@ Principle: P3 — conventions are machine-enforced or they are wishes.
 |---|--------|--------|--------|
 | 1730 | Bring tests, e2e, and scripts under typechecking | **Closed** | PR [#1782](https://github.com/smallorbit/vorbis-player/pull/1782) |
 | 1731 | Wire coverage ratchet, knip, and npm audit into CI | **Closed** | PR [#1783](https://github.com/smallorbit/vorbis-player/pull/1783) — CI `test:coverage` + `knip` + `audit:ci`; floors in `vite.config.ts` (GitHub runner is source of truth for function %); knip clean; `npm update` + sharp 0.35 |
-| **1732** | **Turn on type-aware lint and finish the strictness epic** | **← NEXT** | F85, F32 |
-| 1733 | Declare and enforce the layering order | Open | |
+| 1732 | Turn on type-aware lint and finish the strictness epic | **Closed** | F85 + F32 — type-aware ESLint on production `src/`; `no-non-null-assertion`; props rule rejects `?: … \| null`; OAuth/API parse helpers |
+| **1733** | **Declare and enforce the layering order** | **← NEXT** | |
 | 1734 | Make e2e run against the prod build with a real Dropbox snapshot | Open | |
 | 1735 | Add boundary tests for the Spotify SDK/API layer | Open | |
 | 1736 | Clean up test infrastructure and scripts | Open | |
@@ -86,14 +86,20 @@ Wire coverage ratchet, knip, and `npm audit` into CI (F51, F52). On `main` via [
 
 ---
 
-## Context for #1732 (next implementation)
+## Context for #1732 (merged)
 
 Turn on type-aware lint and finish the strictness epic (F85, F32).
 
-- Type-aware lint (`recommendedTypeChecked` + `projectService`, scoped to `src/` first): `no-floating-promises`, `no-unsafe-*`
-- One bounded cleanup PR, then `no-non-null-assertion` as error; extend the props rule to reject `| null` in optional Props fields
+- `eslint.config.js`: `projectService` on production `src/**/*.{ts,tsx}` (excludes `__tests__`, `src/test`) — `no-floating-promises`, `no-unsafe-*`, `no-non-null-assertion`
+- `vorbis/props-explicit-undefined`: optional Props fields must not include `| null` (F32)
+- Shared parsers: `oauthTokenResponse.ts`, `authPostMessage.ts`, `spotifyApiErrorBody.ts` (+ unit tests)
+- Services coverage floor ratchet adjusted 78→77 after typed JSON guards (#1732)
 
-Do **not** start WS4–WS9 / WS11–WS12 until WS10 closes. Do **not** expand #1732 into #1733+ unless a shared eslint/tsconfig primitive is required.
+## Context for #1733 (next implementation)
+
+Declare and enforce the layering order (circular value imports, dependency boundaries).
+
+Do **not** start WS4–WS9 / WS11–WS12 until WS10 closes.
 
 ---
 
@@ -111,7 +117,7 @@ Do **not** start WS4–WS9 / WS11–WS12 until WS10 closes. Do **not** expand #1
 
 - Label board: https://github.com/smallorbit/vorbis-player/labels/project%3Avorbis-player-architecture-v2  
 - WS10 epic: https://github.com/smallorbit/vorbis-player/issues/1729  
-- Next issue: https://github.com/smallorbit/vorbis-player/issues/1732  
+- Next issue: https://github.com/smallorbit/vorbis-player/issues/1733  
 - Coverage thresholds: `vite.config.ts` (`test.coverage.thresholds`)  
 - knip config: `knip.json`  
 - Test tsconfig: `tsconfig.test.json`  

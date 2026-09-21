@@ -114,7 +114,9 @@ export async function hydrateCachedDurations(tracks: MediaTrack[]): Promise<void
 export async function hydrateCachedArtwork(tracks: MediaTrack[]): Promise<void> {
   const needArt = tracks.filter((t) => !t.image && t.albumId);
   if (needArt.length === 0) return;
-  const albumIds = [...new Set(needArt.map((t) => t.albumId!))];
+  const albumIds = [
+    ...new Set(needArt.flatMap((t) => (t.albumId ? [t.albumId] : []))),
+  ];
   const artMap = new Map<string, string>();
   await Promise.all(
     albumIds.map(async (albumId) => {
@@ -124,7 +126,8 @@ export async function hydrateCachedArtwork(tracks: MediaTrack[]): Promise<void> 
   );
   if (artMap.size > 0) {
     for (const t of needArt) {
-      const art = artMap.get(t.albumId!);
+      if (!t.albumId) continue;
+      const art = artMap.get(t.albumId);
       if (art) t.image = art;
     }
   }

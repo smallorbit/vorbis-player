@@ -27,8 +27,9 @@ function buildNthChildPath(element: Element): string {
       break;
     }
 
+    const tagName = current.tagName;
     const siblings = Array.from(parentEl.children).filter(
-      (child: Element) => child.tagName === current!.tagName,
+      (child: Element) => child.tagName === tagName,
     );
 
     if (siblings.length === 1) {
@@ -57,8 +58,9 @@ export function generateXPath(element: Element): string {
       break;
     }
 
+    const tagName = current.tagName;
     const siblings = Array.from(parentEl.children).filter(
-      (child: Element) => child.tagName === current!.tagName,
+      (child: Element) => child.tagName === tagName,
     );
 
     if (siblings.length === 1) {

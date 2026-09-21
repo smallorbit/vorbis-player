@@ -11,9 +11,10 @@ async function fetchLikedTracksForCollection(
   if (!descriptor?.catalog.listTracks || !descriptor.catalog.isTrackSaved) return [];
 
   const allTracks = await descriptor.catalog.listTracks({ provider, kind, id: collectionId });
+  const isTrackSaved = descriptor.catalog.isTrackSaved;
 
   const savedResults = await Promise.all(
-    allTracks.map((track) => descriptor.catalog.isTrackSaved!(track.id).catch(() => false)),
+    allTracks.map((track) => isTrackSaved(track.id).catch(() => false)),
   );
 
   return allTracks.filter((_, i) => savedResults[i]);

@@ -41,8 +41,9 @@ export const ProviderDataBlock: React.FC<ProviderDataBlockProps> = ({ providerNa
   }, [catalog]);
 
   const exportFn = useCallback(async () => {
+    if (!catalog.exportLikes) return;
     try {
-      const json = await catalog.exportLikes!();
+      const json = await catalog.exportLikes();
       const blob = new Blob([json], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -58,8 +59,9 @@ export const ProviderDataBlock: React.FC<ProviderDataBlockProps> = ({ providerNa
   }, [catalog]);
 
   const refreshMetadataFn = useCallback(async () => {
+    if (!catalog.refreshLikedMetadata) return;
     try {
-      const result = await catalog.refreshLikedMetadata!();
+      const result = await catalog.refreshLikedMetadata();
       const parts: string[] = [];
       if (result.updated > 0) parts.push(`${result.updated} updated`);
       if (result.removed > 0) parts.push(`${result.removed} removed`);
@@ -82,7 +84,8 @@ export const ProviderDataBlock: React.FC<ProviderDataBlockProps> = ({ providerNa
     setImportStatus('working');
     try {
       const json = await file.text();
-      const count = await catalog.importLikes!(json);
+      if (!catalog.importLikes) return;
+      const count = await catalog.importLikes(json);
       setResultMessage(`Imported ${count} tracks`);
     } catch (err) {
       logCaughtError('ProviderDataBlock.handleImport', err);

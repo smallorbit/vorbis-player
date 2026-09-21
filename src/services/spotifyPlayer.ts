@@ -279,7 +279,9 @@ class SpotifyPlayerService {
     }
 
     const token = await spotifyAuth.ensureValidToken();
-    const active = await apiEnsureDeviceActive(this.deviceId!, token, maxRetries, initialDelayMs);
+    const deviceId = this.deviceId;
+    if (!deviceId) return false;
+    const active = await apiEnsureDeviceActive(deviceId, token, maxRetries, initialDelayMs);
     if (active) {
       this.lastDeviceActiveAt = Date.now();
     }
