@@ -1,7 +1,7 @@
 import type { PaginatedResponse } from './types';
 import { SPOTIFY_RATE_LIMIT_WAIT_S } from '@/constants/spotify';
 import { spotifyAuth } from './auth';
-import { AuthExpiredError } from '@/providers/errors';
+import { AuthExpiredError } from '@/types/providerErrors';
 
 /**
  * Structured error thrown for any non-OK Spotify Web API response.

@@ -1,8 +1,8 @@
 import type { TokenData } from './types';
 import { SESSION_EXPIRED_EVENT, dispatchAppEvent } from '@/constants/events';
 import { STORAGE_KEYS } from '@/constants/storage';
-import { migrateLegacySpotifyStorageKeys } from '@/constants/migrateSpotifyStorageKeys';
-import { purgeProviderPersistedData } from '@/services/cache/providerDataPurge';
+import { migrateLegacySpotifyStorageKeys } from '@/utils/migrateSpotifyStorageKeys';
+import { purgeSpotifyPersistedData } from '@/services/spotify/purgePersistedData';
 import { logCaughtError } from '@/utils/logCaughtError';
 import {
   readLocalStorageRaw,
@@ -226,7 +226,7 @@ class SpotifyAuth {
     // Always clear in-memory/token keys (idempotent) and run the full purge —
     // Dropbox's reportUnauthorized routes through adapter.logout() the same way.
     this.logout();
-    void purgeProviderPersistedData('spotify').catch((err) => {
+    void purgeSpotifyPersistedData().catch((err) => {
       logCaughtError('spotifyAuth.reportUnauthorized.purge', err);
     });
     if (typeof window === 'undefined') return;

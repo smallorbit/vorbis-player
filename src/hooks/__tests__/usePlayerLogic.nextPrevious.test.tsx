@@ -144,6 +144,18 @@ vi.mock('@/providers/registry', () => ({
     register: vi.fn(),
   },
 }));
+vi.mock('@/services/providerRegistry', () => ({
+  providerRegistry: {
+    get: vi.fn((id?: ProviderId) => {
+      if (id === 'spotify') return spotifyDescriptor.descriptor;
+      if (id === 'dropbox') return dropboxDescriptor.descriptor;
+      return activeDescriptor.descriptor;
+    }),
+    getAll: vi.fn(() => [spotifyDescriptor.descriptor, dropboxDescriptor.descriptor]),
+    has: vi.fn((id: ProviderId) => id === 'spotify' || id === 'dropbox'),
+    register: vi.fn(),
+  },
+}));
 
 const AllProviders = ({ children }: { children: React.ReactNode }) => (
   <ProviderProvider>

@@ -20,7 +20,7 @@ AppContainer (flexCenter, min-height: 100dvh)
 
 ## Queue Suspense fallback
 
-The queue drawers (`QueueDrawer`, `QueueBottomSheet`) render `QueueSkeleton` (`src/components/QueueSkeleton.tsx`) as their Suspense fallback — a row-shaped placeholder with a transform-based shimmer that respects `prefers-reduced-motion`. The lazy bundles are prefetched on first playback via `useQueueBundlePrefetch` (`src/hooks/useQueueBundlePrefetch.ts`), scheduled inside `requestIdleCallback` (with `setTimeout` fallback) once per session.
+The queue drawers (`QueueDrawer`, `QueueBottomSheet`) render `QueueSkeleton` (`src/components/QueueSkeleton.tsx`) as their Suspense fallback — a row-shaped placeholder with a transform-based shimmer that respects `prefers-reduced-motion`. The lazy bundles are prefetched on first playback via `useQueueBundlePrefetch` (`src/hooks/useQueueBundlePrefetch.ts`; lazy-imports queue UI bundles), scheduled inside `requestIdleCallback` (with `setTimeout` fallback) once per session.
 
 ## Full-screen library
 

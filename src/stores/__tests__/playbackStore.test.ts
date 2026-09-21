@@ -45,7 +45,7 @@ function makeFakeProvider(id: ProviderId): FakeProvider {
   return provider;
 }
 
-vi.mock('@/providers/registry', () => ({
+vi.mock('@/services/providerRegistry', () => ({
   providerRegistry: {
     getAll: () => [...fakeProviders.values()],
     get: (id: string) => fakeProviders.get(id),

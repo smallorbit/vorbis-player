@@ -3,7 +3,7 @@
  * Deduplicates concurrent calls and caches the result to avoid redundant API requests.
  */
 
-import type { DropboxAuthAdapter } from './dropboxAuthAdapter';
+import type { DropboxAuthHandle } from './dropboxAuthHandle';
 import { contentApiRequest } from './dropboxContentApiClient';
 
 const FOLDER_PATH = '/.vorbis';
@@ -14,7 +14,7 @@ let inflightPromise: Promise<boolean> | null = null;
 
 const MAX_RATE_LIMIT_RETRIES = 3;
 
-async function doEnsureFolder(auth: DropboxAuthAdapter): Promise<boolean> {
+async function doEnsureFolder(auth: DropboxAuthHandle): Promise<boolean> {
   const createFolder = (token: string) =>
     fetch('https://api.dropboxapi.com/2/files/create_folder_v2', {
       method: 'POST',
@@ -55,7 +55,7 @@ async function doEnsureFolder(auth: DropboxAuthAdapter): Promise<boolean> {
  * sync services — only one API call will be in flight at a time, and the result
  * is cached for the session.
  */
-export async function ensureVorbisFolder(auth: DropboxAuthAdapter): Promise<boolean> {
+export async function ensureVorbisFolder(auth: DropboxAuthHandle): Promise<boolean> {
   if (folderConfirmed) return true;
 
   if (inflightPromise) return inflightPromise;

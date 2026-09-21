@@ -3,7 +3,7 @@
  * Merge: last-write-wins by updatedAt. Reuses /.vorbis folder; ensures folder on 409.
  */
 
-import type { DropboxAuthAdapter } from './dropboxAuthAdapter';
+import type { DropboxAuthHandle } from './dropboxAuthHandle';
 import { getPins, setPins, UNIFIED_PROVIDER, notifyPinsChanged } from '@/services/settings/pinnedItemsStorage';
 import { RemoteJsonFileStore } from './remoteJsonFileStore';
 import { STORAGE_KEYS } from '@/constants/storage';
@@ -82,7 +82,7 @@ function setLocalUpdatedAt(updatedAt: string): void {
 export class DropboxPreferencesSyncService {
   private readonly store: RemoteJsonFileStore<RemotePreferencesFile>;
 
-  constructor(auth: DropboxAuthAdapter) {
+  constructor(auth: DropboxAuthHandle) {
     this.store = new RemoteJsonFileStore<RemotePreferencesFile>({
       auth,
       path: PREFERENCES_FILE_PATH,
@@ -160,7 +160,7 @@ export class DropboxPreferencesSyncService {
 
 let preferencesSyncInstance: DropboxPreferencesSyncService | null = null;
 
-export function initPreferencesSync(auth: DropboxAuthAdapter): DropboxPreferencesSyncService {
+export function initPreferencesSync(auth: DropboxAuthHandle): DropboxPreferencesSyncService {
   if (preferencesSyncInstance) {
     preferencesSyncInstance.destroy();
   }

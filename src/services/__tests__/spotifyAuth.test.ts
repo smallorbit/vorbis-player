@@ -1,18 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { defined } from '@/test/defined';
 
-const mockPurgeProviderPersistedData = vi.hoisted(() =>
+const mockPurgeSpotifyPersistedData = vi.hoisted(() =>
   vi.fn().mockResolvedValue(undefined),
 );
 
-vi.mock('@/services/cache/providerDataPurge', () => ({
-  purgeProviderPersistedData: mockPurgeProviderPersistedData,
-  PROVIDER_PURGE_LOCAL_STORAGE_KEYS: {
-    spotify: ['vorbis-player-spotify-token', 'vorbis-player-spotify-code-verifier', 'spotify_token', 'spotify_code_verifier'],
-    dropbox: [],
-  },
-  remainingProviderLocalStorageKeys: () => [],
-  SPOTIFY_PROCESSED_CODE_SESSION_KEY: 'spotify_processed_code',
+vi.mock('@/services/spotify/purgePersistedData', () => ({
+  purgeSpotifyPersistedData: mockPurgeSpotifyPersistedData,
 }));
 
 function mockFetchResponse(body: unknown, status = 200, headers?: Record<string, string>) {
@@ -28,8 +22,8 @@ function mockFetchResponse(body: unknown, status = 200, headers?: Record<string,
 
 async function freshAuth() {
   vi.resetModules();
-  mockPurgeProviderPersistedData.mockClear();
-  mockPurgeProviderPersistedData.mockResolvedValue(undefined);
+  mockPurgeSpotifyPersistedData.mockClear();
+  mockPurgeSpotifyPersistedData.mockResolvedValue(undefined);
   const mod = await import('@/services/spotify');
   return mod.spotifyAuth;
 }
@@ -453,7 +447,7 @@ describe('SpotifyAuth', () => {
       auth.reportUnauthorized();
 
       // #then — same purge path as AuthProvider.logout (Dropbox parity)
-      expect(mockPurgeProviderPersistedData).toHaveBeenCalledExactlyOnceWith('spotify');
+      expect(mockPurgeSpotifyPersistedData).toHaveBeenCalledOnce();
     });
 
     it('does not double-dispatch when called twice in the same session', async () => {
@@ -478,7 +472,7 @@ describe('SpotifyAuth', () => {
         call => (call[0] as Event).type === 'vorbis-session-expired',
       );
       expect(sessionExpiredEvents).toHaveLength(1);
-      expect(mockPurgeProviderPersistedData).toHaveBeenCalledOnce();
+      expect(mockPurgeSpotifyPersistedData).toHaveBeenCalledOnce();
       dispatchSpy.mockRestore();
     });
   });

@@ -19,6 +19,7 @@ Deep-dive references — load on demand:
 | Playback flow + queue mutation flow | `docs/architecture/playback.md` |
 | shadcn/ui integration, theme bridge, canonical patterns, z-index | `docs/architecture/shadcn.md` |
 | Architecture v2 initiative status + next issue (agent handoff) | `docs/architecture/v2-handoff.md` |
+| Source dependency layering + circular-import gate | `docs/architecture/layering.md` |
 
 User-facing docs live in `docs/features/` and `docs/providers/`. Troubleshooting (provider issues, layout pitfalls, debug logging) is in `docs/troubleshooting.md`.
 
@@ -92,6 +93,19 @@ src/
 ├── styles/          # theme.ts, ThemeProvider, shadcn-tokens.css, global styles
 └── lib/utils.ts
 ```
+
+### Layering
+
+Bottom → top (each layer imports only from layers **below**):
+
+1. `src/types/**`, `src/constants/**`
+2. `src/lib/**`, `src/utils/**`, `src/workers/**`, `src/styles/**`
+3. `src/services/**`, `src/stores/**`
+4. `src/providers/**`
+5. `src/hooks/**`, `src/contexts/**`
+6. `src/components/**`, `src/App.tsx`, `src/main.tsx`
+
+Enforced with ESLint import zones; CI runs `npm run check:circular` (zero cycles). Details: `docs/architecture/layering.md`.
 
 ## Terminology
 

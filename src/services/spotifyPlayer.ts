@@ -1,6 +1,6 @@
 import { spotifyAuth } from './spotify';
-import { AuthExpiredError } from '@/providers/errors';
-import { shouldUseMockProvider } from '@/providers/mock/shouldUseMockProvider';
+import { AuthExpiredError } from '@/types/providerErrors';
+import { shouldUseMockProvider } from '@/utils/shouldUseMockProvider';
 import { logSpotify } from '@/lib/debugLog';
 import { logCaughtError } from '@/utils/logCaughtError';
 import {

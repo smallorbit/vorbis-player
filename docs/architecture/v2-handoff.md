@@ -2,7 +2,7 @@
 
 **Initiative label:** [`project:vorbis-player-architecture-v2`](https://github.com/smallorbit/vorbis-player/labels/project%3Avorbis-player-architecture-v2) (RFC 0001)  
 **Working mode:** **one workstream (epic) at a time**; within an epic, **one child issue at a time**.  
-**Updated:** 2026-09-21 (after #1732)
+**Updated:** 2026-09-21 (after #1733)
 
 Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tier-codebase.md`, which is **not yet on `main`** — landing that RFC is part of **[WS11](https://github.com/smallorbit/vorbis-player/issues/1757)**.
 
@@ -15,7 +15,7 @@ Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tie
 | WS1 | [#1685](https://github.com/smallorbit/vorbis-player/issues/1685) Neutral domain model | **Done** |
 | WS2 | [#1692](https://github.com/smallorbit/vorbis-player/issues/1692) PlaybackStore + QueueStore | **Done** |
 | WS3 | [#1699](https://github.com/smallorbit/vorbis-player/issues/1699) State, persistence & events | **Done** |
-| WS10 | [#1729](https://github.com/smallorbit/vorbis-player/issues/1729) Close the toolchain blind spots | **In progress** (3/8) |
+| WS10 | [#1729](https://github.com/smallorbit/vorbis-player/issues/1729) Close the toolchain blind spots | **In progress** (4/8) |
 | WS4–WS9, WS11–WS12 | Reliability → DevBug | Open (do not start until WS10 closes) |
 
 Pre-initiative foundations already on `main`: async-race harness, honest e2e, full CI gate (coverage + knip + audit ≥ high).
@@ -24,7 +24,7 @@ Pre-initiative foundations already on `main`: async-race harness, honest e2e, fu
 
 ## Do this next
 
-### Immediate: continue WS10 at #1733
+### Immediate: continue WS10 at #1734
 
 Epic: **[#1729 — Close the toolchain blind spots](https://github.com/smallorbit/vorbis-player/issues/1729)**  
 Principle: P3 — conventions are machine-enforced or they are wishes.
@@ -32,10 +32,10 @@ Principle: P3 — conventions are machine-enforced or they are wishes.
 | # | Issue | State | Notes |
 |---|--------|--------|--------|
 | 1730 | Bring tests, e2e, and scripts under typechecking | **Closed** | PR [#1782](https://github.com/smallorbit/vorbis-player/pull/1782) |
-| 1731 | Wire coverage ratchet, knip, and npm audit into CI | **Closed** | PR [#1783](https://github.com/smallorbit/vorbis-player/pull/1783) — CI `test:coverage` + `knip` + `audit:ci`; floors in `vite.config.ts` (GitHub runner is source of truth for function %); knip clean; `npm update` + sharp 0.35 |
-| 1732 | Turn on type-aware lint and finish the strictness epic | **Closed** | PR [#1785](https://github.com/smallorbit/vorbis-player/pull/1785) — F85 + F32 (see merged context below) |
-| **1733** | **Declare and enforce the layering order** | **← NEXT** | F76, F93 — see implementation brief below |
-| 1734 | Make e2e run against the prod build with a real Dropbox snapshot | Open | |
+| 1731 | Wire coverage ratchet, knip, and npm audit into CI | **Closed** | PR [#1783](https://github.com/smallorbit/vorbis-player/pull/1783) |
+| 1732 | Turn on type-aware lint and finish the strictness epic | **Closed** | PR [#1785](https://github.com/smallorbit/vorbis-player/pull/1785) |
+| 1733 | Declare and enforce the layering order | **Closed** | F76, F93 — layering doc + ESLint zones + madge CI + zero cycles (see merged context below) |
+| **1734** | **Make e2e run against the prod build with a real Dropbox snapshot** | **← NEXT** | |
 | 1735 | Add boundary tests for the Spotify SDK/API layer | Open | |
 | 1736 | Clean up test infrastructure and scripts | Open | |
 | 1737 | Set the dependency-upgrade policy | Open | Routine `npm update` already landed in #1731; this issue is the written policy + the React 19 / Vite 8 / Vitest 4 RFC (not piecemeal). Remaining moderate vitest advisories need that major. |
@@ -95,54 +95,26 @@ Turn on type-aware lint and finish the strictness epic (F85, F32). On `main` via
 - Shared parsers: `oauthTokenResponse.ts`, `authPostMessage.ts`, `spotifyApiErrorBody.ts` (+ unit tests)
 - Services coverage floor ratchet adjusted 78→77 after typed JSON guards (#1732)
 
-**Deferred (do not expand #1733 to cover unless required):** extend the same type-aware ESLint block to `src/**/__tests__/**` and `src/test/**` once layering is stable.
+**Deferred (do not expand #1734 to cover unless required):** extend the same type-aware ESLint block to `src/**/__tests__/**` and `src/test/**` once layering is stable.
 
-## Context for #1733 (next implementation)
+---
 
-**Issue:** [#1733 — Declare and enforce the layering order](https://github.com/smallorbit/vorbis-player/issues/1733) (F76, F93).
+## Context for #1733 (merged)
 
-**Goal:** Document the dependency ladder, enforce it in ESLint, break **six value-import cycles** (today held together only by type-only imports / convention), and gate CI on **zero** circular value imports.
+Declare and enforce the layering order (F76, F93).
 
-### Target layering (declare in `CLAUDE.md`, enforce with zones)
+- **Docs:** `CLAUDE.md` layering subsection + [`docs/architecture/layering.md`](layering.md)
+- **ESLint:** `import/no-restricted-paths` zones in `eslint.config.js` (`eslint-layer-zones.js`; production `src/`, excludes tests and `src/types/**/*.d.ts`)
+- **CI:** `npm run check:circular` (`madge` devDependency) after typecheck in `.github/workflows/ci.yml`
+- **Cycles:** six Dropbox/IDB chains broken — `IdbDatabaseHandle` → `services/idb/types.ts`; Dropbox modules use `dropboxAuthHandle.ts` (token surface); `providerRegistry` → `services/providerRegistry.ts`; logout purge → `providers/providerDataPurge.ts` + `services/spotify/purgePersistedData.ts`; provider errors → `types/providerErrors.ts`
 
-Bottom → top (each layer may import only from layers **below** it):
+## Context for #1734 (next implementation)
 
-1. `src/types/**`, `src/constants/**`
-2. `src/lib/**`, `src/utils/**`, `src/workers/**`
-3. `src/services/**`, `src/stores/**`
-4. `src/providers/**` (provider implementations; not `contexts/`)
-5. `src/hooks/**`, `src/contexts/**`
-6. `src/components/**`, `src/App.tsx`, `src/main.tsx`
+**Issue:** [#1734 — Make e2e run against the prod build with a real Dropbox snapshot](https://github.com/smallorbit/vorbis-player/issues/1734).
 
-Cross-cutting rules already on `main`: domain types live in `src/types/`; no raw `localStorage` outside `persistedStorage.ts`; storage keys only in `constants/storage.ts`.
+Make Playwright run against the production build and a real Dropbox snapshot (see epic #1729 exit criteria: no empty e2e run).
 
-### Known cycles (2026-09-21 baseline — must reach **0**)
-
-Run before/after (same command CI should use):
-
-```bash
-npx madge --circular --extensions ts,tsx --ts-config tsconfig.app.json src
-```
-
-Current output (6 chains, all Dropbox/IDB-related except the IDB pair):
-
-1. `services/idb/createDatabase.ts` ↔ `services/idb/kvStore.ts`
-2. `providers/dropbox/dropboxAuthAdapter.ts` ↔ `providers/dropbox/dropboxLikesSync.ts`
-3. `dropboxAuthAdapter` → `dropboxLikesSync` → `remoteJsonFileStore` → (back to auth)
-4. `dropboxAuthAdapter` → `dropboxLikesSync` → `remoteJsonFileStore` → `dropboxSyncFolder` → (back)
-5. `dropboxAuthAdapter` ↔ `providers/dropbox/dropboxPreferencesSync.ts`
-6. `dropboxAuthAdapter` → `services/cache/providerDataPurge.ts` → `dropboxPlaylistStorage` → (back)
-
-**Fix strategy (from issue):** prefer extracting **leaf modules** (types-only files, tiny facades, or `import type` at boundaries) so runtime imports flow one way. Avoid “fixing” cycles by disabling rules. `providerDataPurge` and auth adapters are sensitive — keep purge contract from #1704 intact.
-
-### Suggested deliverables (one issue-sized PR)
-
-1. **Docs:** Add a short “Layering” subsection to `CLAUDE.md` (and optionally a row in `docs/architecture/` if it fits existing layout) with the ladder above.
-2. **ESLint:** `eslint-plugin-import` or `@typescript-eslint` `no-restricted-imports` / dedicated **import zones** config mirroring the ladder (start strict on `src/types` and `src/constants` being import-only from below; tune ignores for `main.tsx`, tests, and Playwright separately).
-3. **CI:** Add a `checks` step after typecheck, e.g. `npx madge --circular --extensions ts,tsx --ts-config tsconfig.app.json src` — **fail if count &gt; 0**. Pin `madge` as a devDependency if CI should not `npx` install each run.
-4. **Code:** Break all six cycles; run full gate: `npx tsc -b --noEmit`, `npm run lint`, `npm run test:coverage`, `npm run build`.
-
-Do **not** start WS4–WS9 / WS11–WS12 until WS10 closes. Do **not** pick up #1734 (prod e2e) or #1735 in the same PR unless a shared CI primitive is unavoidable.
+Do **not** start WS4–WS9 / WS11–WS12 until WS10 closes. Do **not** pick up #1735 in the same PR unless a shared CI primitive is unavoidable.
 
 ---
 
@@ -160,17 +132,19 @@ Do **not** start WS4–WS9 / WS11–WS12 until WS10 closes. Do **not** pick up #
 
 - Label board: https://github.com/smallorbit/vorbis-player/labels/project%3Avorbis-player-architecture-v2  
 - WS10 epic: https://github.com/smallorbit/vorbis-player/issues/1729  
-- Next issue: https://github.com/smallorbit/vorbis-player/issues/1733  
+- Next issue: https://github.com/smallorbit/vorbis-player/issues/1734  
 - Coverage thresholds: `vite.config.ts` (`test.coverage.thresholds`)  
 - knip config: `knip.json`  
 - Test tsconfig: `tsconfig.test.json`  
 - E2E tsconfig: `tsconfig.e2e.json`  
 - Test factories: `src/test/fixtures.ts` / `src/test/defined.ts`  
 - Shared IDB foundation: `src/services/idb/`  
+- Provider registry: `src/services/providerRegistry.ts` (re-export: `src/providers/registry.ts`)  
 - Remote JSON store: `src/providers/dropbox/remoteJsonFileStore.ts`  
-- Logout purge: `src/services/cache/providerDataPurge.ts`  
+- Logout purge: `src/providers/providerDataPurge.ts`  
 - Typed events: `src/constants/events.ts`  
 - Storage keys: `src/constants/storage.ts`  
 - Metadata enrichment: `src/providers/dropbox/dropboxMetadataEnrichment.ts`  
 - Type-aware lint: `eslint.config.js` (production `src/` block)  
-- Circular import check: `npx madge --circular --extensions ts,tsx --ts-config tsconfig.app.json src`  
+- Import layering zones: `eslint-layer-zones.js`  
+- Circular import check: `npm run check:circular`  
