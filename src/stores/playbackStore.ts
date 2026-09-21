@@ -381,7 +381,7 @@ function attach(): () => void {
   );
 
   // Prime from whichever provider is currently driving playback.
-  getDrivingDescriptor()?.playback.getState().then((state) => {
+  void getDrivingDescriptor()?.playback.getState().then((state) => {
     if (generation !== attachGeneration) return;
     if (state) {
       commit({ isPlaying: state.isPlaying, positionMs: state.positionMs });
@@ -395,7 +395,7 @@ function attach(): () => void {
     expectedTrackId = null;
     const resyncProviderId = resolveDrivingProviderId();
     const resyncDescriptor = resyncProviderId ? providerRegistry.get(resyncProviderId) : undefined;
-    resyncDescriptor?.playback.getState().then((state) => {
+    void resyncDescriptor?.playback.getState().then((state) => {
       if (generation !== attachGeneration) return;
       if (state && resyncProviderId) {
         handleProviderEvent(resyncProviderId, state);

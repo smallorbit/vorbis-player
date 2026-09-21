@@ -229,7 +229,9 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
                 label: saved ? 'Remove from Library' : 'Add to Library',
                 icon: saved ? <RemoveFromLibraryIcon /> : <AddToLibraryIcon />,
                 onClick: () => {
-                    catalog.setAlbumSaved!(popover.albumId, !saved).then(() => {
+                    const setAlbumSaved = catalog.setAlbumSaved;
+                    if (!setAlbumSaved) return;
+                    void setAlbumSaved(popover.albumId, !saved).then(() => {
                         if (saved) {
                             spotifyLibrarySyncEngine.optimisticRemoveAlbum(popover.albumId).catch(() => {});
                         } else {

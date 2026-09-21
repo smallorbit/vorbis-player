@@ -43,7 +43,9 @@ export function useQueueThumbnailLoader(tracks: readonly MediaTrack[]) {
     const missing = tracks.filter((t) => !t.image && t.albumId);
     if (missing.length === 0) return;
 
-    const albumIds = [...new Set(missing.map((t) => t.albumId!))];
+    const albumIds = [
+      ...new Set(missing.flatMap((t) => (t.albumId ? [t.albumId] : []))),
+    ];
     const toResolve = albumIds.filter((id) => !attemptedAlbumIds.current.has(id));
     if (toResolve.length === 0) return;
 

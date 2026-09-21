@@ -176,7 +176,7 @@ export function usePlayerLogic() {
         setError(error instanceof Error ? error.message : 'Authentication failed');
       }
     }
-    handleAuthRedirect();
+    void handleAuthRedirect();
   }, [setError]);
 
   // Warm the lazy QueueDrawer/QueueBottomSheet bundles on first playback so the
@@ -270,7 +270,7 @@ export function usePlayerLogic() {
 
   const handlePause = useCallback(() => {
     logQueue('handlePause — drivingProvider=%s, index=%d', playbackStore.resolveDrivingProviderId(), queueStore.getCurrentIndex());
-    playbackStore.getDrivingDescriptor()?.playback.pause();
+    void playbackStore.getDrivingDescriptor()?.playback.pause();
   }, []);
 
   const handleOpenLibrary = useCallback(() => {

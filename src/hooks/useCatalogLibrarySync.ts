@@ -212,8 +212,9 @@ export function useCatalogLibrarySync(catalogProviderIdsInput: readonly Provider
       const eventName = registryDescriptor?.likesChangedEvent;
       if (!eventName) continue;
 
+      const getLikedCount = catalog.getLikedCount;
       const handleLikesChanged = () => {
-        catalog.getLikedCount!().then(count => {
+        void getLikedCount().then(count => {
           const data = dataRef.current.get(providerId);
           if (data) {
             data.likedCount = count;

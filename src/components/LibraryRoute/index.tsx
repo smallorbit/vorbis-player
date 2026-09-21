@@ -22,7 +22,7 @@ interface LibraryRouteProps {
   ) => Promise<void>) | undefined;
   onQueueLikedTracks?: ((tracks: MediaTrack[], collectionName?: string) => void) | undefined;
   onResume?: (() => void) | undefined;
-  lastSession?: SessionSnapshot | null | undefined;
+  lastSession: SessionSnapshot | null;
   onPlayNext?: ((selection: CollectionSelection) => void) | undefined;
   onStartRadioForCollection?: ((ref: CollectionRef) => void) | undefined;
   initialSearchQuery?: string | undefined;

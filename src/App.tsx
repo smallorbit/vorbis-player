@@ -97,8 +97,9 @@ function App() {
             }
           }
 
-          if (handled && window.opener) {
-            window.opener.postMessage(
+          const opener = window.opener as Window | null;
+          if (handled && opener) {
+            opener.postMessage(
               { type: AUTH_COMPLETE_EVENT, provider: handledProviderId },
               window.location.origin,
             );
@@ -119,7 +120,7 @@ function App() {
       }
     };
 
-    authenticate();
+    void authenticate();
   }, []);
 
 

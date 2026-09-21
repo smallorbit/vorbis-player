@@ -135,9 +135,9 @@ export function useUnifiedLikedTracks(): UseUnifiedLikedTracksResult {
 
     cleanups.push(onAppEvent(LIBRARY_REFRESH_EVENT, handle));
 
-    const likesEvents = providerRegistry.getAll()
-      .filter(d => d.likesChangedEvent)
-      .map(d => d.likesChangedEvent!);
+    const likesEvents = providerRegistry
+      .getAll()
+      .flatMap((d) => (d.likesChangedEvent ? [d.likesChangedEvent] : []));
     for (const eventName of likesEvents) {
       window.addEventListener(eventName, handle);
       cleanups.push(() => window.removeEventListener(eventName, handle));

@@ -55,10 +55,12 @@ async function lastfmGet(params: Record<string, string>): Promise<unknown> {
     throw new Error(`Last.fm API error: ${response.status} ${response.statusText}`);
   }
 
-  const data = await response.json();
+  const data: unknown = await response.json();
 
-  if (data && typeof data === 'object' && 'error' in data) {
-    throw new Error(`Last.fm error ${data.error}: ${data.message}`);
+  if (isPlainObject(data) && 'error' in data) {
+    const code = data['error'];
+    const message = data['message'];
+    throw new Error(`Last.fm error ${String(code)}: ${String(message)}`);
   }
 
   return data;

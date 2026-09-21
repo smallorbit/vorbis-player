@@ -278,7 +278,7 @@ export default function ProviderSetupScreen({ onOpenSettings, onOpenLibrary }: P
                       onClick={() => {
                         if (!isEnabled) toggleProvider(descriptor.id);
                         setActiveProviderId(descriptor.id);
-                        descriptor.auth.beginLogin({ popup: true });
+                        void descriptor.auth.beginLogin({ popup: true });
                       }}
                     >
                       Connect
@@ -367,7 +367,7 @@ export default function ProviderSetupScreen({ onOpenSettings, onOpenLibrary }: P
                       $accentColor={meta.accentColor}
                       onClick={() => {
                         setActiveProviderId(descriptor.id);
-                        descriptor.auth.beginLogin({ popup: true });
+                        void descriptor.auth.beginLogin({ popup: true });
                       }}
                     >
                       Reconnect

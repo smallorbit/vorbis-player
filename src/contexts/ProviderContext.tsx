@@ -7,7 +7,6 @@ import type { ProviderDescriptor, ProviderRegistry } from '@/types/providers';
 // Ensure real providers are registered before the context is used.
 import '@/providers/registerProviders';
 import {
-  AUTH_COMPLETE_EVENT,
   AUTH_STATE_CHANGED_EVENT,
   PROVIDER_DISCONNECTED_EVENT,
   PROVIDER_RECONNECTED_EVENT,
@@ -17,6 +16,7 @@ import {
   onAppEvent,
 } from '@/constants/events';
 import { STORAGE_KEYS } from '@/constants/storage';
+import { parseAuthCompletePostMessage } from '@/utils/authPostMessage';
 
 type ProviderSwitchInterceptor = (
   newProviderId: ProviderId,
@@ -57,11 +57,20 @@ interface ProviderContextValue {
   connectedProviderIds: ProviderId[];
 }
 
-const ProviderContext =
-  (import.meta.hot?.data?.ProviderContext as React.Context<ProviderContextValue | null> | undefined) ??
-  createContext<ProviderContextValue | null>(null);
-if (import.meta.hot?.data) {
-  import.meta.hot.data.ProviderContext = ProviderContext;
+type ProviderContextHmrData = {
+  ProviderContext?: React.Context<ProviderContextValue | null> | undefined;
+};
+
+function readProviderContextHmrData(): ProviderContextHmrData {
+  if (!import.meta.hot?.data) return {};
+  return import.meta.hot.data as ProviderContextHmrData;
+}
+
+const hotProviderContext = readProviderContextHmrData().ProviderContext;
+const ProviderContext: React.Context<ProviderContextValue | null> =
+  hotProviderContext ?? createContext<ProviderContextValue | null>(null);
+if (import.meta.hot?.data && hotProviderContext === undefined) {
+  (import.meta.hot.data as ProviderContextHmrData).ProviderContext = ProviderContext;
 }
 
 /**
@@ -105,7 +114,7 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
 
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
-      if (event.data?.type !== AUTH_COMPLETE_EVENT) return;
+      if (parseAuthCompletePostMessage(event.data) === null) return;
       bumpRevision();
     };
     window.addEventListener('message', handleMessage);

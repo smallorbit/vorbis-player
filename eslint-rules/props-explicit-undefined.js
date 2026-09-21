@@ -12,6 +12,14 @@ function isUndefinedInUnion(typeNode) {
   return false;
 }
 
+function isNullInUnion(typeNode) {
+  if (typeNode.type === 'TSNullKeyword') return true;
+  if (typeNode.type === 'TSUnionType') {
+    return typeNode.types.some((t) => t.type === 'TSNullKeyword');
+  }
+  return false;
+}
+
 function isStyledTag(tagNode) {
   if (!tagNode) return false;
   if (tagNode.type === 'MemberExpression') {
@@ -64,6 +72,9 @@ const propsExplicitUndefined = createRule({
       missingUndefined:
         'Optional field `{{field}}` on `{{kind}}` must include `| undefined` in its type. ' +
         'See CLAUDE.md "Type strictness baseline" for the convention.',
+      optionalNullable:
+        'Optional field `{{field}}` on `{{kind}}` must not include `| null` — use `field: T | null` ' +
+        '(always present) or `field?: T | undefined` (absent when omitted). See CLAUDE.md.',
     },
   },
   defaultOptions: [
@@ -92,6 +103,14 @@ const propsExplicitUndefined = createRule({
       if (!node.optional) return;
       const annotation = node.typeAnnotation && node.typeAnnotation.typeAnnotation;
       if (!annotation) return;
+      if (isNullInUnion(annotation)) {
+        context.report({
+          node,
+          messageId: 'optionalNullable',
+          data: { field: fieldName(node), kind },
+        });
+        return;
+      }
       if (isUndefinedInUnion(annotation)) return;
       context.report({
         node,

@@ -120,7 +120,7 @@ export function useMenuItems(
       }),
       onAddToQueue: closeAfter('Add to Queue', () => {
         if (onAddToQueue) {
-          onAddToQueue(request.selection);
+          void onAddToQueue(request.selection);
         }
       }),
       onPlayNext: closeAfter('Play Next', () => {

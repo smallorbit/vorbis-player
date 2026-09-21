@@ -19,6 +19,7 @@ import {
   removeLocalStorageKey,
   writeLocalStorageRaw,
 } from '@/utils/persistedStorage';
+import { parseOAuthTokenResponse } from '@/utils/oauthTokenResponse';
 
 function notifyDropboxSessionExpired(): void {
   dispatchAppEvent(DROPBOX_AUTH_ERROR_EVENT);
@@ -184,7 +185,7 @@ export class DropboxAuthAdapter implements AuthProvider {
       throw new Error(`Dropbox token exchange failed: ${response.status} ${errorText}`);
     }
 
-    const data = await response.json();
+    const data = parseOAuthTokenResponse(await response.json());
     this.accessToken = data.access_token;
     this.refreshToken = data.refresh_token ?? null;
     this.tokenExpiresAt = data.expires_in
@@ -284,7 +285,7 @@ export class DropboxAuthAdapter implements AuthProvider {
       return null;
     }
 
-    const data = await response.json();
+    const data = parseOAuthTokenResponse(await response.json());
     this.accessToken = data.access_token;
     this.tokenExpiresAt = data.expires_in
       ? Date.now() + data.expires_in * 1000

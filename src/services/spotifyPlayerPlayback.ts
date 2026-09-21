@@ -3,19 +3,26 @@ import { SpotifyApiError } from './spotify/api';
 import { SPOTIFY_TRANSFER_RETRY_COUNT } from '@/constants/spotify';
 import { logSpotify } from '@/lib/debugLog';
 import { TRANSFER_RETRY_DELAY_MS } from '@/constants/timing';
-import { logCaughtError } from '@/utils/logCaughtError';
+import { parseSpotifyApiErrorBody } from '@/utils/spotifyApiErrorBody';
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isSpotifyPlayerDeviceActive(data: unknown, deviceId: string): boolean {
+  if (!isRecord(data)) return false;
+  const device = data['device'];
+  if (!isRecord(device)) return false;
+  return device['id'] === deviceId && device['is_active'] === true;
+}
 
 async function buildPlayApiError(response: Response): Promise<SpotifyApiError> {
   const errorText = await response.text();
   let reason = '';
-  try {
-    const json = JSON.parse(errorText);
-    if (json.error?.message) reason = ` - ${json.error.message}`;
-    if (json.error?.reason) reason += ` (${json.error.reason})`;
-  } catch (err) {
-    logCaughtError('spotifyPlayerPlayback.buildPlayApiError', err);
-    reason = errorText ? ` - ${errorText}` : '';
-  }
+  const errorBody = parseSpotifyApiErrorBody(errorText);
+  if (errorBody?.message) reason = ` - ${errorBody.message}`;
+  if (errorBody?.reason) reason += ` (${errorBody.reason})`;
+  if (!errorBody && errorText) reason = ` - ${errorText}`;
   if (response.status === 429) {
     const retryAfter = response.headers.get('Retry-After');
     if (retryAfter) reason += ` Retry-After: ${retryAfter}`;
@@ -212,8 +219,8 @@ export async function apiEnsureDeviceActive(
       });
 
       if (response.status === 200) {
-        const data = await response.json();
-        if (data.device?.id === deviceId && data.device?.is_active) {
+        const data: unknown = await response.json();
+        if (isSpotifyPlayerDeviceActive(data, deviceId)) {
           logSpotify('device is active and ready');
           return true;
         }

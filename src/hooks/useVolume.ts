@@ -23,7 +23,7 @@ export const useVolume = (currentTrackProvider?: ProviderId) => {
   }, [activeDescriptor, currentTrackProvider]);
 
   useEffect(() => {
-    getPlayingPlayback()?.setVolume(isMuted ? 0 : volume / 100);
+    void getPlayingPlayback()?.setVolume(isMuted ? 0 : volume / 100);
   }, [getPlayingPlayback, isMuted, volume]);
 
   const handleMuteToggle = useCallback(() => {
@@ -31,11 +31,11 @@ export const useVolume = (currentTrackProvider?: ProviderId) => {
       const newMuted = !prev;
       if (newMuted) {
         previousVolumeRef.current = volume > 0 ? volume : DEFAULT_VOLUME;
-        getPlayingPlayback()?.setVolume(0);
+        void getPlayingPlayback()?.setVolume(0);
       } else {
         const restore = previousVolumeRef.current > 0 ? previousVolumeRef.current : DEFAULT_VOLUME;
         setVolume(restore);
-        getPlayingPlayback()?.setVolume(restore / 100);
+        void getPlayingPlayback()?.setVolume(restore / 100);
       }
       return newMuted;
     });
@@ -48,7 +48,7 @@ export const useVolume = (currentTrackProvider?: ProviderId) => {
   const setVolumeLevel = useCallback((newVolume: number) => {
     const clamped = Math.max(0, Math.min(100, Math.round(newVolume)));
     setVolume(clamped);
-    getPlayingPlayback()?.setVolume(clamped / 100);
+    void getPlayingPlayback()?.setVolume(clamped / 100);
 
     if (clamped > 0 && isMuted) {
       setIsMuted(false);

@@ -551,7 +551,7 @@ export function FeedbackPanel(props: FeedbackPanelProps) {
 
   useEffect(() => {
     if (props.isOpen) {
-      import('@/services/devbug/consoleCapture').then(({ getEntries }) => {
+      void import('@/services/devbug/consoleCapture').then(({ getEntries }) => {
         setConsoleEntries(getEntries().slice(-10));
       });
     }

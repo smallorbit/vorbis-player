@@ -250,7 +250,7 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
   }, [route, lastSession, onHydrate, onHydrateFired, onHydrateFailed]);
 
   const handleConnectClick = useCallback(() => {
-    activeDescriptor?.auth.beginLogin();
+    void activeDescriptor?.auth.beginLogin();
   }, [activeDescriptor]);
 
   const handleBrowseLibrary = useCallback(() => {

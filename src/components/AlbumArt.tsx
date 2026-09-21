@@ -242,7 +242,7 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
     image.crossOrigin = 'anonymous';
     image.src = currentTrack.image;
     image.onload = () => {
-      if (!cancelled) processImageWithWorker(image, accentColorRgb, isCancelled);
+      if (!cancelled) void processImageWithWorker(image, accentColorRgb, isCancelled);
     };
     image.onerror = () => {
       if (!cancelled) {

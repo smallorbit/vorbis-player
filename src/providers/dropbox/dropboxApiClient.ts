@@ -95,7 +95,8 @@ export class DropboxApiClient {
       throw new Error(`Dropbox API error: ${response.status} ${errorText}`);
     }
 
-    return response.json();
+    const responseBody: unknown = await response.json();
+    return responseBody as T;
   }
 
   async paginateFolder(

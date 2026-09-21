@@ -11,7 +11,7 @@ interface TrailVisualizerProps {
   accentColor: string;
   isPlaying: boolean;
   /** When set, the trail head (ship) stays inside this rect so the trail appears to come from the album art */
-  albumArtBounds?: AlbumArtBounds | null | undefined;
+  albumArtBounds?: AlbumArtBounds | undefined;
 }
 
 interface TrailParticle {

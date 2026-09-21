@@ -17,13 +17,29 @@ interface BuildInfo {
 
 interface ImportMetaEnv {
   readonly VITE_DROPBOX_APP_KEY: string
+  readonly VITE_DROPBOX_CLIENT_ID: string
+  readonly VITE_DROPBOX_REDIRECT_URI: string
   readonly VITE_SPOTIFY_CLIENT_ID: string
   readonly VITE_SPOTIFY_REDIRECT_URI: string
+  readonly VITE_LASTFM_API_KEY?: string
   readonly VITE_MOCK_PROVIDER?: 'true' | 'false'
+}
+
+/** Vite HMR `import.meta.hot.data` slots used across the app. */
+interface ImportMetaHotData {
+  ProviderContext?: import('react').Context<unknown>
+  playerState?: {
+    player: SpotifyPlayer | null
+    deviceId: string | null
+    isReady: boolean
+  }
 }
 
 interface ImportMeta {
   readonly env: ImportMetaEnv
+  readonly hot?: {
+    readonly data: ImportMetaHotData
+  }
 }
 
 interface Window {

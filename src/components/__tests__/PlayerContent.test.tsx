@@ -235,6 +235,7 @@ describe('PlayerContent', () => {
           isPlaying={false}
           showLibrary={false}
           handlers={mockHandlers}
+          radioProgress={null}
         />
       </TestWrapper>
     );
@@ -251,6 +252,7 @@ describe('PlayerContent', () => {
           isPlaying={true}
           showLibrary={false}
           handlers={mockHandlers}
+          radioProgress={null}
         />
       </TestWrapper>
     );
@@ -267,6 +269,7 @@ describe('PlayerContent', () => {
           isPlaying={false}
           showLibrary={false}
           handlers={mockHandlers}
+          radioProgress={null}
         />
       </TestWrapper>
     );
@@ -293,6 +296,7 @@ describe('PlayerContent', () => {
           handlers={mockHandlers}
           radioState={radioState}
           isRadioAvailable={true}
+          radioProgress={null}
         />
       </TestWrapper>
     );
@@ -323,6 +327,7 @@ describe('PlayerContent', () => {
           isPlaying={true}
           showLibrary={false}
           handlers={handlers}
+          radioProgress={null}
         />
       </TestWrapper>
     );
@@ -343,6 +348,7 @@ describe('PlayerContent', () => {
           showLibrary={false}
           handlers={mockHandlers}
           onAlbumArtBoundsChange={mockOnBoundsChange}
+          radioProgress={null}
         />
       </TestWrapper>
     );
@@ -360,6 +366,7 @@ describe('PlayerContent', () => {
           showLibrary={false}
           handlers={mockHandlers}
           currentTrackProvider="spotify"
+          radioProgress={null}
         />
       </TestWrapper>
     );

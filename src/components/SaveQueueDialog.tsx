@@ -118,7 +118,7 @@ export default function SaveQueueDialog({ onSave, onClose, availableProviders, t
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      handleSave();
+      void handleSave();
     }
   }, [handleSave]);
 

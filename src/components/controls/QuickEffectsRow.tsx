@@ -206,7 +206,7 @@ function QuickEffectsRow({
 
   useEffect(() => {
     if (currentTrack?.image) {
-      extractTopVibrantColors(currentTrack.image, 2).then(setColorOptions);
+      void extractTopVibrantColors(currentTrack.image, 2).then(setColorOptions);
     } else {
       setColorOptions([]);
     }

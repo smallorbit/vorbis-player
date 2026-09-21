@@ -114,5 +114,12 @@ describe('props-explicit-undefined', () => {
       expect(diagnostics).toHaveLength(2);
       expect(diagnostics.every((d) => d.ruleId === RULE_ID)).toBe(true);
     });
+
+    it('rejects optional fields that include | null (F32)', () => {
+      const code = `interface FooProps { session?: Session | null }`;
+      const diagnostics = lint(code);
+      expect(diagnostics).toHaveLength(1);
+      expect(diagnostics[0]?.messageId).toBe('optionalNullable');
+    });
   });
 });

@@ -18,7 +18,8 @@ const EyedropperOverlay: React.FC<EyedropperOverlayProps> = ({ image, onPick, on
     img.crossOrigin = 'Anonymous';
     img.src = image;
     img.onload = () => {
-      const canvas = canvasRef.current!;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
       canvas.width = img.width;
       canvas.height = img.height;
       const ctx = canvas.getContext('2d', { willReadFrequently: true });

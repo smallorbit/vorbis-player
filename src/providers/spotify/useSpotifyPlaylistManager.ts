@@ -119,7 +119,7 @@ export const useSpotifyPlaylistManager = ({
     } catch (err: unknown) {
       if (err instanceof AuthExpiredError) {
         setError("Authentication expired. Redirecting to Spotify login...");
-        spotifyAuth.redirectToAuth();
+        void spotifyAuth.redirectToAuth();
       } else {
         setError(err instanceof Error ? err.message : "An unknown error occurred while loading tracks.");
       }

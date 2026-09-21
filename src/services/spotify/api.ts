@@ -92,7 +92,7 @@ async function executeApiRequest<T>(
     return undefined as T;
   }
   try {
-    return JSON.parse(text);
+    return JSON.parse(text) as T;
   } catch (err) {
     // Some successful write endpoints (e.g. player seek/pause) occasionally
     // return a non-JSON body instead of a clean 204, so a void-returning caller
