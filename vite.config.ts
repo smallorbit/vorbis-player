@@ -26,7 +26,7 @@
  * 
  * @testing
  * - Environment: jsdom for DOM simulation
- * - Coverage: V8 provider with HTML reports
+ * - Coverage: V8 provider, all-src include, per-directory ratchet thresholds
  * - Setup: Custom test setup file
  * - Exclusions: node_modules, dist, coverage directories
  * 
@@ -111,15 +111,43 @@ export default defineConfig({
     exclude: ['**/node_modules/**', '**/dist/**', 'playwright/**', 'proxy-server/**', '.claude/**'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
+      reporter: ['text-summary', 'json-summary', 'html'],
+      reportsDirectory: './coverage',
+      reportOnFailure: true,
+      // Count every production file, not just those imported by a test, so
+      // new untested modules drop the ratchet instead of hiding at 0%.
+      all: true,
+      include: ['src/**/*.{ts,tsx}'],
       exclude: [
-        'node_modules/',
-        'src/test/',
+        'src/test/**',
+        'src/**/__tests__/**',
         '**/*.d.ts',
-        'dist/',
-        'coverage/',
-        'proxy-server/'
-      ]
+        'src/vite-env.d.ts',
+        'src/main.tsx',
+        'src/workers/**',
+      ],
+      // Floors are the current measured percentages (ratchet-only, F51).
+      // Function coverage from v8 varies by runner: CI measured contexts
+      // functions at 60.78% vs ~75% locally, so that floor follows CI.
+      // Raise a number when a directory's coverage grows; never lower it
+      // without an explicit decision in the PR.
+      thresholds: {
+        statements: 69,
+        branches: 81,
+        functions: 73,
+        lines: 69,
+        'src/components/**/*.{ts,tsx}': { statements: 65, branches: 80, functions: 69, lines: 65 },
+        'src/constants/**/*.{ts,tsx}': { statements: 99, branches: 96, functions: 99, lines: 99 },
+        'src/contexts/**/*.{ts,tsx}': { statements: 60, branches: 81, functions: 60, lines: 60 },
+        'src/hooks/**/*.{ts,tsx}': { statements: 78, branches: 83, functions: 85, lines: 78 },
+        'src/lib/**/*.{ts,tsx}': { statements: 99, branches: 99, functions: 99, lines: 99 },
+        'src/providers/**/*.{ts,tsx}': { statements: 65, branches: 77, functions: 68, lines: 65 },
+        'src/services/**/*.{ts,tsx}': { statements: 78, branches: 84, functions: 80, lines: 78 },
+        'src/stores/**/*.{ts,tsx}': { statements: 95, branches: 92, functions: 95, lines: 95 },
+        'src/styles/**/*.{ts,tsx}': { statements: 99, branches: 99, functions: 99, lines: 99 },
+        'src/types/**/*.{ts,tsx}': { statements: 99, branches: 95, functions: 99, lines: 99 },
+        'src/utils/**/*.{ts,tsx}': { statements: 60, branches: 65, functions: 74, lines: 60 },
+      },
     }
   }
 })

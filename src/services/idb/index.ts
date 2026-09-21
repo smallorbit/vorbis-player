@@ -5,17 +5,9 @@
  * and Dropbox art/catalog/likes databases.
  */
 
-export type {
-  CreateIdbDatabaseOptions,
-  IDBMode,
-  IdbErrorKind,
-  KVStore,
-  StoreKeyMode,
-  StoreSpec,
-} from './types';
+export type { KVStore } from './types';
 export type { IdbDatabaseHandle } from './createDatabase';
-export type { DegradationContext, DegradationResult } from './degradation';
 
 export { createIdbDatabase } from './createDatabase';
-export { classifyIdbError, runWithDegradationPolicy } from './degradation';
-export { deleteIdbDatabase, openIdbDatabase } from './openDatabase';
+export { runWithDegradationPolicy } from './degradation';
+export { deleteIdbDatabase } from './openDatabase';

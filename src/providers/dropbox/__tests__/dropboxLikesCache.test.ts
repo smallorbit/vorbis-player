@@ -13,7 +13,6 @@ vi.mock('../dropboxIdb', () => ({
     recoverFromCorruption: vi.fn().mockResolvedValue(undefined),
     reopenConnection: vi.fn().mockResolvedValue(undefined),
   },
-  closeDropboxCache: vi.fn(),
 }));
 
 import { getDb, runDropboxWrite } from '../dropboxIdb';

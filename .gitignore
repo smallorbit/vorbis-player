@@ -71,6 +71,9 @@ Thumbs.db
 # Conversation exports
 it.txt
 
+# Coverage (vitest / v8)
+coverage/
+
 # Playwright
 test-results/
 playwright-report/

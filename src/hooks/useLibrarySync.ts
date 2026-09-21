@@ -11,8 +11,6 @@ import {
   onAppEvent,
 } from '@/constants/events';
 
-export { ART_REFRESHED_EVENT, LIBRARY_REFRESH_EVENT };
-
 interface UseLibrarySyncResult {
   playlists: MediaCollection[];
   albums: MediaCollection[];

@@ -65,6 +65,8 @@ npm run lint           # Lint
 npm run test           # Watch mode
 npm run test:run       # Run once
 npm run test:coverage  # Coverage
+npm run knip           # Unused files/exports/dependencies
+npm run audit:ci       # Fail on high/critical advisories
 npm run test:e2e       # Playwright specs
 npm run capture        # Visual capture (desktop + mobile)
 npm run snapshot:spotify   # Regenerate Spotify fixture snapshot

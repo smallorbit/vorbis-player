@@ -2,8 +2,6 @@ import { LOCAL_STORAGE_CHANGE_EVENT, dispatchAppEvent } from '@/constants/events
 import type { LocalStorageChangeDetail } from '@/constants/events';
 import { logCaughtError } from '@/utils/logCaughtError';
 
-export type { LocalStorageChangeDetail };
-
 export function isLocalStorageChangeDetail(value: unknown): value is LocalStorageChangeDetail {
   if (typeof value !== 'object' || value === null) return false;
   if (!('key' in value) || !('newValue' in value)) return false;

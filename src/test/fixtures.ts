@@ -172,7 +172,7 @@ export function makePinnedItemsResult(
   };
 }
 
-export function makeBrowserFeatures(
+function makeBrowserFeatures(
   overrides: Partial<BrowserFeatures> = {},
 ): BrowserFeatures {
   return {

@@ -32,10 +32,6 @@ export async function getDb(): Promise<IDBDatabase | null> {
   return dropboxIdbHandle.getDb();
 }
 
-export function closeDropboxCache(): void {
-  dropboxIdbHandle.close();
-}
-
 /**
  * Run a Dropbox IDB write under the shared degradation policy.
  * Exhausted writes are logged and dropped (no per-key overlay — art/catalog

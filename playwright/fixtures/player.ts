@@ -7,17 +7,6 @@ export function trackName(page: Page) {
 }
 
 /**
- * Enter the player by opening the first playlist in the library.
- * Leaves the app playing, with a queue of that playlist's tracks.
- */
-export async function enterPlayerViaPlaylist(page: Page): Promise<void> {
-  await page.goto('/');
-  await page.locator('[data-testid="library-home"]').waitFor({ state: 'visible', timeout: 30_000 });
-  await page.locator('[data-testid^="library-card-playlist-"]').first().click();
-  await trackName(page).waitFor({ state: 'visible', timeout: 15_000 });
-}
-
-/**
  * Open a specific playlist by id, loading its tracks as the queue.
  *
  * Deliberately not `window.__mockTest.setQueue`: that dispatches into

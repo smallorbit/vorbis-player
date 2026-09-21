@@ -11,8 +11,8 @@ import { bytesToDataUrl } from '@/utils/bytesToDataUrl';
 import { putTagMetadata } from './dropboxArtCache';
 import { logCaughtError } from '@/utils/logCaughtError';
 
-export const ID3_FETCH_LIMIT = 262144; // 256KB — enough for large embedded cover art
-export const ENRICHMENT_DELAY_MS = 2000; // Wait for audio to buffer before competing for bandwidth
+const ID3_FETCH_LIMIT = 262144; // 256KB — enough for large embedded cover art
+const ENRICHMENT_DELAY_MS = 2000; // Wait for audio to buffer before competing for bandwidth
 
 export interface MetadataEnrichmentResult {
   /** Fields to merge onto the live MediaTrack (includes MusicBrainz / ISRC). */

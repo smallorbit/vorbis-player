@@ -49,10 +49,6 @@ export function isFallback(): boolean {
   return handle.isFallback();
 }
 
-export function getFallbackMap(storeName: string): Map<string, unknown> {
-  return handle.getFallbackMap(storeName);
-}
-
 /**
  * Live view of the in-memory fallback maps (same Map instances the handle owns).
  * Proxy so `_testing.fallbackStores[name]` and `Object.values` keep working.
@@ -91,8 +87,4 @@ export function closeCache(): void {
 
 export function getLibraryStore<T>(storeName: string): KVStore<T> {
   return handle.getStore<T>(storeName);
-}
-
-export function getLibraryHandle(): IdbDatabaseHandle {
-  return handle;
 }

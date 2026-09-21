@@ -16,7 +16,7 @@ import { openPlaylist } from '../fixtures/player';
 const playlist = requirePlaylist(spotifySnapshot, 'spotify');
 
 function visualizerStyle(page: import('@playwright/test').Page) {
-  return page.getByRole('group', { name: 'Visualizer style' });
+  return page.getByRole('radiogroup', { name: 'Visualizer style' });
 }
 
 async function flipToEffectsMenu(page: import('@playwright/test').Page): Promise<void> {

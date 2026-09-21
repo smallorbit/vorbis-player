@@ -2,7 +2,7 @@
 
 **Initiative label:** [`project:vorbis-player-architecture-v2`](https://github.com/smallorbit/vorbis-player/labels/project%3Avorbis-player-architecture-v2) (RFC 0001)  
 **Working mode:** **one workstream (epic) at a time**; within an epic, **one child issue at a time**.  
-**Updated:** 2026-09-20 (after #1730)
+**Updated:** 2026-09-20 (after #1731)
 
 Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tier-codebase.md`, which is **not yet on `main`** — landing that RFC is part of **[WS11](https://github.com/smallorbit/vorbis-player/issues/1757)**.
 
@@ -14,8 +14,8 @@ Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tie
 |----|------|--------|
 | WS1 | [#1685](https://github.com/smallorbit/vorbis-player/issues/1685) Neutral domain model | **Done** |
 | WS2 | [#1692](https://github.com/smallorbit/vorbis-player/issues/1692) PlaybackStore + QueueStore | **Done** |
-| WS3 | [#1699](https://github.com/smallorbit/vorbis-player/issues/1699) State, persistence & events | **Done** (8/8 children closed; close epic #1699 on GitHub if still open) |
-| WS10 | [#1729](https://github.com/smallorbit/vorbis-player/issues/1729) Close the toolchain blind spots | **In progress** (1/8) |
+| WS3 | [#1699](https://github.com/smallorbit/vorbis-player/issues/1699) State, persistence & events | **Done** |
+| WS10 | [#1729](https://github.com/smallorbit/vorbis-player/issues/1729) Close the toolchain blind spots | **In progress** (2/8) |
 | WS4–WS9, WS11–WS12 | Reliability → DevBug | Open (do not start until WS10 closes) |
 
 Pre-initiative foundations already on `main`: async-race harness, honest e2e, full CI gate.
@@ -24,21 +24,21 @@ Pre-initiative foundations already on `main`: async-race harness, honest e2e, fu
 
 ## Do this next
 
-### Immediate: continue WS10 at #1731
+### Immediate: continue WS10 at #1732
 
 Epic: **[#1729 — Close the toolchain blind spots](https://github.com/smallorbit/vorbis-player/issues/1729)**  
 Principle: P3 — conventions are machine-enforced or they are wishes.
 
 | # | Issue | State | Notes |
 |---|--------|--------|--------|
-| **1730** | **Bring tests, e2e, and scripts under typechecking** | **← THIS PR** | `tsconfig.test.json` + `tsconfig.e2e.json` referenced from root `tsc -b`; scripts/node aligned to the full flag set; one-time drift-fix |
-| **1731** | **Wire coverage ratchet, knip, and npm audit into CI** | **← NEXT** | |
-| 1732 | Turn on type-aware lint and finish the strictness epic | Open | |
+| 1730 | Bring tests, e2e, and scripts under typechecking | **Closed** | PR [#1782](https://github.com/smallorbit/vorbis-player/pull/1782) |
+| **1731** | **Wire coverage ratchet, knip, and npm audit into CI** | **← THIS PR** | CI `test:coverage` + `knip` + `audit:ci`; per-directory floors in `vite.config.ts`; knip clean; `npm update` + sharp 0.35 for audit ≥ high |
+| **1732** | **Turn on type-aware lint and finish the strictness epic** | **← NEXT** | |
 | 1733 | Declare and enforce the layering order | Open | |
 | 1734 | Make e2e run against the prod build with a real Dropbox snapshot | Open | |
 | 1735 | Add boundary tests for the Spotify SDK/API layer | Open | |
 | 1736 | Clean up test infrastructure and scripts | Open | |
-| 1737 | Set the dependency-upgrade policy | Open | |
+| 1737 | Set the dependency-upgrade policy | Open | Routine `npm update` already landed in #1731; this issue is the written policy + the React 19 / Vite 8 / Vitest 4 RFC (not piecemeal). Remaining moderate vitest advisories need that major. |
 
 **WS10 exit criteria** (from epic): `tsc -b` covers 100% of TS in the repo; CI fails on coverage regression, knip findings, audit ≥ high, circular value imports, empty e2e run, chunk misplacement.
 
@@ -75,23 +75,27 @@ Optional WS2 leftovers if they surface: [#1770](https://github.com/smallorbit/vo
 
 ---
 
-## Context for #1730 (this PR)
+## Context for #1731 (this PR)
 
-Bring tests, Playwright, and `scripts/` under typechecking (F23).
+Wire coverage ratchet, knip, and `npm audit` into CI (F51, F52).
 
-- `tsconfig.test.json` — Vitest tests + `src/test` + eslint-rule tests, full strictness flag set, referenced from root `tsc -b`
-- `tsconfig.e2e.json` — Playwright specs/capture + `playwright.config.ts`, same flags + DOM lib
-- `tsconfig.scripts.json` / `tsconfig.node.json` aligned to the remaining flags (`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`, `noUncheckedSideEffectImports`); node also typechecks `tailwind.config.ts`
-- Drift-fix: `defined()` in `src/test/defined.ts`; expanded factories in `src/test/fixtures.ts`; tests no longer use incomplete mocks / `!` to dodge strictness
-- Small production type honesty: `DropboxRequestAuth` for `contentApiRequest`; `refreshNow(scopeProviderId?: ProviderId)` on the library-sync result type
+- CI `checks` job: `npm run knip`, `npm run audit:ci` (`--audit-level=high`), `npm run test:coverage` (replaces `test:run`)
+- Coverage: `all: true` over `src/**/*.{ts,tsx}`; per-directory floors in `vite.config.ts` at measured levels (ratchet-only). Excludes `src/main.tsx` and `src/workers/**` (bootstrap / worker harness).
+- knip: `ignoreExportsUsedInFile` for types; ambient `.d.ts` ignored; dead re-exports / unused helpers removed so `npx knip` is clean
+- Audit backlog: `npm update` plus `sharp@^0.35.4` (favicon script only). Remaining vitest advisories are **moderate** and need Vitest 5 → #1737
 
-Do **not** expand into later WS10 children (#1731+) unless a shared tsconfig primitive is required.
+Do **not** expand into later WS10 children (#1732+) — type-aware lint, madge/layering, prod-build e2e, and the upgrade-policy RFC stay on their issues.
 
 ---
 
-## Context for #1731 (next implementation)
+## Context for #1732 (next implementation)
 
-Wire coverage ratchet, knip, and `npm audit` into CI. Do **not** start WS4–WS9 / WS11–WS12 until WS10 closes.
+Turn on type-aware lint and finish the strictness epic (F85, F32).
+
+- Type-aware lint (`recommendedTypeChecked` + `projectService`, scoped to `src/` first): `no-floating-promises`, `no-unsafe-*`
+- One bounded cleanup PR, then `no-non-null-assertion` as error; extend the props rule to reject `| null` in optional Props fields
+
+Do **not** start WS4–WS9 / WS11–WS12 until WS10 closes.
 
 ---
 
@@ -100,7 +104,7 @@ Wire coverage ratchet, knip, and `npm audit` into CI. Do **not** start WS4–WS9
 - Branch from latest `main`; name `cursor/<slug>-<cloud-suffix>` when using the cloud branch convention (suffix varies per run).
 - Target PRs at `main`; conventional commits; run `npm test` / `npm run test:run` before push. PRs squash-merge; mark draft ready before merge.
 - Staging: workflow **Deploy PR to Staging** (`workflow_dispatch` + `pr_number`). Cloud agent `gh` is often **read-only** for dispatch — equivalent plumbing is rebuild `staging` from `main`, merge `pull/N/head`, `git push --force-with-lease origin staging`.
-- Prefer issue-sized PRs; close epic #1699 on GitHub when editing is available (all children closed).
+- Prefer issue-sized PRs; update the epic checklist when closing children.
 - Update **this file** when finishing a child or switching epics so the next agent has a current pointer.
 
 ---
@@ -108,9 +112,10 @@ Wire coverage ratchet, knip, and `npm audit` into CI. Do **not** start WS4–WS9
 ## Quick links
 
 - Label board: https://github.com/smallorbit/vorbis-player/labels/project%3Avorbis-player-architecture-v2  
-- WS3 epic (close if still open): https://github.com/smallorbit/vorbis-player/issues/1699  
-- Next epic: https://github.com/smallorbit/vorbis-player/issues/1729 (WS10)  
-- Next issue: https://github.com/smallorbit/vorbis-player/issues/1731  
+- WS10 epic: https://github.com/smallorbit/vorbis-player/issues/1729  
+- Next issue: https://github.com/smallorbit/vorbis-player/issues/1732  
+- Coverage thresholds: `vite.config.ts` (`test.coverage.thresholds`)  
+- knip config: `knip.json`  
 - Test tsconfig: `tsconfig.test.json`  
 - E2E tsconfig: `tsconfig.e2e.json`  
 - Test factories: `src/test/fixtures.ts` / `src/test/defined.ts`  
