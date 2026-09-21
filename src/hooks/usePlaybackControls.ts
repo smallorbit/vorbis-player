@@ -82,7 +82,7 @@ export const usePlaybackControls = ({
 
   const handleScrubEnd = useCallback((position: number) => {
     setIsDragging(false);
-    handleSeek(position);
+    void handleSeek(position);
   }, [handleSeek]);
 
   const formatTime = useCallback((ms: number) => {

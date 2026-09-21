@@ -66,7 +66,7 @@ interface DrawerOrchestratorProps {
   isMobile: boolean;
   radioActive?: boolean | undefined;
   radioState?: RadioState | undefined;
-  radioProgress?: RadioProgress | null | undefined;
+  radioProgress: RadioProgress | null;
   onDismissRadioProgress?: (() => void) | undefined;
   onOpenQueueFromToast: () => void;
 }

@@ -52,7 +52,7 @@ export const AccentColorManager: React.FC = () => {
   useEffect(() => {
     if (currentTrack?.image) {
       let cancelled = false;
-      extractTopVibrantColors(currentTrack.image, 2).then((colors) => {
+      void extractTopVibrantColors(currentTrack.image, 2).then((colors) => {
         if (!cancelled) setColorOptions(colors);
       });
       return () => {

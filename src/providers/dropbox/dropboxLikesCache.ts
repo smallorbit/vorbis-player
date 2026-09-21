@@ -15,6 +15,17 @@ export interface LikedEntry {
   likedAt: number;
 }
 
+function isLikedEntry(value: unknown): value is LikedEntry {
+  if (!value || typeof value !== 'object') return false;
+  const record = value as Record<string, unknown>;
+  return (
+    typeof record.trackId === 'string' &&
+    typeof record.likedAt === 'number' &&
+    typeof record.track === 'object' &&
+    record.track !== null
+  );
+}
+
 const TOMBSTONE_STORE = 'tombstones';
 
 /**
@@ -163,8 +174,9 @@ export async function exportLikes(): Promise<string> {
 export async function importLikes(json: string): Promise<number> {
   let entries: LikedEntry[];
   try {
-    entries = JSON.parse(json);
-    if (!Array.isArray(entries)) return 0;
+    const parsed: unknown = JSON.parse(json);
+    if (!Array.isArray(parsed)) return 0;
+    entries = parsed.filter(isLikedEntry);
   } catch (err) {
     logCaughtError('dropboxLikesCache.importLikes', err);
     return 0;

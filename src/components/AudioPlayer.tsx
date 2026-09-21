@@ -115,7 +115,7 @@ const AudioPlayerComponent = () => {
   const handleAlbumPlay = useCallback((albumId: string, albumName: string) => {
     const provider = currentTrack?.provider ?? 'spotify';
     collectionNameRef.current = albumName;
-    handlers.loadCollection({
+    void handlers.loadCollection({
       type: 'collection',
       ref: { provider, kind: 'album', id: albumId },
       name: albumName,
@@ -125,7 +125,7 @@ const AudioPlayerComponent = () => {
   const handleSelectCollection = useCallback(
     (collectionSelection: CollectionSelection) => {
       if (collectionSelection.name) collectionNameRef.current = collectionSelection.name;
-      handlers.loadCollection(collectionSelection);
+      void handlers.loadCollection(collectionSelection);
     },
     [handlers]
   );
@@ -379,14 +379,14 @@ const AudioPlayerComponent = () => {
     const ref = keyToCollectionRef(playlistParam);
     if (ref) {
       if (ref.kind === 'liked') {
-        handlers.loadCollection({ type: 'liked', provider: ref.provider, name: LIKED_SONGS_NAME });
+        void handlers.loadCollection({ type: 'liked', provider: ref.provider, name: LIKED_SONGS_NAME });
       } else {
-        handlers.loadCollection({ type: 'collection', ref });
+        void handlers.loadCollection({ type: 'collection', ref });
       }
     } else {
       const legacy = decodeLegacySelection(playlistParam, activeDescriptor?.id, playlistParam);
       if (legacy.type !== 'radio') {
-        handlers.loadCollection(legacy);
+        void handlers.loadCollection(legacy);
       }
     }
   }, [needsSetup, selection, handlers, activeDescriptor]);

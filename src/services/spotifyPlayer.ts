@@ -74,9 +74,9 @@ class SpotifyPlayerService {
     this.player = new window.Spotify.Player({
       name: 'Vorbis Player',
       getOAuthToken: (cb) => {
-        spotifyAuth.ensureValidToken().then(cb).catch(() => {
+        void spotifyAuth.ensureValidToken().then(cb).catch(() => {
           if (shouldUseMockProvider()) return;
-          spotifyAuth.redirectToAuth();
+          void spotifyAuth.redirectToAuth();
         });
       },
       volume: SPOTIFY_INITIAL_VOLUME
@@ -113,7 +113,7 @@ class SpotifyPlayerService {
       console.error('Failed to perform playback', message);
     });
 
-    this.player.connect();
+    void this.player.connect();
     this.saveState();
   }
 

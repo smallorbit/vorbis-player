@@ -48,7 +48,7 @@ export function useLikeTrack(trackId: string | undefined, trackProvider?: Provid
       }
     }
 
-    checkLikeStatus();
+    void checkLikeStatus();
 
     return () => {
       isMounted = false;

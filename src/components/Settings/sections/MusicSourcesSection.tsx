@@ -6,7 +6,7 @@ import { useTrackListContext } from '@/contexts/TrackContext';
 import { queueStore } from '@/stores/queueStore';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { STORAGE_KEYS } from '@/constants/storage';
-import { AUTH_COMPLETE_EVENT } from '@/constants/events';
+import { parseAuthCompletePostMessage } from '@/utils/authPostMessage';
 import type { ProviderId } from '@/types/domain';
 import ProviderDisconnectDialog from '@/components/ProviderDisconnectDialog';
 import { Switch } from '@/components/ui/switch';
@@ -42,11 +42,12 @@ export const MusicSourcesSection = memo(() => {
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
-      if (event.data?.type !== AUTH_COMPLETE_EVENT) return;
+      const message = parseAuthCompletePostMessage(event.data);
+      if (message === null) return;
 
       const pending = pendingPopup.current;
       if (!pending) return;
-      if (event.data?.provider !== pending.providerId) return;
+      if (message.provider !== pending.providerId) return;
 
       const { providerId, onSuccess } = pending;
       clearPendingPopup();

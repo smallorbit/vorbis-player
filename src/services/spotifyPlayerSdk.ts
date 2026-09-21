@@ -7,10 +7,18 @@ interface HMRPlayerState {
   isReady: boolean;
 }
 
+type SpotifyPlayerHmrData = { playerState?: HMRPlayerState | undefined };
+
+function readSpotifyPlayerHmrData(): SpotifyPlayerHmrData {
+  if (!import.meta.hot?.data) return {};
+  return import.meta.hot.data as SpotifyPlayerHmrData;
+}
+
 const getHMRState = (): HMRPlayerState => {
-  if (import.meta.hot?.data.playerState) {
+  const playerState = readSpotifyPlayerHmrData().playerState;
+  if (playerState) {
     logSpotify('restoring player state from HMR');
-    return import.meta.hot.data.playerState;
+    return playerState;
   }
   return {
     player: null,
@@ -20,8 +28,8 @@ const getHMRState = (): HMRPlayerState => {
 };
 
 const saveHMRState = (state: HMRPlayerState) => {
-  if (import.meta.hot) {
-    import.meta.hot.data.playerState = state;
+  if (import.meta.hot?.data) {
+    (import.meta.hot.data as SpotifyPlayerHmrData).playerState = state;
   }
 };
 

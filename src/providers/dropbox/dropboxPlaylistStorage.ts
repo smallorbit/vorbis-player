@@ -204,7 +204,7 @@ export async function listSavedPlaylists(
     return [];
   }
 
-  const result: ListResult = await response.json();
+  const result = (await response.json()) as ListResult;
   const collections: MediaCollection[] = [];
 
   const filePaths: string[] = [];
@@ -243,7 +243,7 @@ export async function listSavedPlaylists(
       }),
     );
     if (!continueResp || !continueResp.ok) break;
-    const cont: ListResult = await continueResp.json();
+    const cont = (await continueResp.json()) as ListResult;
     collectEntries(cont.entries);
     cursor = cont.cursor;
     hasMore = cont.has_more;

@@ -37,6 +37,26 @@ export default tseslint.config(
     },
   },
   {
+    // F85: type-aware lint scoped to production src first (tests follow in a
+    // later pass once the main surface is clean).
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/**/__tests__/**', 'src/test/**'],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-unsafe-argument': 'error',
+      '@typescript-eslint/no-unsafe-assignment': 'error',
+      '@typescript-eslint/no-unsafe-call': 'error',
+      '@typescript-eslint/no-unsafe-member-access': 'error',
+      '@typescript-eslint/no-unsafe-return': 'error',
+    },
+  },
+  {
     // #1700 raw-localStorage ban + #1706 prefix-literal ban. Combined in one
     // block so flat-config does not let a later no-restricted-syntax override
     // the earlier selectors.

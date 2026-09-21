@@ -16,6 +16,11 @@ import { readLocalStorageRaw } from '@/utils/persistedStorage';
 const QUEUE_URI_LIMIT = 200;
 const MAX_CONCURRENT_SEARCHES = 3;
 
+function parseStoredBoolean(raw: string): boolean {
+  const parsed: unknown = JSON.parse(raw);
+  return parsed !== false;
+}
+
 class SpotifyQueueSyncService {
   /** Cache: non-Spotify trackId → resolved Spotify URI (or null if unresolvable) */
   private resolutionCache = new Map<string, string | null>();
@@ -26,7 +31,7 @@ class SpotifyQueueSyncService {
     try {
       const stored = readLocalStorageRaw(STORAGE_KEYS.SPOTIFY_QUEUE_SYNC);
       if (stored === null) return true; // default on
-      return JSON.parse(stored);
+      return parseStoredBoolean(stored);
     } catch (err) {
       logCaughtError('spotifyQueueSync.isSyncEnabled', err);
       return true;
@@ -38,7 +43,7 @@ class SpotifyQueueSyncService {
     try {
       const stored = readLocalStorageRaw(STORAGE_KEYS.SPOTIFY_QUEUE_CROSS_PROVIDER);
       if (stored === null) return true; // default on
-      return JSON.parse(stored);
+      return parseStoredBoolean(stored);
     } catch (err) {
       logCaughtError('spotifyQueueSync.isResolveEnabled', err);
       return true;

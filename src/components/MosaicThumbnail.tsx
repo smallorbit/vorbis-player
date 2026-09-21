@@ -62,11 +62,11 @@ export const MosaicThumbnail: React.FC<MosaicThumbnailProps> = React.memo(
           return results;
         });
 
-      resolve().then(results => {
+      void       void resolve().then(results => {
         if (cancelled) return;
         const hasMissing = results.some(url => url == null);
         if (hasMissing) {
-          setTimeout(() => { if (!cancelled) resolve(); }, IMAGE_LOAD_TIMEOUT_MS);
+          setTimeout(() => { if (!cancelled) void resolve(); }, IMAGE_LOAD_TIMEOUT_MS);
         }
       });
       return () => { cancelled = true; };

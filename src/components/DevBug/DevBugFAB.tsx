@@ -208,8 +208,8 @@ export function DevBugFAB() {
 
   const handleElementSelected = useCallback(
     (_element: Element, info: SelectedElement) => {
-      import('@/services/devbug/screenshotCapture').then(({ captureScreenshot }) => {
-        captureScreenshot(info.boundingRect).then((dataUrl) => {
+      void import('@/services/devbug/screenshotCapture').then(({ captureScreenshot }) => {
+        void captureScreenshot(info.boundingRect).then((dataUrl) => {
           panel.open(info, dataUrl);
         }).catch(() => {
           panel.open(info);
@@ -255,11 +255,11 @@ export function DevBugFAB() {
 
   useEffect(() => {
     if (isActive) {
-      import('@/services/devbug/consoleCapture').then(({ startCapture }) => startCapture());
-      import('@/services/devbug/perfCapture').then(({ startPerfCapture }) => startPerfCapture());
+      void import('@/services/devbug/consoleCapture').then(({ startCapture }) => startCapture());
+      void import('@/services/devbug/perfCapture').then(({ startPerfCapture }) => startPerfCapture());
     } else {
-      import('@/services/devbug/consoleCapture').then(({ stopCapture }) => stopCapture());
-      import('@/services/devbug/perfCapture').then(({ stopPerfCapture }) => stopPerfCapture());
+      void import('@/services/devbug/consoleCapture').then(({ stopCapture }) => stopCapture());
+      void import('@/services/devbug/perfCapture').then(({ stopPerfCapture }) => stopPerfCapture());
       setDialOpen(false);
     }
   }, [isActive]);

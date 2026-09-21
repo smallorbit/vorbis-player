@@ -43,7 +43,7 @@ interface PlayerContentProps {
   radioState?: RadioState | undefined;
   isRadioAvailable?: boolean | undefined;
   radioActive?: boolean | undefined;
-  radioProgress?: RadioProgress | null | undefined;
+  radioProgress: RadioProgress | null;
   onDismissRadioProgress?: (() => void) | undefined;
 }
 

@@ -10,6 +10,7 @@ import {
   writeLocalStorageJson,
   writeLocalStorageRaw,
 } from '@/utils/persistedStorage';
+import { parseOAuthTokenResponse } from '@/utils/oauthTokenResponse';
 
 const SPOTIFY_CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
 
@@ -146,12 +147,15 @@ class SpotifyAuth {
       throw new Error(`Token exchange failed: ${response.statusText} - ${errorText}`);
     }
 
-    const data = await response.json();
-    this.saveTokenToStorage({
+    const data = parseOAuthTokenResponse(await response.json());
+    const tokenPayload: TokenData = {
       access_token: data.access_token,
-      refresh_token: data.refresh_token,
-      expires_at: Date.now() + data.expires_in * 1000,
-    });
+      expires_at: Date.now() + (data.expires_in ?? 0) * 1000,
+    };
+    if (data.refresh_token !== undefined) {
+      tokenPayload.refresh_token = data.refresh_token;
+    }
+    this.saveTokenToStorage(tokenPayload);
 
     removeLocalStorageKey(STORAGE_KEYS.SPOTIFY_CODE_VERIFIER);
   }
@@ -193,12 +197,13 @@ class SpotifyAuth {
       throw new Error(`Token refresh failed: ${response.statusText}`);
     }
 
-    const data = await response.json();
-    this.saveTokenToStorage({
+    const data = parseOAuthTokenResponse(await response.json());
+    const tokenPayload: TokenData = {
       access_token: data.access_token,
-      refresh_token: data.refresh_token || this.tokenData.refresh_token,
-      expires_at: Date.now() + data.expires_in * 1000,
-    });
+      refresh_token: data.refresh_token ?? this.tokenData.refresh_token,
+      expires_at: Date.now() + (data.expires_in ?? 0) * 1000,
+    };
+    this.saveTokenToStorage(tokenPayload);
   }
 
   /**
