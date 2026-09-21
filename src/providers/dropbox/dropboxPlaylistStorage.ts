@@ -3,7 +3,7 @@
  * Files are saved at /.vorbis/playlists/<name>.json.
  */
 
-import type { DropboxAuthAdapter } from './dropboxAuthAdapter';
+import type { DropboxAuthHandle } from './dropboxAuthHandle';
 import type { MediaTrack, MediaCollection, ProviderId, PlaybackItemRef } from '@/types/domain';
 import { logLibrary } from '@/lib/debugLog';
 import { buildAlbumCoverMap, selectMosaicCovers } from '@/utils/mosaicSelection';
@@ -47,7 +47,7 @@ const LOG_LABEL = 'DropboxPlaylistStorage';
 
 let playlistsFolderConfirmed = false;
 
-async function ensurePlaylistsFolder(auth: DropboxAuthAdapter): Promise<boolean> {
+async function ensurePlaylistsFolder(auth: DropboxAuthHandle): Promise<boolean> {
   if (playlistsFolderConfirmed) return true;
 
   const response = await contentApiRequest(auth, (token) =>
@@ -121,7 +121,7 @@ function savedTrackToMediaTrack(track: SavedTrack): MediaTrack {
   };
 }
 
-function playlistTransport(auth: DropboxAuthAdapter, path: string) {
+function playlistTransport(auth: DropboxAuthHandle, path: string) {
   return {
     auth,
     path,
@@ -139,7 +139,7 @@ function playlistTransport(auth: DropboxAuthAdapter, path: string) {
  * Returns the file path on success, or null on failure.
  */
 export async function saveQueueAsPlaylist(
-  auth: DropboxAuthAdapter,
+  auth: DropboxAuthHandle,
   name: string,
   mediaTracks: MediaTrack[],
 ): Promise<string | null> {
@@ -175,7 +175,7 @@ export async function saveQueueAsPlaylist(
  * List all saved playlists from /.vorbis/playlists/ as MediaCollections.
  */
 export async function listSavedPlaylists(
-  auth: DropboxAuthAdapter,
+  auth: DropboxAuthHandle,
 ): Promise<MediaCollection[]> {
   interface ListResult {
     entries: Array<{ '.tag': string; name: string; path_lower: string; path_display: string }>;
@@ -283,7 +283,7 @@ export async function listSavedPlaylists(
  * Returns null if the file doesn't exist or can't be parsed.
  */
 async function loadPlaylistFile(
-  auth: DropboxAuthAdapter,
+  auth: DropboxAuthHandle,
   playlistPath: string,
 ): Promise<PlaylistFile | null> {
   return downloadRemoteJson<PlaylistFile>(playlistTransport(auth, playlistPath));
@@ -294,7 +294,7 @@ async function loadPlaylistFile(
  * @param playlistPath The Dropbox file path (e.g. /.vorbis/playlists/my-playlist.json)
  */
 export async function loadPlaylistTracks(
-  auth: DropboxAuthAdapter,
+  auth: DropboxAuthHandle,
   playlistPath: string,
 ): Promise<MediaTrack[]> {
   const data = await loadPlaylistFile(auth, playlistPath);

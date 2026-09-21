@@ -8,8 +8,7 @@
 
 import { logCaughtError } from '@/utils/logCaughtError';
 import { runWithDegradationPolicy } from './degradation';
-import type { IdbDatabaseHandle } from './createDatabase';
-import type { IDBMode, KVStore, StoreKeyMode } from './types';
+import type { IDBMode, IdbDatabaseHandle, KVStore, StoreKeyMode } from './types';
 
 function withStoreRequest<R>(
   db: IDBDatabase,

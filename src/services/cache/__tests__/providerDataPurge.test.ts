@@ -6,7 +6,7 @@ import {
   remainingProviderLocalStorageKeys,
   PROVIDER_PURGE_LOCAL_STORAGE_KEYS,
   SPOTIFY_PROCESSED_CODE_SESSION_KEY,
-} from '../providerDataPurge';
+} from '@/providers/providerDataPurge';
 import {
   clearAll,
   initCache,

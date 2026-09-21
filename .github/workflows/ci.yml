@@ -31,6 +31,9 @@ jobs:
       - name: Typecheck
         run: npx tsc -b --noEmit
 
+      - name: Circular imports (madge)
+        run: npm run check:circular
+
       - name: Lint
         run: npm run lint
 

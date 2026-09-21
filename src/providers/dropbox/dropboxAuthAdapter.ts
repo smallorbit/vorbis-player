@@ -13,7 +13,7 @@ import {
 } from '@/constants/events';
 import { getLikesSync } from './dropboxLikesSync';
 import { getPreferencesSync } from './dropboxPreferencesSync';
-import { purgeProviderPersistedData } from '@/services/cache/providerDataPurge';
+import { purgeProviderPersistedData } from '@/providers/providerDataPurge';
 import {
   readLocalStorageRaw,
   removeLocalStorageKey,

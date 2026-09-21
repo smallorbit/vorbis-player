@@ -4,7 +4,7 @@ import { writeLocalStorageJson, writeLocalStorageRaw } from '@/utils/persistedSt
 import {
   remainingProviderLocalStorageKeys,
   SPOTIFY_PROCESSED_CODE_SESSION_KEY,
-} from '@/services/cache/providerDataPurge';
+} from '@/providers/providerDataPurge';
 import {
   clearAll,
   initCache,

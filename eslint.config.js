@@ -3,7 +3,9 @@ import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
+import importPlugin from 'eslint-plugin-import'
 import propsExplicitUndefined from './eslint-rules/props-explicit-undefined.js'
+import { importLayerZones } from './eslint-layer-zones.js'
 
 export default tseslint.config(
   { ignores: ['dist', 'coverage', 'eslint-rules/__tests__/**'] },
@@ -34,6 +36,27 @@ export default tseslint.config(
         },
       ],
       'vorbis/props-explicit-undefined': 'error',
+    },
+  },
+  {
+    // F76: dependency layering (production src only; tests may compose freely).
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/**/__tests__/**', 'src/test/**', 'src/types/**/*.d.ts'],
+    plugins: { import: importPlugin },
+    settings: {
+      'import/resolver': {
+        typescript: {
+          project: './tsconfig.app.json',
+        },
+      },
+    },
+    rules: {
+      'import/no-restricted-paths': [
+        'error',
+        {
+          zones: importLayerZones,
+        },
+      ],
     },
   },
   {

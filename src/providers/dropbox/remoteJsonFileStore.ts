@@ -6,7 +6,7 @@
  * each have incompatible merge shapes).
  */
 
-import type { DropboxAuthAdapter } from './dropboxAuthAdapter';
+import type { DropboxAuthHandle } from './dropboxAuthHandle';
 import { ensureVorbisFolder } from './dropboxSyncFolder';
 import { contentApiRequest } from './dropboxContentApiClient';
 import { logCaughtError } from '@/utils/logCaughtError';
@@ -26,12 +26,12 @@ export interface VersionedJson {
 }
 
 export interface RemoteJsonTransportOptions {
-  auth: DropboxAuthAdapter;
+  auth: DropboxAuthHandle;
   path: string;
   expectedVersion: number;
   logLabel: string;
   /** Called before upload. Defaults to `ensureVorbisFolder`. Pass a no-op when the caller already ensured. */
-  ensureFolder?: ((auth: DropboxAuthAdapter) => Promise<boolean>) | undefined;
+  ensureFolder?: ((auth: DropboxAuthHandle) => Promise<boolean>) | undefined;
   /** Encode the Dropbox-API-Arg JSON string (e.g. `jsonToHttpHeader` for non-ASCII paths). */
   encodeApiArg?: ((json: string) => string) | undefined;
 }

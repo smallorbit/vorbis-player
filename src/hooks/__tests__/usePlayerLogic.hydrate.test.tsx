@@ -123,6 +123,13 @@ vi.mock('@/providers/registry', () => ({
     register: vi.fn(),
   },
 }));
+vi.mock('@/services/providerRegistry', () => ({
+  providerRegistry: {
+    get: vi.fn(() => mockDescriptor),
+    getAll: vi.fn(() => []),
+    register: vi.fn(),
+  },
+}));
 
 const AllProviders = ({ children }: { children: React.ReactNode }) => (
   <ProviderProvider>
