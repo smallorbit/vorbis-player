@@ -34,7 +34,7 @@ Principle: P3 — conventions are machine-enforced or they are wishes.
 | 1730 | Bring tests, e2e, and scripts under typechecking | **Closed** | PR [#1782](https://github.com/smallorbit/vorbis-player/pull/1782) |
 | 1731 | Wire coverage ratchet, knip, and npm audit into CI | **Closed** | PR [#1783](https://github.com/smallorbit/vorbis-player/pull/1783) |
 | 1732 | Turn on type-aware lint and finish the strictness epic | **Closed** | PR [#1785](https://github.com/smallorbit/vorbis-player/pull/1785) |
-| 1733 | Declare and enforce the layering order | **Closed** | F76, F93 — layering doc + ESLint zones + madge CI + zero cycles (see merged context below) |
+| 1733 | Declare and enforce the layering order | **Closed** | PR [#1787](https://github.com/smallorbit/vorbis-player/pull/1787) — F76, F93 (see merged context below) |
 | **1734** | **Make e2e run against the prod build with a real Dropbox snapshot** | **← NEXT** | |
 | 1735 | Add boundary tests for the Spotify SDK/API layer | Open | |
 | 1736 | Clean up test infrastructure and scripts | Open | |
