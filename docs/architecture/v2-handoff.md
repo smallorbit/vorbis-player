@@ -2,7 +2,7 @@
 
 **Initiative label:** [`project:vorbis-player-architecture-v2`](https://github.com/smallorbit/vorbis-player/labels/project%3Avorbis-player-architecture-v2) (RFC 0001)  
 **Working mode:** **one workstream (epic) at a time**; within an epic, **one child issue at a time**.  
-**Updated:** 2026-09-21 (after #1733)
+**Updated:** 2026-09-27 (after #1734)
 
 Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tier-codebase.md`, which is **not yet on `main`** — landing that RFC is part of **[WS11](https://github.com/smallorbit/vorbis-player/issues/1757)**.
 
@@ -15,7 +15,7 @@ Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tie
 | WS1 | [#1685](https://github.com/smallorbit/vorbis-player/issues/1685) Neutral domain model | **Done** |
 | WS2 | [#1692](https://github.com/smallorbit/vorbis-player/issues/1692) PlaybackStore + QueueStore | **Done** |
 | WS3 | [#1699](https://github.com/smallorbit/vorbis-player/issues/1699) State, persistence & events | **Done** |
-| WS10 | [#1729](https://github.com/smallorbit/vorbis-player/issues/1729) Close the toolchain blind spots | **In progress** (4/8) |
+| WS10 | [#1729](https://github.com/smallorbit/vorbis-player/issues/1729) Close the toolchain blind spots | **In progress** (5/8) |
 | WS4–WS9, WS11–WS12 | Reliability → DevBug | Open (do not start until WS10 closes) |
 
 Pre-initiative foundations already on `main`: async-race harness, honest e2e, full CI gate (coverage + knip + audit ≥ high).
@@ -24,7 +24,7 @@ Pre-initiative foundations already on `main`: async-race harness, honest e2e, fu
 
 ## Do this next
 
-### Immediate: continue WS10 at #1734
+### Immediate: continue WS10 at #1735
 
 Epic: **[#1729 — Close the toolchain blind spots](https://github.com/smallorbit/vorbis-player/issues/1729)**  
 Principle: P3 — conventions are machine-enforced or they are wishes.
@@ -35,8 +35,8 @@ Principle: P3 — conventions are machine-enforced or they are wishes.
 | 1731 | Wire coverage ratchet, knip, and npm audit into CI | **Closed** | PR [#1783](https://github.com/smallorbit/vorbis-player/pull/1783) |
 | 1732 | Turn on type-aware lint and finish the strictness epic | **Closed** | PR [#1785](https://github.com/smallorbit/vorbis-player/pull/1785) |
 | 1733 | Declare and enforce the layering order | **Closed** | PR [#1787](https://github.com/smallorbit/vorbis-player/pull/1787) — F76, F93 (see merged context below) |
-| **1734** | **Make e2e run against the prod build with a real Dropbox snapshot** | **← NEXT** | |
-| 1735 | Add boundary tests for the Spotify SDK/API layer | Open | |
+| 1734 | Make e2e run against the prod build with a real Dropbox snapshot | **Closed** | F74, F71, F83 — see merged context below |
+| **1735** | **Add boundary tests for the Spotify SDK/API layer** | **← NEXT** | |
 | 1736 | Clean up test infrastructure and scripts | Open | |
 | 1737 | Set the dependency-upgrade policy | Open | Routine `npm update` already landed in #1731; this issue is the written policy + the React 19 / Vite 8 / Vitest 4 RFC (not piecemeal). Remaining moderate vitest advisories need that major. |
 
@@ -108,13 +108,20 @@ Declare and enforce the layering order (F76, F93).
 - **CI:** `npm run check:circular` (`madge` devDependency) after typecheck in `.github/workflows/ci.yml`
 - **Cycles:** six Dropbox/IDB chains broken — `IdbDatabaseHandle` → `services/idb/types.ts`; Dropbox modules use `dropboxAuthHandle.ts` (token surface); `providerRegistry` → `services/providerRegistry.ts`; logout purge → `providers/providerDataPurge.ts` + `services/spotify/purgePersistedData.ts`; provider errors → `types/providerErrors.ts`
 
-## Context for #1734 (next implementation)
+## Context for #1734 (merged)
 
-**Issue:** [#1734 — Make e2e run against the prod build with a real Dropbox snapshot](https://github.com/smallorbit/vorbis-player/issues/1734).
+Make e2e run against the prod build with a synthetic Dropbox snapshot (F74, F71, F83).
 
-Make Playwright run against the production build and a real Dropbox snapshot (see epic #1729 exit criteria: no empty e2e run).
+- **Playwright:** `webServer` runs `npm run preview:e2e` (`build:e2e` bakes `VITE_MOCK_PROVIDER=true`, then `vite preview` on port 3000)
+- **CI:** Playwright browser cache (`~/.cache/ms-playwright`); longer webServer timeout for prod build
+- **Fixtures:** committed synthetic `dropbox-snapshot.json`; `require-snapshot.ts` hard-fails on hollow fixtures (no silent skips)
+- **Unit:** `useProviderPlayback.transitionMatrix.test.ts` — cross-provider pause / driving-provider matrix
 
-Do **not** start WS4–WS9 / WS11–WS12 until WS10 closes. Do **not** pick up #1735 in the same PR unless a shared CI primitive is unavoidable.
+## Context for #1735 (next implementation)
+
+**Issue:** [#1735 — Add boundary tests for the Spotify SDK/API layer](https://github.com/smallorbit/vorbis-player/issues/1735).
+
+Do **not** start WS4–WS9 / WS11–WS12 until WS10 closes.
 
 ---
 
@@ -132,7 +139,7 @@ Do **not** start WS4–WS9 / WS11–WS12 until WS10 closes. Do **not** pick up #
 
 - Label board: https://github.com/smallorbit/vorbis-player/labels/project%3Avorbis-player-architecture-v2  
 - WS10 epic: https://github.com/smallorbit/vorbis-player/issues/1729  
-- Next issue: https://github.com/smallorbit/vorbis-player/issues/1734  
+- Next issue: https://github.com/smallorbit/vorbis-player/issues/1735  
 - Coverage thresholds: `vite.config.ts` (`test.coverage.thresholds`)  
 - knip config: `knip.json`  
 - Test tsconfig: `tsconfig.test.json`  

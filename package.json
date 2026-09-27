@@ -19,6 +19,8 @@
     "check:circular": "madge --circular --extensions ts,tsx --ts-config tsconfig.app.json src",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "preview:e2e": "npm run build:e2e && vite preview",
+    "build:e2e": "VITE_MOCK_PROVIDER=true VITE_LASTFM_API_KEY=e2e-stub-key npm run build",
     "capture": "playwright test --config playwright/capture/capture.config.ts --project desktop --project mobile",
     "capture:desktop": "playwright test --config playwright/capture/capture.config.ts --project desktop",
     "capture:mobile": "playwright test --config playwright/capture/capture.config.ts --project mobile",

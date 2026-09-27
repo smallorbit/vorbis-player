@@ -7,6 +7,8 @@ Run with `npm run test:run`. Tests are colocated with source files in `__tests__
 
 CI runs `npm run test:coverage`, `npm run knip`, and `npm run audit:ci`. Coverage floors live in `vite.config.ts` (`test.coverage.thresholds`) and are ratchet-only: raise a number when coverage grows, never lower it without calling that out in the PR.
 
+Playwright (`npm run test:e2e`) boots the **production build** via `npm run preview:e2e` (mock provider baked in at build time). Fixture preconditions in `playwright/fixtures/require-snapshot.ts` throw on empty snapshots so CI cannot silently skip cross-provider specs.
+
 ## Test utilities (`src/test/`)
 
 | File | Purpose |
