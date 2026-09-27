@@ -32,12 +32,14 @@ export default defineConfig({
     },
   ],
   webServer: {
+    // Production build + preview — catches dev-only regressions (tree-shaking,
+    // chunk paths, service worker). Mock provider is baked in via build:e2e.
     // VITE_LASTFM_API_KEY only has to be present — isLastFmConfigured gates the
     // radio UI on its existence. Specs stub ws.audioscrobbler.com with
     // page.route, so this key is never sent anywhere.
-    command: 'VITE_MOCK_PROVIDER=true VITE_LASTFM_API_KEY=e2e-stub-key npm run dev',
+    command: 'npm run preview:e2e',
     url: 'http://127.0.0.1:3000',
     reuseExistingServer: !process.env.CI,
-    timeout: 30_000,
+    timeout: process.env.CI ? 180_000 : 120_000,
   },
 });
