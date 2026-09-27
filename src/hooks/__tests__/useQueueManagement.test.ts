@@ -18,13 +18,13 @@ vi.mock('sonner', () => ({
 // playbackStore.getDrivingDescriptor() → providerRegistry.get(<driving id>),
 // so the registry is mocked to let native-sync tests wire a fake driving
 // descriptor behind the store's resolver.
-vi.mock('@/providers/registry', () => ({
-  providerRegistry: {
-    get: vi.fn(),
-    getAll: vi.fn(() => []),
-    has: vi.fn(() => false),
-  },
+const registryMock = vi.hoisted(() => ({
+  get: vi.fn(),
+  getAll: vi.fn(() => []),
+  has: vi.fn(() => false),
 }));
+vi.mock('@/providers/registry', () => ({ providerRegistry: registryMock }));
+vi.mock('@/services/providerRegistry', () => ({ providerRegistry: registryMock }));
 
 /** Spotify playlist selection, as produced by the library UI. */
 function playlistSel(id: string, name?: string): CollectionSelection {

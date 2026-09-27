@@ -18,7 +18,11 @@ export function useQueueBundlePrefetch(isPlaying: boolean, _currentTrackId?: str
         };
 
     schedule(() => {
+      // Lazy queue UI lives in the component layer; dynamic import keeps the
+      // hook module out of the static bundle graph (see #1733 layering).
+      // eslint-disable-next-line import/no-restricted-paths -- intentional cross-layer prefetch
       void import('@/components/QueueDrawer');
+      // eslint-disable-next-line import/no-restricted-paths -- intentional cross-layer prefetch
       void import('@/components/QueueBottomSheet');
     });
   }, [isPlaying]);

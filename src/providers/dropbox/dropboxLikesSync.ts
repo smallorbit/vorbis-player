@@ -4,7 +4,7 @@
  * Merge strategy: last-write-wins per trackId (likedAt vs deletedAt).
  */
 
-import type { DropboxAuthAdapter } from './dropboxAuthAdapter';
+import type { DropboxAuthHandle } from './dropboxAuthHandle';
 import type { LikedEntry, Tombstone } from './dropboxLikesCache';
 import {
   getLikedEntries,
@@ -43,7 +43,7 @@ function entriesEqual<T extends { trackId: string }>(
 export class DropboxLikesSyncService {
   private readonly store: RemoteJsonFileStore<RemoteLikesFile>;
 
-  constructor(auth: DropboxAuthAdapter) {
+  constructor(auth: DropboxAuthHandle) {
     this.store = new RemoteJsonFileStore<RemoteLikesFile>({
       auth,
       path: SYNC_FILE_PATH,
@@ -224,7 +224,7 @@ export class DropboxLikesSyncService {
 
 let syncInstance: DropboxLikesSyncService | null = null;
 
-export function initLikesSync(auth: DropboxAuthAdapter): DropboxLikesSyncService {
+export function initLikesSync(auth: DropboxAuthHandle): DropboxLikesSyncService {
   if (syncInstance) {
     syncInstance.destroy();
   }

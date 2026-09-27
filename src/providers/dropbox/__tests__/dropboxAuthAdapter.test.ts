@@ -394,7 +394,7 @@ describe('DropboxAuthAdapter', () => {
       // #given
       const { STORAGE_KEYS } = await import('@/constants/storage');
       const { PROVIDER_PURGE_LOCAL_STORAGE_KEYS, remainingProviderLocalStorageKeys } =
-        await import('@/services/cache/providerDataPurge');
+        await import('@/providers/providerDataPurge');
       const { dropboxIdbHandle } = await import('../dropboxIdb');
       const {
         initCache,

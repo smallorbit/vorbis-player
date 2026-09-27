@@ -11,28 +11,30 @@ import { makeMediaTrack } from '@/test/fixtures';
 // assert what the hook's cursor (currentPosition) does.
 
 let listeners: Array<(state: PlaybackState | null) => void> = [];
-const seek = vi.fn().mockResolvedValue(undefined);
 
-const descriptor = {
-  id: 'spotify' as ProviderId,
-  playback: {
-    subscribe: (fn: (state: PlaybackState | null) => void) => {
-      listeners.push(fn);
-      return () => {
-        listeners = listeners.filter((l) => l !== fn);
-      };
+const { seek, registryMock } = vi.hoisted(() => {
+  const seekFn = vi.fn().mockResolvedValue(undefined);
+  const desc = {
+    id: 'spotify' as ProviderId,
+    playback: {
+      subscribe: (fn: (state: PlaybackState | null) => void) => {
+        listeners.push(fn);
+        return () => {
+          listeners = listeners.filter((l) => l !== fn);
+        };
+      },
+      getState: vi.fn().mockResolvedValue(null),
+      seek: seekFn,
     },
-    getState: vi.fn().mockResolvedValue(null),
-    seek,
-  },
-};
-
-vi.mock('@/providers/registry', () => ({
-  providerRegistry: {
-    get: vi.fn(() => descriptor),
-    getAll: vi.fn(() => [descriptor]),
-  },
-}));
+  };
+  const reg = {
+    get: vi.fn(() => desc),
+    getAll: vi.fn(() => [desc]),
+  };
+  return { seek: seekFn, registryMock: reg };
+});
+vi.mock('@/providers/registry', () => ({ providerRegistry: registryMock }));
+vi.mock('@/services/providerRegistry', () => ({ providerRegistry: registryMock }));
 
 import { usePlaybackControls } from '../usePlaybackControls';
 import { playbackStore } from '@/stores/playbackStore';

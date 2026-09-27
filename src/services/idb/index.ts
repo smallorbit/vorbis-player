@@ -6,7 +6,7 @@
  */
 
 export type { KVStore } from './types';
-export type { IdbDatabaseHandle } from './createDatabase';
+export type { IdbDatabaseHandle } from './types';
 
 export { createIdbDatabase } from './createDatabase';
 export { runWithDegradationPolicy } from './degradation';

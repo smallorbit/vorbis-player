@@ -1,10 +1,9 @@
 import React from 'react';
 import styled from 'styled-components';
 import { breatheGlow } from '../styles/animations';
+import { DEFAULT_GLOW_INTENSITY, DEFAULT_GLOW_RATE } from '@/constants/glowDefaults';
 
-
-export const DEFAULT_GLOW_RATE = 4.0;
-export const DEFAULT_GLOW_INTENSITY = 110;
+export { DEFAULT_GLOW_INTENSITY, DEFAULT_GLOW_RATE } from '@/constants/glowDefaults';
 
 const GlowBackgroundLayer = styled.div<{
   $glowIntensity: number;

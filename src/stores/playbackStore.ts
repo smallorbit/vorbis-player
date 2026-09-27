@@ -36,7 +36,7 @@
 
 import type { PlaybackState, ProviderId, MediaTrack } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';
-import { providerRegistry } from '@/providers/registry';
+import { providerRegistry } from '@/services/providerRegistry';
 import { queueStore } from '@/stores/queueStore';
 import {
   AUTO_ADVANCE_END_THRESHOLD_MS,

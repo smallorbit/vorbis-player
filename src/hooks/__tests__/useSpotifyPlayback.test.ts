@@ -4,14 +4,19 @@ import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
 import { queueStore } from '@/stores/queueStore';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 
-const mockPlayTrack = vi.fn().mockResolvedValue(undefined);
-const mockPause = vi.fn().mockResolvedValue(undefined);
-const mockResume = vi.fn().mockResolvedValue(undefined);
-const mockPrepareTrack = vi.fn();
-const mockInitialize = vi.fn().mockResolvedValue(undefined);
-
-vi.mock('@/providers/registry', () => ({
-  providerRegistry: {
+const {
+  mockPlayTrack,
+  mockPause,
+  mockResume,
+  mockPrepareTrack,
+  spotifyPlaybackRegistry,
+} = vi.hoisted(() => {
+  const playTrack = vi.fn().mockResolvedValue(undefined);
+  const pause = vi.fn().mockResolvedValue(undefined);
+  const resume = vi.fn().mockResolvedValue(undefined);
+  const prepareTrack = vi.fn();
+  const initialize = vi.fn().mockResolvedValue(undefined);
+  const registry = {
     get: vi.fn((id: string) => ({
       id,
       capabilities: {
@@ -19,11 +24,11 @@ vi.mock('@/providers/registry', () => ({
       },
       playback: {
         providerId: id,
-        playTrack: mockPlayTrack,
-        pause: mockPause,
-        resume: mockResume,
-        prepareTrack: mockPrepareTrack,
-        initialize: mockInitialize,
+        playTrack,
+        pause,
+        resume,
+        prepareTrack,
+        initialize,
         seek: vi.fn(),
         next: vi.fn(),
         previous: vi.fn(),
@@ -32,8 +37,17 @@ vi.mock('@/providers/registry', () => ({
         subscribe: vi.fn(),
       },
     })),
-  },
-}));
+  };
+  return {
+    mockPlayTrack: playTrack,
+    mockPause: pause,
+    mockResume: resume,
+    mockPrepareTrack: prepareTrack,
+    spotifyPlaybackRegistry: registry,
+  };
+});
+vi.mock('@/providers/registry', () => ({ providerRegistry: spotifyPlaybackRegistry }));
+vi.mock('@/services/providerRegistry', () => ({ providerRegistry: spotifyPlaybackRegistry }));
 
 import { useProviderPlayback } from '../useProviderPlayback';
 import { playbackStore } from '@/stores/playbackStore';

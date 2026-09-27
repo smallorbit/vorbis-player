@@ -6,30 +6,7 @@
 import { logCaughtError } from '@/utils/logCaughtError';
 import { createKvStore } from './kvStore';
 import { deleteIdbDatabase, openIdbDatabase } from './openDatabase';
-import type { CreateIdbDatabaseOptions, KVStore, StoreSpec } from './types';
-
-export interface IdbDatabaseHandle {
-  readonly name: string;
-  readonly logLabel: string;
-  init(): Promise<void>;
-  close(): void;
-  isFallback(): boolean;
-  getDb(): IDBDatabase | null;
-  getStore<T>(storeName: string): KVStore<T>;
-  getFallbackMap(storeName: string): Map<string, unknown>;
-  /** Per-key session overlay after a write soft-fail (`undefined` = tombstone). */
-  getOverlayMap(storeName: string): Map<string, unknown>;
-  /**
-   * Clear quota-evictable stores. When `storeNames` is provided, only those
-   * names that are also marked evictable are cleared.
-   */
-  evictForQuota(storeNames?: readonly string[]): Promise<void>;
-  /** Close + reopen without deleting data (closed-handle / versionchange). */
-  reopenConnection(): Promise<void>;
-  recoverFromCorruption(): Promise<void>;
-  /** Testing / logout purge. */
-  deleteDatabase(): Promise<void>;
-}
+import type { CreateIdbDatabaseOptions, IdbDatabaseHandle, KVStore, StoreSpec } from './types';
 
 function buildFallbackStores(stores: readonly StoreSpec[]): Record<string, Map<string, unknown>> {
   const out: Record<string, Map<string, unknown>> = {};
