@@ -2,7 +2,7 @@
 
 **Initiative label:** [`project:vorbis-player-architecture-v2`](https://github.com/smallorbit/vorbis-player/labels/project%3Avorbis-player-architecture-v2) (RFC 0001)  
 **Working mode:** **one workstream (epic) at a time**; within an epic, **one child issue at a time**.  
-**Updated:** 2026-09-28 (after #1736)
+**Updated:** 2026-09-28 (after #1737 — WS10 complete)
 
 Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tier-codebase.md`, which is **not yet on `main`** — landing that RFC is part of **[WS11](https://github.com/smallorbit/vorbis-player/issues/1757)**.
 
@@ -15,8 +15,8 @@ Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tie
 | WS1 | [#1685](https://github.com/smallorbit/vorbis-player/issues/1685) Neutral domain model | **Done** |
 | WS2 | [#1692](https://github.com/smallorbit/vorbis-player/issues/1692) PlaybackStore + QueueStore | **Done** |
 | WS3 | [#1699](https://github.com/smallorbit/vorbis-player/issues/1699) State, persistence & events | **Done** |
-| WS10 | [#1729](https://github.com/smallorbit/vorbis-player/issues/1729) Close the toolchain blind spots | **In progress** (7/8) |
-| WS4–WS9, WS11–WS12 | Reliability → DevBug | Open (do not start until WS10 closes) |
+| WS10 | [#1729](https://github.com/smallorbit/vorbis-player/issues/1729) Close the toolchain blind spots | **Done** (8/8) |
+| WS4–WS9, WS11–WS12 | Reliability → DevBug | Open (WS10 closed — pick one epic at a time) |
 
 Pre-initiative foundations already on `main`: async-race harness, honest e2e, full CI gate (coverage + knip + audit ≥ high).
 
@@ -24,25 +24,22 @@ Pre-initiative foundations already on `main`: async-race harness, honest e2e, fu
 
 ## Do this next
 
-### Immediate: continue WS10 at #1737
+### WS10 closed — start the next epic
 
-Epic: **[#1729 — Close the toolchain blind spots](https://github.com/smallorbit/vorbis-player/issues/1729)**  
-Principle: P3 — conventions are machine-enforced or they are wishes.
+**[#1729 — Close the toolchain blind spots](https://github.com/smallorbit/vorbis-player/issues/1729)** is complete (all eight children closed). Policy + RFC for majors: [`docs/dependency-upgrades.md`](../dependency-upgrades.md), [`docs/rfcs/0002-coordinated-toolchain-upgrade.md`](../rfcs/0002-coordinated-toolchain-upgrade.md) ([#1737](https://github.com/smallorbit/vorbis-player/issues/1737)).
 
 | # | Issue | State | Notes |
 |---|--------|--------|--------|
 | 1730 | Bring tests, e2e, and scripts under typechecking | **Closed** | PR [#1782](https://github.com/smallorbit/vorbis-player/pull/1782) |
 | 1731 | Wire coverage ratchet, knip, and npm audit into CI | **Closed** | PR [#1783](https://github.com/smallorbit/vorbis-player/pull/1783) |
 | 1732 | Turn on type-aware lint and finish the strictness epic | **Closed** | PR [#1785](https://github.com/smallorbit/vorbis-player/pull/1785) |
-| 1733 | Declare and enforce the layering order | **Closed** | PR [#1787](https://github.com/smallorbit/vorbis-player/pull/1787) — F76, F93 (see merged context below) |
-| 1734 | Make e2e run against the prod build with a real Dropbox snapshot | **Closed** | F74, F71, F83 — see merged context below |
-| 1735 | Add boundary tests for the Spotify SDK/API layer | **Closed** | F53 — see merged context below |
-| 1736 | Clean up test infrastructure and scripts | **Closed** | F92, F80, F100, F78 — see merged context below |
-| **1737** | **Set the dependency-upgrade policy** | **← NEXT** | Routine `npm update` already landed in #1731; this issue is the written policy + the React 19 / Vite 8 / Vitest 4 RFC (not piecemeal). Remaining moderate vitest advisories need that major. |
+| 1733 | Declare and enforce the layering order | **Closed** | PR [#1787](https://github.com/smallorbit/vorbis-player/pull/1787) — F76, F93 |
+| 1734 | Make e2e run against the prod build with a real Dropbox snapshot | **Closed** | F74, F71, F83 |
+| 1735 | Add boundary tests for the Spotify SDK/API layer | **Closed** | F53 |
+| 1736 | Clean up test infrastructure and scripts | **Closed** | F92, F80, F100, F78 |
+| 1737 | Set the dependency-upgrade policy | **Closed** | F94 — policy doc + RFC 0002 (implementation deferred) |
 
-**WS10 exit criteria** (from epic): `tsc -b` covers 100% of TS in the repo; CI fails on coverage regression, knip findings, audit ≥ high, circular value imports, empty e2e run, chunk misplacement.
-
-### After WS10 closes
+### Pick the next workstream epic
 
 Still **one epic at a time**. Suggested order (adjust if the human says otherwise):
 
@@ -133,11 +130,13 @@ Clean up test infrastructure and scripts (F92, F80, F100, F78).
 - **F100:** `vite-env.d.ts` — drop phantom `VITE_DROPBOX_APP_KEY`; optional env vars typed correctly
 - **F78:** `spotify.d.ts` header documents Web Playback SDK globals only
 
-## Context for #1737 (next implementation)
+## Context for #1737 (merged)
 
-**Issue:** [#1737 — Set the dependency-upgrade policy](https://github.com/smallorbit/vorbis-player/issues/1737).
+Set the dependency-upgrade policy (F94).
 
-Do **not** start WS4–WS9 / WS11–WS12 until WS10 closes.
+- **Policy:** [`docs/dependency-upgrades.md`](../dependency-upgrades.md) — routine `npm update` vs coordinated majors; audit:ci ≥ high; no `audit fix --force` on main; html2canvas DevBug-only
+- **RFC:** [`docs/rfcs/0002-coordinated-toolchain-upgrade.md`](../rfcs/0002-coordinated-toolchain-upgrade.md) — Proposed; React 19 + Vite 8 + Vitest 4+ (+ Tailwind 4 in same window)
+- **Moderate Vitest advisories** remain until RFC implementation
 
 ---
 
@@ -155,7 +154,9 @@ Do **not** start WS4–WS9 / WS11–WS12 until WS10 closes.
 
 - Label board: https://github.com/smallorbit/vorbis-player/labels/project%3Avorbis-player-architecture-v2  
 - WS10 epic: https://github.com/smallorbit/vorbis-player/issues/1729  
-- Next issue: https://github.com/smallorbit/vorbis-player/issues/1737  
+- Dependency policy: [`docs/dependency-upgrades.md`](../dependency-upgrades.md)  
+- Toolchain RFC: [`docs/rfcs/0002-coordinated-toolchain-upgrade.md`](../rfcs/0002-coordinated-toolchain-upgrade.md)  
+- Suggested next epic: [WS6 a11y #1721](https://github.com/smallorbit/vorbis-player/issues/1721)  
 - Coverage thresholds: `vite.config.ts` (`test.coverage.thresholds`)  
 - knip config: `knip.json`  
 - Test tsconfig: `tsconfig.test.json`  

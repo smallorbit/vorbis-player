@@ -115,6 +115,12 @@ Guidelines:
 - Every test should have meaningful assertions
 - Run `npm test` before pushing and before creating any PR
 
+## Dependency upgrades
+
+Routine patch/minor updates use `npm update` within current semver ranges. **Do not** bump React, Vite, or Vitest majors in drive-by PRs — those land via the coordinated RFC.
+
+See **[Dependency upgrades](./dependency-upgrades.md)** and **[RFC 0002 — Coordinated toolchain upgrade](./rfcs/0002-coordinated-toolchain-upgrade.md)**.
+
 ## Git Workflow
 
 - Feature branches from `main`: `feature/name`, `fix/name`
