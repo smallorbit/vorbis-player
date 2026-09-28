@@ -15,6 +15,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
 import type { MediaTrack } from '@/types/domain';
+import { makeTrack } from '@/test/fixtures';
 
 const { mockCurrentTrack } = vi.hoisted(() => ({
   mockCurrentTrack: vi.fn<() => { currentTrack: MediaTrack | null }>(),
@@ -25,19 +26,6 @@ vi.mock('@/contexts/TrackContext', () => ({
 }));
 
 import MiniPlayer, { type MiniPlayerProps } from '../MiniPlayer';
-
-function makeTrack(overrides: Partial<MediaTrack> = {}): MediaTrack {
-  return {
-    id: 't1',
-    name: 'Track A',
-    artists: 'Artist A',
-    duration_ms: 1000,
-    image: 'https://example.com/a.png',
-    provider: 'spotify',
-    uri: 'spotify:track:t1',
-    ...overrides,
-  } as MediaTrack;
-}
 
 function defaultProps(overrides: Partial<MiniPlayerProps> = {}): MiniPlayerProps {
   return {

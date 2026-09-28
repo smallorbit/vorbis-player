@@ -13,7 +13,7 @@ import { TrackProvider } from '@/contexts/TrackContext';
 import { VisualEffectsProvider } from '@/contexts/visualEffects';
 import { ColorProvider } from '@/contexts/ColorContext';
 import { ProviderProvider } from '@/contexts/ProviderContext';
-import { makeMediaTrack, makeProviderDescriptor, makePlaybackProvider, makeCapabilities } from '@/test/fixtures';
+import { makeTrack, makeProviderDescriptor, makePlaybackProvider, makeCapabilities } from '@/test/fixtures';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
 import type { ProviderId, PlaybackState } from '@/types/domain';
 import { defined } from '@/test/defined';
@@ -170,9 +170,9 @@ const AllProviders = ({ children }: { children: React.ReactNode }) => (
 );
 
 function makeSession(overrides?: Partial<SessionSnapshot>): SessionSnapshot {
-  const trackA = makeMediaTrack({ id: 'track-a', name: 'Song A', artists: 'Artist A', provider: activeDescriptor.descriptor.id });
-  const trackB = makeMediaTrack({ id: 'track-b', name: 'Song B', artists: 'Artist B', provider: activeDescriptor.descriptor.id });
-  const trackC = makeMediaTrack({ id: 'track-c', name: 'Song C', artists: 'Artist C', provider: activeDescriptor.descriptor.id });
+  const trackA = makeTrack({ id: 'track-a', name: 'Song A', artists: 'Artist A', provider: activeDescriptor.descriptor.id });
+  const trackB = makeTrack({ id: 'track-b', name: 'Song B', artists: 'Artist B', provider: activeDescriptor.descriptor.id });
+  const trackC = makeTrack({ id: 'track-c', name: 'Song C', artists: 'Artist C', provider: activeDescriptor.descriptor.id });
   return {
     selection: {
       type: 'collection',

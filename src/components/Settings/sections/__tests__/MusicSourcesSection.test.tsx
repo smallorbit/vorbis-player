@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
-import { makeProviderDescriptor, makeMediaTrack } from '@/test/fixtures';
+import { makeProviderDescriptor, makeTrack } from '@/test/fixtures';
 import type { ProviderDescriptor } from '@/types/providers';
 
 // ── Context mocks ──────────────────────────────────────────────────────────
@@ -20,7 +20,7 @@ const mockRegistry = {
 };
 
 let mockEnabledProviderIds: string[] = ['spotify', 'dropbox'];
-let mockTracks: ReturnType<typeof makeMediaTrack>[] = [];
+let mockTracks: ReturnType<typeof makeTrack>[] = [];
 let mockCurrentTrackIndex = 0;
 
 vi.mock('@/contexts/ProviderContext', () => ({
@@ -95,7 +95,7 @@ describe('MusicSourcesSection', () => {
   describe('toggle-off: disconnect dialog flow', () => {
     it('opens ProviderDisconnectDialog when an enabled provider with queued tracks is toggled off', () => {
       // #given
-      mockTracks = [makeMediaTrack({ id: 'track-1', provider: 'spotify' })];
+      mockTracks = [makeTrack({ id: 'track-1', provider: 'spotify' })];
       const spotifyDesc = makeSpotifyDescriptor();
       const dropboxDesc = makeDropboxDescriptor();
       mockRegistry.getAll.mockReturnValue([spotifyDesc, dropboxDesc]);
@@ -114,7 +114,7 @@ describe('MusicSourcesSection', () => {
 
     it('calls descriptor.auth.logout() and toggleProvider when dialog is confirmed', () => {
       // #given
-      mockTracks = [makeMediaTrack({ id: 'track-1', provider: 'spotify' })];
+      mockTracks = [makeTrack({ id: 'track-1', provider: 'spotify' })];
       const spotifyDesc = makeSpotifyDescriptor();
       const dropboxDesc = makeDropboxDescriptor();
       mockRegistry.getAll.mockReturnValue([spotifyDesc, dropboxDesc]);
@@ -135,7 +135,7 @@ describe('MusicSourcesSection', () => {
 
     it('closes the dialog and leaves state unchanged when Cancel is clicked', () => {
       // #given
-      mockTracks = [makeMediaTrack({ id: 'track-1', provider: 'spotify' })];
+      mockTracks = [makeTrack({ id: 'track-1', provider: 'spotify' })];
       const spotifyDesc = makeSpotifyDescriptor();
       const dropboxDesc = makeDropboxDescriptor();
       mockRegistry.getAll.mockReturnValue([spotifyDesc, dropboxDesc]);
@@ -154,7 +154,7 @@ describe('MusicSourcesSection', () => {
 
     it('performs logout and toggleProvider immediately without opening the dialog when the provider has no queued tracks', () => {
       // #given — only dropbox has queued tracks; toggling off spotify should skip the prompt
-      mockTracks = [makeMediaTrack({ id: 'track-1', provider: 'dropbox' as 'spotify' })];
+      mockTracks = [makeTrack({ id: 'track-1', provider: 'dropbox' as 'spotify' })];
       const spotifyDesc = makeSpotifyDescriptor();
       const dropboxDesc = makeDropboxDescriptor();
       mockRegistry.getAll.mockReturnValue([spotifyDesc, dropboxDesc]);
@@ -174,9 +174,9 @@ describe('MusicSourcesSection', () => {
 
     it('shows affected-track count in disconnect dialog when provider has queued tracks', () => {
       // #given
-      const spotifyTrack1 = makeMediaTrack({ id: 'track-1', provider: 'spotify' });
-      const spotifyTrack2 = makeMediaTrack({ id: 'track-2', provider: 'spotify' });
-      const dropboxTrack = makeMediaTrack({ id: 'track-3', provider: 'dropbox' as 'spotify' });
+      const spotifyTrack1 = makeTrack({ id: 'track-1', provider: 'spotify' });
+      const spotifyTrack2 = makeTrack({ id: 'track-2', provider: 'spotify' });
+      const dropboxTrack = makeTrack({ id: 'track-3', provider: 'dropbox' as 'spotify' });
       mockTracks = [spotifyTrack1, spotifyTrack2, dropboxTrack];
 
       const spotifyDesc = makeSpotifyDescriptor();

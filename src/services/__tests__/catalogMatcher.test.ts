@@ -8,17 +8,17 @@ import {
 } from '../catalogMatcher';
 import type { MediaTrack } from '@/types/domain';
 import type { LastFmSimilarTrack } from '@/types/radio';
+import { makeTrack as makeTrackFixture } from '@/test/fixtures';
 
 function makeTrack(overrides: Partial<MediaTrack> & { name: string; artists: string }): MediaTrack {
-  return {
+  return makeTrackFixture({
     id: overrides.id ?? `track-${overrides.name}`,
     provider: 'dropbox',
     playbackRef: { provider: 'dropbox', ref: `/music/${overrides.name}.mp3` },
     album: overrides.album ?? 'Test Album',
     durationMs: 200000,
-    genres: [],
     ...overrides,
-  };
+  });
 }
 
 describe('normalizeForMatching', () => {

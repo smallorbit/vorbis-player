@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useRadioSession } from '../useRadioSession';
 import type { RadioResult } from '@/types/radio';
-import { makeMediaTrack, makeProviderDescriptor, makeCapabilities, makePlaybackProvider } from '@/test/fixtures';
+import { makeTrack, makeProviderDescriptor, makeCapabilities, makePlaybackProvider } from '@/test/fixtures';
 import type { MediaTrack } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';
 import { createDeferredFn } from '@/test/asyncRace';
@@ -39,7 +39,7 @@ function makeTrackOps() {
 }
 
 function track(id: string, name: string, artists: string): MediaTrack {
-  return makeMediaTrack({ id, name, artists, provider: 'spotify' });
+  return makeTrack({ id, name, artists, provider: 'spotify' });
 }
 
 describe('useRadioSession', () => {

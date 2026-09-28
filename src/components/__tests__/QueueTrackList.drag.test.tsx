@@ -3,7 +3,7 @@ import { render, fireEvent, act, screen } from '@testing-library/react';
 import { vi, describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
-import { makeMediaTrack } from '@/test/fixtures';
+import { makeTrack } from '@/test/fixtures';
 import type { MediaTrack } from '@/types/domain';
 
 // Mock only the leaf hooks/components that transitively pull in the Spotify SDK
@@ -189,9 +189,9 @@ describe('QueueTrackList — drag gesture survives mid-drag rename', () => {
       current: null,
     };
     const initialTracks = [
-      makeMediaTrack({ id: 'track-1', name: 'Song A' }),
-      makeMediaTrack({ id: 'track-2', name: 'filename-derived.flac' }),
-      makeMediaTrack({ id: 'track-3', name: 'Song C' }),
+      makeTrack({ id: 'track-1', name: 'Song A' }),
+      makeTrack({ id: 'track-2', name: 'filename-derived.flac' }),
+      makeTrack({ id: 'track-3', name: 'Song C' }),
     ];
 
     render(

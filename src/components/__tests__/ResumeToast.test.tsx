@@ -5,7 +5,7 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { toast } from 'sonner';
 import { theme } from '@/styles/theme';
 import { Toaster } from '@/components/ui/sonner';
-import { makeMediaTrack } from '@/test/fixtures';
+import { makeTrack } from '@/test/fixtures';
 import type { MediaTrack } from '@/types/domain';
 
 type HandlerKey = 'play' | 'pause' | 'next' | 'previous' | 'library';
@@ -88,7 +88,7 @@ const fireHydrateWith = (
   trackName: string,
 ) => {
   act(() => {
-    ref.current?.fireHydrate(makeMediaTrack({ name: trackName }));
+    ref.current?.fireHydrate(makeTrack({ name: trackName }));
   });
 };
 
@@ -198,7 +198,7 @@ describe('Resume toast behavior', () => {
 
     // #when
     act(() => {
-      ref.current?.fireHydrate(makeMediaTrack({ name: 'Skipped Track' }), true);
+      ref.current?.fireHydrate(makeTrack({ name: 'Skipped Track' }), true);
     });
 
     // #then

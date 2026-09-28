@@ -26,18 +26,16 @@ function folderSel(id: string, name?: string): CollectionSelection {
   };
 }
 
-function makeMediaTrack(id: string, addedAt?: number): MediaTrack {
-  return {
+function makeListedTrack(id: string, addedAt?: number): MediaTrack {
+  const track = makeTrack({
     id,
-    provider: 'spotify',
-    playbackRef: { provider: 'spotify', ref: `spotify:track:${id}` },
     name: `Track ${id}`,
-    artists: 'Artist',
-    album: 'Album',
     durationMs: 180000,
-    genres: [],
     ...(addedAt !== undefined && { addedAt }),
-  };
+  });
+  const { image: _albumArt, ...withoutImage } = track;
+  void _albumArt;
+  return withoutImage;
 }
 
 function stubDescriptor(options: {
@@ -139,9 +137,9 @@ describe('useCollectionLoader', () => {
     // #given
     const mockCatalog = {
       listTracks: vi.fn().mockResolvedValue([
-        makeMediaTrack('1'),
-        makeMediaTrack('2'),
-        makeMediaTrack('3'),
+        makeListedTrack('1'),
+        makeListedTrack('2'),
+        makeListedTrack('3'),
       ]),
     };
     mockActiveDescriptor = stubDescriptor({
@@ -158,7 +156,7 @@ describe('useCollectionLoader', () => {
     });
 
     // #then — the queue store holds the collection in catalog order
-    const expectedTracks = [makeMediaTrack('1'), makeMediaTrack('2'), makeMediaTrack('3')];
+    const expectedTracks = [makeListedTrack('1'), makeListedTrack('2'), makeListedTrack('3')];
     expect(mockSetIsLoading).toHaveBeenCalledWith(true);
     expect(queueStore.getTracks()).toEqual(expectedTracks);
     expect(queueStore.getSnapshot().originalTracks).toEqual(expectedTracks);
@@ -170,13 +168,13 @@ describe('useCollectionLoader', () => {
     // #given
     const mockCatalog1 = {
       listTracks: vi.fn().mockResolvedValue([
-        makeMediaTrack('1', 1000),
-        makeMediaTrack('2', 500),
+        makeListedTrack('1', 1000),
+        makeListedTrack('2', 500),
       ]),
     };
     const mockCatalog2 = {
       listTracks: vi.fn().mockResolvedValue([
-        makeMediaTrack('3', 1500),
+        makeListedTrack('3', 1500),
       ]),
     };
 
@@ -206,7 +204,7 @@ describe('useCollectionLoader', () => {
     });
 
     // #then
-    const expectedMergedOrder = [makeMediaTrack('3', 1500), makeMediaTrack('1', 1000), makeMediaTrack('2', 500)];
+    const expectedMergedOrder = [makeListedTrack('3', 1500), makeListedTrack('1', 1000), makeListedTrack('2', 500)];
     expect(queueStore.getTracks()).toEqual(expectedMergedOrder);
     expect(queueStore.getSnapshot().originalTracks).toEqual(expectedMergedOrder);
     expect(trackCount).toEqual({ status: 'loaded', count: 3 });
@@ -214,7 +212,7 @@ describe('useCollectionLoader', () => {
 
   it('an empty collection result sets error state', async () => {
     // #given — a previously loaded queue, so the error path's clear() is observable
-    queueStore.replaceQueue([makeMediaTrack('stale')]);
+    queueStore.replaceQueue([makeListedTrack('stale')]);
     const mockCatalog = {
       listTracks: vi.fn().mockResolvedValue([]),
     };
@@ -290,7 +288,7 @@ describe('useCollectionLoader', () => {
   it('stops radio before loading a new collection when radio is active', async () => {
     // #given
     const mockCatalog = {
-      listTracks: vi.fn().mockResolvedValue([makeMediaTrack('1')]),
+      listTracks: vi.fn().mockResolvedValue([makeListedTrack('1')]),
     };
     mockActiveDescriptor = stubDescriptor({
       listTracks: mockCatalog.listTracks,
@@ -311,7 +309,7 @@ describe('useCollectionLoader', () => {
   it('shuffles tracks when the store shuffle flag is enabled', async () => {
     // #given
     queueStore.__setShuffleForTests(true);
-    const tracks = [makeMediaTrack('1'), makeMediaTrack('2'), makeMediaTrack('3')];
+    const tracks = [makeListedTrack('1'), makeListedTrack('2'), makeListedTrack('3')];
     const mockCatalog = { listTracks: vi.fn().mockResolvedValue(tracks) };
     mockActiveDescriptor = stubDescriptor({
       listTracks: mockCatalog.listTracks,
@@ -334,7 +332,7 @@ describe('useCollectionLoader', () => {
 
   it('switches active provider when loading a collection from a different provider', async () => {
     // #given
-    const dropboxCatalog = { listTracks: vi.fn().mockResolvedValue([makeMediaTrack('1')]) };
+    const dropboxCatalog = { listTracks: vi.fn().mockResolvedValue([makeListedTrack('1')]) };
     const dropboxDescriptor = stubDescriptor({
       id: 'dropbox',
       listTracks: dropboxCatalog.listTracks,
@@ -405,7 +403,7 @@ describe('useCollectionLoader', () => {
   it('calls record with the collection ref and name after a successful provider collection load', async () => {
     // #given
     const mockCatalog = {
-      listTracks: vi.fn().mockResolvedValue([makeMediaTrack('1'), makeMediaTrack('2')]),
+      listTracks: vi.fn().mockResolvedValue([makeListedTrack('1'), makeListedTrack('2')]),
     };
     mockActiveDescriptor = stubDescriptor({
       listTracks: mockCatalog.listTracks,
@@ -430,9 +428,9 @@ describe('useCollectionLoader', () => {
 
   it('forwards the first track image as imageUrl when calling record', async () => {
     // #given
-    const trackWithImage: MediaTrack = { ...makeMediaTrack('1'), image: 'https://cdn.example/cover.jpg' };
+    const trackWithImage: MediaTrack = { ...makeListedTrack('1'), image: 'https://cdn.example/cover.jpg' };
     const mockCatalog = {
-      listTracks: vi.fn().mockResolvedValue([trackWithImage, makeMediaTrack('2')]),
+      listTracks: vi.fn().mockResolvedValue([trackWithImage, makeListedTrack('2')]),
     };
     mockActiveDescriptor = stubDescriptor({
       listTracks: mockCatalog.listTracks,
@@ -478,7 +476,7 @@ describe('useCollectionLoader', () => {
   it('calls record with the liked kind and display name after a successful unified liked load', async () => {
     // #given
     const mockCatalog = {
-      listTracks: vi.fn().mockResolvedValue([makeMediaTrack('1', 1000)]),
+      listTracks: vi.fn().mockResolvedValue([makeListedTrack('1', 1000)]),
     };
     mockGetDescriptor.mockReturnValue(stubDescriptor({
       listTracks: mockCatalog.listTracks,
@@ -503,7 +501,7 @@ describe('useCollectionLoader', () => {
 
   it('forces shuffle when loading Dropbox All Music even when the store shuffle flag is off', async () => {
     // #given — All Music is addressed as dropbox folder with empty id; provide an ordered list we can detect re-ordering on
-    const tracks = Array.from({ length: 20 }, (_, i) => makeMediaTrack(String(i + 1)));
+    const tracks = Array.from({ length: 20 }, (_, i) => makeListedTrack(String(i + 1)));
     const mockCatalog = { listTracks: vi.fn().mockResolvedValue(tracks) };
     const dropboxDescriptor = stubDescriptor({
       id: 'dropbox',
@@ -532,7 +530,7 @@ describe('useCollectionLoader', () => {
 
   it('does not force-shuffle non-All-Music Dropbox folder collections when the store shuffle flag is off', async () => {
     // #given — regression guard: a normal dropbox folder (non-empty id) must keep catalog order
-    const tracks = Array.from({ length: 20 }, (_, i) => makeMediaTrack(String(i + 1)));
+    const tracks = Array.from({ length: 20 }, (_, i) => makeListedTrack(String(i + 1)));
     const mockCatalog = { listTracks: vi.fn().mockResolvedValue(tracks) };
     const dropboxDescriptor = stubDescriptor({
       id: 'dropbox',
@@ -573,8 +571,8 @@ describe('useCollectionLoader', () => {
 
   it('does not invoke listTracks for a provider whose hasLikedCollection is false when loading unified liked', async () => {
     // #given — one provider supports liked collection, one does not
-    const spotifyListTracks = vi.fn().mockResolvedValue([makeMediaTrack('s1', 1000)]);
-    const dropboxListTracks = vi.fn().mockResolvedValue([makeMediaTrack('d1', 500)]);
+    const spotifyListTracks = vi.fn().mockResolvedValue([makeListedTrack('s1', 1000)]);
+    const dropboxListTracks = vi.fn().mockResolvedValue([makeListedTrack('d1', 500)]);
 
     mockGetDescriptor.mockImplementation((id: string) => {
       if (id === 'spotify') {
@@ -613,8 +611,8 @@ describe('useCollectionLoader', () => {
   it('a new load that begins during the context-playback spotifyHandlePlaylistSelect call does not write stale tracks', async () => {
     // #given — provider A uses context-playback fallback; its spotifyHandlePlaylistSelect is slow
     const slowContextDeferred = makeDeferred<MediaTrack[]>();
-    const contextTracks = [makeMediaTrack('CTX1'), makeMediaTrack('CTX2')];
-    const fastTracks = [makeMediaTrack('B1')];
+    const contextTracks = [makeListedTrack('CTX1'), makeListedTrack('CTX2')];
+    const fastTracks = [makeListedTrack('B1')];
 
     mockSpotifyHandlePlaylistSelect.mockReturnValueOnce(slowContextDeferred.promise);
 
@@ -689,7 +687,7 @@ describe('useCollectionLoader', () => {
 
   it('passes an AbortSignal to catalog.listTracks for a provider collection load', async () => {
     // #given
-    const mockCatalog = { listTracks: vi.fn().mockResolvedValue([makeMediaTrack('1')]) };
+    const mockCatalog = { listTracks: vi.fn().mockResolvedValue([makeListedTrack('1')]) };
     mockActiveDescriptor = stubDescriptor({
       listTracks: mockCatalog.listTracks,
       pause: vi.fn(),
@@ -711,8 +709,8 @@ describe('useCollectionLoader', () => {
   it('a stale slow provider load does not clobber a newer fast load', async () => {
     // #given — load A is slow (deferred), load B is fast and resolves first
     const slowDeferred = makeDeferred<MediaTrack[]>();
-    const slowTracks = [makeMediaTrack('A1'), makeMediaTrack('A2')];
-    const fastTracks = [makeMediaTrack('B1')];
+    const slowTracks = [makeListedTrack('A1'), makeListedTrack('A2')];
+    const fastTracks = [makeListedTrack('B1')];
 
     const slowCatalog = { listTracks: vi.fn().mockReturnValue(slowDeferred.promise) };
     const fastCatalog = { listTracks: vi.fn().mockResolvedValue(fastTracks) };
@@ -758,8 +756,8 @@ describe('useCollectionLoader', () => {
       return Promise.resolve();
     });
 
-    const tracksA = [makeMediaTrack('A1'), makeMediaTrack('A2')];
-    const tracksB = [makeMediaTrack('B1')];
+    const tracksA = [makeListedTrack('A1'), makeListedTrack('A2')];
+    const tracksB = [makeListedTrack('B1')];
     const catalogA = { listTracks: vi.fn().mockResolvedValue(tracksA) };
     const catalogB = { listTracks: vi.fn().mockResolvedValue(tracksB) };
 
@@ -811,7 +809,7 @@ describe('useCollectionLoader', () => {
         return slowDeferred.promise;
       }),
     };
-    const fastCatalog = { listTracks: vi.fn().mockResolvedValue([makeMediaTrack('B1')]) };
+    const fastCatalog = { listTracks: vi.fn().mockResolvedValue([makeListedTrack('B1')]) };
 
     mockGetDescriptor.mockImplementation((id: string) => {
       if (id === 'spotify') {
@@ -830,7 +828,7 @@ describe('useCollectionLoader', () => {
     await act(async () => {
       const slowLoad = result.current.loadCollection(playlistSel('playlist_A'));
       await result.current.loadCollection(folderSel('playlist_B'));
-      slowDeferred.resolve([makeMediaTrack('A1')]);
+      slowDeferred.resolve([makeListedTrack('A1')]);
       await slowLoad;
     });
 
@@ -842,7 +840,7 @@ describe('useCollectionLoader', () => {
     // #given — unified liked load A is slow; a fast provider load B follows
     const slowDeferred = makeDeferred<MediaTrack[]>();
     const slowLikedCatalog = { listTracks: vi.fn().mockReturnValue(slowDeferred.promise) };
-    const fastCatalog = { listTracks: vi.fn().mockResolvedValue([makeMediaTrack('B1')]) };
+    const fastCatalog = { listTracks: vi.fn().mockResolvedValue([makeListedTrack('B1')]) };
 
     mockGetDescriptor.mockImplementation((id: string) => {
       if (id === 'spotify') {
@@ -874,7 +872,7 @@ describe('useCollectionLoader', () => {
     await act(async () => {
       const slowLoad = result.current.loadCollection({ type: 'liked' });
       await result.current.loadCollection(folderSel('playlist_B'));
-      slowDeferred.resolve([makeMediaTrack('A1', 1000)]);
+      slowDeferred.resolve([makeListedTrack('A1', 1000)]);
       await slowLoad;
     });
     unsubscribe();
@@ -900,7 +898,7 @@ describe('useCollectionLoader', () => {
       addedAt: 2000,
       genres: [],
     };
-    const fastSpotifyTracks = [makeMediaTrack('S1')];
+    const fastSpotifyTracks = [makeListedTrack('S1')];
 
     const slowDropboxCatalog = { listTracks: vi.fn().mockReturnValue(slowDeferred.promise) };
     const fastSpotifyCatalog = { listTracks: vi.fn().mockResolvedValue(fastSpotifyTracks) };

@@ -4,6 +4,7 @@ import { MockAuthAdapter } from '../mockAuthAdapter';
 import type { MockCatalogAdapter } from '../mockCatalogAdapter';
 import type { MockPlaybackAdapter } from '../mockPlaybackAdapter';
 import type { MediaTrack } from '@/types/domain';
+import { makeTrack } from '@/test/fixtures';
 import {
   AUTH_STATE_CHANGED_EVENT,
   MOCK_RESET_EVENT,
@@ -11,19 +12,6 @@ import {
   SESSION_EXPIRED_EVENT,
   onAppEvent,
 } from '@/constants/events';
-
-function makeTrack(overrides: Partial<MediaTrack> & Pick<MediaTrack, 'id' | 'provider'>): MediaTrack {
-  return {
-    name: `Track ${overrides.id}`,
-    artists: 'Artist',
-    album: 'Album',
-    albumId: 'album-1',
-    durationMs: 180000,
-    playbackRef: { provider: overrides.provider, ref: `${overrides.provider}:track:${overrides.id}` },
-    genres: [],
-    ...overrides,
-  };
-}
 
 function makeCatalogStub(tracks: MediaTrack[]): MockCatalogAdapter {
   const map = new Map(tracks.map(t => [t.id, t]));
@@ -39,8 +27,20 @@ function makePlaybackStub(): MockPlaybackAdapter {
   } as unknown as MockPlaybackAdapter;
 }
 
-const spotifyTrack = makeTrack({ id: 'sp-1', provider: 'spotify' });
-const dropboxTrack = makeTrack({ id: 'db-1', provider: 'dropbox' });
+const spotifyTrack = makeTrack({
+  id: 'sp-1',
+  provider: 'spotify',
+  playbackRef: { provider: 'spotify', ref: 'spotify:track:sp-1' },
+  name: 'Track sp-1',
+  durationMs: 180000,
+});
+const dropboxTrack = makeTrack({
+  id: 'db-1',
+  provider: 'dropbox',
+  playbackRef: { provider: 'dropbox', ref: 'dropbox:track:db-1' },
+  name: 'Track db-1',
+  durationMs: 180000,
+});
 
 describe('installMockTestApi', () => {
   let spotifyPlayback: MockPlaybackAdapter;

@@ -6,7 +6,7 @@ import { useQueueManagement } from '../useQueueManagement';
 import { playbackStore } from '@/stores/playbackStore';
 import { queueStore } from '@/stores/queueStore';
 import { providerRegistry } from '@/providers/registry';
-import { makeProviderDescriptor } from '@/test/fixtures';
+import { makeProviderDescriptor, makeTrack as makeTrackFixture } from '@/test/fixtures';
 import type { CollectionSelection, MediaTrack, ProviderId } from '@/types/domain';
 import type { CatalogProvider, ProviderDescriptor } from '@/types/providers';
 
@@ -44,21 +44,12 @@ function folderSel(id: string, name?: string): CollectionSelection {
   };
 }
 
-function makeMediaTrack(id: string): MediaTrack {
-  return {
-    id,
-    provider: 'spotify',
-    playbackRef: { provider: 'spotify', ref: `spotify:track:${id}` },
-    name: `Track ${id}`,
-    artists: 'Artist',
-    album: 'Album',
-    durationMs: 180000,
-    genres: [],
-  };
+function makeTrack(id: string): MediaTrack {
+  return makeTrackFixture({ id, name: `Track ${id}`, durationMs: 180000 });
 }
 
 /** Build MediaTracks for a list of ids. */
-const t = (...ids: string[]): MediaTrack[] => ids.map(makeMediaTrack);
+const t = (...ids: string[]): MediaTrack[] => ids.map(makeTrack);
 const idsOf = (tracks: MediaTrack[]): string[] => tracks.map((track) => track.id);
 
 describe('useQueueManagement', () => {
@@ -181,7 +172,7 @@ describe('useQueueManagement', () => {
   it('handleAddToQueue shuffles Dropbox All Music tracks before appending', async () => {
     // #given — existing queue + All Music ref ('' id, dropbox folder) returning a large ordered list
     queueStore.replaceQueue(t('a', 'b'));
-    const incoming = Array.from({ length: 20 }, (_, i) => makeMediaTrack(`n${i + 1}`));
+    const incoming = Array.from({ length: 20 }, (_, i) => makeTrack(`n${i + 1}`));
     const dropboxDescriptor = makeDescriptorWithListTracks('dropbox', vi.fn().mockResolvedValue(incoming));
     mockGetDescriptor.mockReturnValue(dropboxDescriptor);
     const { result } = renderQueueManagement({ activeDescriptor: dropboxDescriptor });
@@ -204,7 +195,7 @@ describe('useQueueManagement', () => {
   it('handleAddToQueue preserves catalog order when appending a non-All-Music Dropbox folder', async () => {
     // #given — regression guard for shuffle-by-default semantics
     queueStore.replaceQueue(t('a'));
-    const incoming = Array.from({ length: 20 }, (_, i) => makeMediaTrack(`n${i + 1}`));
+    const incoming = Array.from({ length: 20 }, (_, i) => makeTrack(`n${i + 1}`));
     const dropboxDescriptor = makeDescriptorWithListTracks('dropbox', vi.fn().mockResolvedValue(incoming));
     mockGetDescriptor.mockReturnValue(dropboxDescriptor);
     const { result } = renderQueueManagement({ activeDescriptor: dropboxDescriptor });
@@ -324,7 +315,7 @@ describe('useQueueManagement', () => {
     // #when
     let response: ReturnType<typeof result.current.insertTracksNext> = null;
     act(() => {
-      response = result.current.insertTracksNext([makeMediaTrack('x')], 'X');
+      response = result.current.insertTracksNext([makeTrack('x')], 'X');
     });
 
     // #then — the track lands right after the playing track
@@ -562,7 +553,7 @@ describe('useQueueManagement', () => {
 
       // #when
       act(() => {
-        result.current.insertTracksNext([makeMediaTrack('x')]);
+        result.current.insertTracksNext([makeTrack('x')]);
       });
 
       // #then
@@ -753,7 +744,7 @@ describe('useQueueManagement', () => {
 
       // #when
       act(() => {
-        result.current.insertTracksNext([makeMediaTrack('x')]);
+        result.current.insertTracksNext([makeTrack('x')]);
       });
 
       // #then — originalTracks is [a, b, c, x], not the shuffled snapshot with x spliced in
@@ -769,7 +760,7 @@ describe('useQueueManagement', () => {
 
       // #when
       act(() => {
-        result.current.insertTracksNext([makeMediaTrack('x')]);
+        result.current.insertTracksNext([makeTrack('x')]);
       });
 
       // #then — originalTracks holds the full spliced order [a, x, b, c]

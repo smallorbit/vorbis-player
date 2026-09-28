@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { makeMediaTrack } from '@/test/fixtures';
+import { makeTrack } from '@/test/fixtures';
 import {
   applyEnrichmentResult,
   enrichMetadataFromStream,
@@ -29,7 +29,7 @@ describe('dropboxMetadataEnrichment', () => {
 
   it('parses ID3 tags after the enrichment delay and returns a track patch', async () => {
     // #given
-    const track = makeMediaTrack({ name: 'file.mp3', artists: 'Unknown' });
+    const track = makeTrack({ name: 'file.mp3', artists: 'Unknown' });
     vi.mocked(parseID3).mockReturnValue({
       title: 'Real Title',
       artist: 'Real Artist',
@@ -92,7 +92,7 @@ describe('dropboxMetadataEnrichment', () => {
 
   it('applyEnrichmentResult merges patch onto the live track', () => {
     // #given
-    const track = makeMediaTrack({ name: 'file.mp3', artists: 'Unknown' });
+    const track = makeTrack({ name: 'file.mp3', artists: 'Unknown' });
 
     // #when
     const applied = applyEnrichmentResult(track, {

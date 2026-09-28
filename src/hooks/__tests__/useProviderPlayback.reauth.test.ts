@@ -39,9 +39,9 @@ vi.mock('@/services/sessionPersistence', () => ({
 }));
 
 import { useProviderPlayback } from '../useProviderPlayback';
-import { makeMediaTrack as makeFixtureTrack } from '@/test/fixtures';
+import { makeTrack as makeFixtureTrack } from '@/test/fixtures';
 
-function makeMediaTrack(overrides?: Partial<MediaTrack>): MediaTrack {
+function makeTrack(overrides?: Partial<MediaTrack>): MediaTrack {
   return makeFixtureTrack({
     image: '',
     ...overrides,
@@ -61,7 +61,7 @@ describe('useProviderPlayback — PROVIDER_RECONNECTED_EVENT re-prime', () => {
 
   it('calls prepareTrack with the persisted playbackPosition when the snapshot trackId matches', () => {
     // #given — current track is a spotify track, snapshot points at the same id
-    const currentTrack = makeMediaTrack({ id: 'sp-1', provider: 'spotify' });
+    const currentTrack = makeTrack({ id: 'sp-1', provider: 'spotify' });
     queueStore.replaceQueue([currentTrack], { currentIndex: 0 });
 
     mockLoadSession.mockReturnValue({
@@ -86,7 +86,7 @@ describe('useProviderPlayback — PROVIDER_RECONNECTED_EVENT re-prime', () => {
 
   it('falls back to the live PlaybackStore cursor when the snapshot trackId does not match', () => {
     // #given
-    const currentTrack = makeMediaTrack({ id: 'sp-1', provider: 'spotify' });
+    const currentTrack = makeTrack({ id: 'sp-1', provider: 'spotify' });
     queueStore.replaceQueue([currentTrack], { currentIndex: 0 });
     playbackStore.primeRestoredPlayback(12_000);
 
@@ -111,7 +111,7 @@ describe('useProviderPlayback — PROVIDER_RECONNECTED_EVENT re-prime', () => {
 
   it('falls back to the live PlaybackStore cursor when no snapshot is persisted', () => {
     // #given — hydrate clears the session after restore; the live cursor is still mid-track
-    const currentTrack = makeMediaTrack({ id: 'sp-1', provider: 'spotify' });
+    const currentTrack = makeTrack({ id: 'sp-1', provider: 'spotify' });
     queueStore.replaceQueue([currentTrack], { currentIndex: 0 });
     playbackStore.primeRestoredPlayback(45_000);
 
@@ -130,7 +130,7 @@ describe('useProviderPlayback — PROVIDER_RECONNECTED_EVENT re-prime', () => {
 
   it('falls back to positionMs=0 when neither session nor live cursor has a position', () => {
     // #given
-    const currentTrack = makeMediaTrack({ id: 'sp-1', provider: 'spotify' });
+    const currentTrack = makeTrack({ id: 'sp-1', provider: 'spotify' });
     queueStore.replaceQueue([currentTrack], { currentIndex: 0 });
     mockLoadSession.mockReturnValue(null);
 
@@ -147,7 +147,7 @@ describe('useProviderPlayback — PROVIDER_RECONNECTED_EVENT re-prime', () => {
 
   it('does NOT call prepareTrack when the reconnected provider is not the current track provider', () => {
     // #given — current track is spotify, but dropbox just reconnected
-    const currentTrack = makeMediaTrack({ id: 'sp-1', provider: 'spotify' });
+    const currentTrack = makeTrack({ id: 'sp-1', provider: 'spotify' });
     queueStore.replaceQueue([currentTrack], { currentIndex: 0 });
 
     mockLoadSession.mockReturnValue(null);

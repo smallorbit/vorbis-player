@@ -3,7 +3,7 @@ import { DropboxAuthAdapter } from '../dropbox/dropboxAuthAdapter';
 import { DropboxPlaybackAdapter } from '../dropbox/dropboxPlaybackAdapter';
 import { DropboxCatalogAdapter } from '../dropbox/dropboxCatalogAdapter';
 import { defined } from '@/test/defined';
-import { makeMediaTrack } from '@/test/fixtures';
+import { makeTrack } from '@/test/fixtures';
 
 // Mock import.meta.env values
 vi.stubEnv('VITE_DROPBOX_CLIENT_ID', 'test-client-id');
@@ -138,7 +138,7 @@ describe('DropboxPlaybackAdapter', () => {
 
   it('playTrack sets src and calls play', async () => {
     // #when
-    await playback.playTrack(makeMediaTrack({
+    await playback.playTrack(makeTrack({
       id: 'test-id',
       provider: 'dropbox',
       playbackRef: { provider: 'dropbox', ref: '/music/song.mp3' },

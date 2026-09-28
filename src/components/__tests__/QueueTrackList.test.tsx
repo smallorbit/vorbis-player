@@ -3,7 +3,7 @@ import { render } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
-import { makeMediaTrack } from '@/test/fixtures';
+import { makeTrack } from '@/test/fixtures';
 
 // Capture the `items` array passed to every <SortableContext> render so tests
 // can assert the exact IDs without simulating drag gestures.
@@ -85,14 +85,14 @@ vi.mock('@/components/styled', async (importOriginal) => {
 import QueueTrackList from '../QueueTrackList';
 
 function renderList(overrides?: {
-  tracks?: ReturnType<typeof makeMediaTrack>[];
+  tracks?: ReturnType<typeof makeTrack>[];
   currentTrackIndex?: number;
   onReorderTracks?: (from: number, to: number) => void;
 }) {
   const tracks = overrides?.tracks ?? [
-    makeMediaTrack({ id: 'track-1', name: 'Song A' }),
-    makeMediaTrack({ id: 'track-2', name: 'Song B' }),
-    makeMediaTrack({ id: 'track-3', name: 'Song C' }),
+    makeTrack({ id: 'track-1', name: 'Song A' }),
+    makeTrack({ id: 'track-2', name: 'Song B' }),
+    makeTrack({ id: 'track-3', name: 'Song C' }),
   ];
   render(
     <ThemeProvider theme={theme}>
@@ -115,9 +115,9 @@ describe('QueueTrackList — sortable ID contract', () => {
     it('passes track.id (not a composite) as each sortable item', () => {
       // #given
       const tracks = [
-        makeMediaTrack({ id: 'track-1', name: 'Song A' }),
-        makeMediaTrack({ id: 'track-2', name: 'Song B' }),
-        makeMediaTrack({ id: 'track-3', name: 'Song C' }),
+        makeTrack({ id: 'track-1', name: 'Song A' }),
+        makeTrack({ id: 'track-2', name: 'Song B' }),
+        makeTrack({ id: 'track-3', name: 'Song C' }),
       ];
 
       // #when
@@ -131,7 +131,7 @@ describe('QueueTrackList — sortable ID contract', () => {
 
     it('items remain stable when a track name changes (simulates ID3 enrichment)', () => {
       // #given — initial render with one track
-      const track = makeMediaTrack({ id: 'abc', name: 'filename-derived.flac' });
+      const track = makeTrack({ id: 'abc', name: 'filename-derived.flac' });
       renderList({ tracks: [track] });
 
       const itemsBefore = [...(capturedSortableContextItems[0] ?? [])];
@@ -150,7 +150,7 @@ describe('QueueTrackList — sortable ID contract', () => {
     it('items contain only the track id with no name prefix', () => {
       // #given — track whose name and id share no substring (guards against composite patterns)
       const tracks = [
-        makeMediaTrack({ id: 'xk9-unique', name: 'Completely Different Name' }),
+        makeTrack({ id: 'xk9-unique', name: 'Completely Different Name' }),
       ];
 
       // #when

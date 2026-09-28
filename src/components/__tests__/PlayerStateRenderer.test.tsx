@@ -8,7 +8,7 @@ import { useQapEnabled } from '@/hooks/useQapEnabled';
 import { useWelcomeSeen } from '@/hooks/useWelcomeSeen';
 import { STALE_SESSION_MS, type SessionSnapshot } from '@/services/sessionPersistence';
 import type { PlaybackSelection } from '@/types/domain';
-import { makeMediaTrack } from '@/test/fixtures';
+import { makeTrack } from '@/test/fixtures';
 
 vi.mock('@/hooks/useQapEnabled', () => ({
   useQapEnabled: vi.fn(),
@@ -261,7 +261,7 @@ describe('PlayerStateRenderer idle routing', () => {
     // #given
     mockUseWelcomeSeen.mockReturnValue([true, vi.fn()]);
     mockUseQapEnabled.mockReturnValue([false, vi.fn()]);
-    const resolvedTrack = makeMediaTrack({ id: 't2', name: 'Second' });
+    const resolvedTrack = makeTrack({ id: 't2', name: 'Second' });
     const onHydrate = vi.fn(async () => ({ track: resolvedTrack, skipped: false, totalFailure: false }));
     const onHydrateFired = vi.fn();
 

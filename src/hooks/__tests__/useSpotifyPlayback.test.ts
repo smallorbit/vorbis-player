@@ -51,9 +51,9 @@ vi.mock('@/services/providerRegistry', () => ({ providerRegistry: spotifyPlaybac
 
 import { useProviderPlayback } from '../useProviderPlayback';
 import { playbackStore } from '@/stores/playbackStore';
-import { makeMediaTrack as makeFixtureTrack } from '@/test/fixtures';
+import { makeTrack as makeFixtureTrack } from '@/test/fixtures';
 
-function makeMediaTrack(overrides?: Partial<MediaTrack>): MediaTrack {
+function makeTrack(overrides?: Partial<MediaTrack>): MediaTrack {
   return makeFixtureTrack({
     image: 'https://example.com/image.jpg',
     ...overrides,
@@ -62,9 +62,9 @@ function makeMediaTrack(overrides?: Partial<MediaTrack>): MediaTrack {
 
 describe('useProviderPlayback', () => {
   const mediaTracks: MediaTrack[] = [
-    makeMediaTrack({ id: 't1', name: 'Track 1', playbackRef: { provider: 'spotify' as ProviderId, ref: 'spotify:track:t1' } }),
-    makeMediaTrack({ id: 't2', name: 'Track 2', playbackRef: { provider: 'spotify' as ProviderId, ref: 'spotify:track:t2' } }),
-    makeMediaTrack({ id: 't3', name: 'Track 3', playbackRef: { provider: 'spotify' as ProviderId, ref: 'spotify:track:t3' } }),
+    makeTrack({ id: 't1', name: 'Track 1', playbackRef: { provider: 'spotify' as ProviderId, ref: 'spotify:track:t1' } }),
+    makeTrack({ id: 't2', name: 'Track 2', playbackRef: { provider: 'spotify' as ProviderId, ref: 'spotify:track:t2' } }),
+    makeTrack({ id: 't3', name: 'Track 3', playbackRef: { provider: 'spotify' as ProviderId, ref: 'spotify:track:t3' } }),
   ];
 
   beforeEach(() => {
@@ -186,8 +186,8 @@ describe('useProviderPlayback', () => {
   it('pauses previous provider when switching providers', async () => {
     // #given
     const mixedTracks: MediaTrack[] = [
-      makeMediaTrack({ id: 'd1', provider: 'dropbox' as ProviderId, playbackRef: { provider: 'dropbox' as ProviderId, ref: '/path/to/file.mp3' } }),
-      makeMediaTrack({ id: 's1', provider: 'spotify' as ProviderId, playbackRef: { provider: 'spotify' as ProviderId, ref: 'spotify:track:s1' } }),
+      makeTrack({ id: 'd1', provider: 'dropbox' as ProviderId, playbackRef: { provider: 'dropbox' as ProviderId, ref: '/path/to/file.mp3' } }),
+      makeTrack({ id: 's1', provider: 'spotify' as ProviderId, playbackRef: { provider: 'spotify' as ProviderId, ref: 'spotify:track:s1' } }),
     ];
     queueStore.replaceQueue(mixedTracks);
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import type { MediaTrack, PlaybackState, ProviderId } from '@/types/domain';
-import { makeMediaTrack } from '@/test/fixtures';
+import { makeTrack } from '@/test/fixtures';
 
 // The seek guard (#1671) rejects stale pre-seek position emits that would drag
 // the timeline cursor back after a seek. The guard lives in playbackStore's
@@ -55,7 +55,7 @@ function emit(s: PlaybackState) {
   });
 }
 
-const track: MediaTrack = makeMediaTrack({ id: 'track-1', provider: 'spotify' });
+const track: MediaTrack = makeTrack({ id: 'track-1', provider: 'spotify' });
 
 function render() {
   return renderHook(() =>

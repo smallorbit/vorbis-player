@@ -12,7 +12,7 @@ import { TrackProvider } from '@/contexts/TrackContext';
 import { VisualEffectsProvider } from '@/contexts/visualEffects';
 import { ColorProvider } from '@/contexts/ColorContext';
 import { ProviderProvider } from '@/contexts/ProviderContext';
-import { makeMediaTrack } from '@/test/fixtures';
+import { makeTrack } from '@/test/fixtures';
 import { UnavailableTrackError } from '@/providers/errors';
 import { deferred } from '@/test/asyncRace';
 import { queueStore } from '@/stores/queueStore';
@@ -145,8 +145,8 @@ const AllProviders = ({ children }: { children: React.ReactNode }) => (
 );
 
 function makeSession(overrides?: Partial<SessionSnapshot>): SessionSnapshot {
-  const trackA = makeMediaTrack({ id: 'track-a', name: 'Song A', artists: 'Artist A' });
-  const trackB = makeMediaTrack({ id: 'track-b', name: 'Song B', artists: 'Artist B' });
+  const trackA = makeTrack({ id: 'track-a', name: 'Song A', artists: 'Artist A' });
+  const trackB = makeTrack({ id: 'track-b', name: 'Song B', artists: 'Artist B' });
   return {
     selection: {
       type: 'collection',
@@ -219,9 +219,9 @@ describe('usePlayerLogic — restoreSession (hydrate) fallback', () => {
       .mockImplementationOnce(() => { throw new UnavailableTrackError('a'); })
       .mockImplementationOnce(() => { throw new UnavailableTrackError('b'); })
       .mockImplementationOnce(() => {});
-    const trackA = makeMediaTrack({ id: 'track-a' });
-    const trackB = makeMediaTrack({ id: 'track-b' });
-    const trackC = makeMediaTrack({ id: 'track-c' });
+    const trackA = makeTrack({ id: 'track-a' });
+    const trackB = makeTrack({ id: 'track-b' });
+    const trackC = makeTrack({ id: 'track-c' });
     const session = makeSession({ queueTracks: [trackA, trackB, trackC], trackId: 'track-a', trackIndex: 0 });
     const { result } = renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
 

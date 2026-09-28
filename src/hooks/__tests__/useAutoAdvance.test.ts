@@ -17,16 +17,16 @@ vi.mock('@/stores/playbackStore', () => ({
 
 import { useAutoAdvance } from '../useAutoAdvance';
 import { queueStore } from '@/stores/queueStore';
-import { makeMediaTrack } from '@/test/fixtures';
+import { makeTrack } from '@/test/fixtures';
 import { AUTO_ADVANCE_DELAY_MS } from '@/constants/timing';
 
 describe('useAutoAdvance', () => {
   let playTrack: ReturnType<typeof vi.fn>;
   let emitTrackEnded: (() => void) | null;
   const tracks = [
-    makeMediaTrack({ id: 't1' }),
-    makeMediaTrack({ id: 't2' }),
-    makeMediaTrack({ id: 't3' }),
+    makeTrack({ id: 't1' }),
+    makeTrack({ id: 't2' }),
+    makeTrack({ id: 't3' }),
   ];
 
   beforeEach(() => {
@@ -105,7 +105,7 @@ describe('useAutoAdvance', () => {
     emitTrackEnded?.();
 
     // #when — the queue is replaced before the delay elapses
-    queueStore.replaceQueue([makeMediaTrack({ id: 'x1' }), makeMediaTrack({ id: 'x2' })], { currentIndex: 0 });
+    queueStore.replaceQueue([makeTrack({ id: 'x1' }), makeTrack({ id: 'x2' })], { currentIndex: 0 });
     vi.advanceTimersByTime(AUTO_ADVANCE_DELAY_MS);
 
     // #then — the stale-index advance never fires

@@ -55,7 +55,7 @@ vi.mock('@/services/sessionPersistence', () => ({ loadSession: () => null }));
 import { useProviderPlayback } from '../useProviderPlayback';
 import { queueStore } from '@/stores/queueStore';
 import { playbackStore } from '@/stores/playbackStore';
-import { makeMediaTrack as makeFixtureTrack } from '@/test/fixtures';
+import { makeTrack as makeFixtureTrack } from '@/test/fixtures';
 
 function track(id: string, provider: ProviderId): MediaTrack {
   return makeFixtureTrack({

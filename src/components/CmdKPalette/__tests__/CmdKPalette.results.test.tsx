@@ -1,6 +1,7 @@
 import { render, screen, act, fireEvent } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { MediaCollection, MediaTrack } from '@/types/domain';
+import { makeTrack } from '@/test/fixtures';
 import type { LibrarySearchResult, SearchArtist } from '@/services/cache/librarySearch';
 
 const mockUseLibrarySearch = vi.fn();
@@ -39,16 +40,8 @@ const mockMatchMedia = (matches: boolean) => {
   });
 };
 
-const makeTrack = (id: string, name: string, artists = 'Artist'): MediaTrack => ({
-  id,
-  provider: 'spotify',
-  playbackRef: { provider: 'spotify', ref: `spotify:track:${id}` },
-  name,
-  artists,
-  album: 'Album',
-  durationMs: 200_000,
-  genres: [],
-});
+const makeSearchTrack = (id: string, name: string, artists = 'Artist'): MediaTrack =>
+  makeTrack({ id, name, artists, durationMs: 200_000 });
 
 const makeAlbum = (id: string, name: string, ownerName = 'Artist'): MediaCollection => ({
   id,
@@ -112,7 +105,7 @@ describe('CmdKPalette — categorized rendering', () => {
   it('renders all four group headings when each bucket has items', () => {
     // #given
     setSearchResult({
-      tracks: [makeTrack('t1', 'Karma Police', 'Radiohead')],
+      tracks: [makeSearchTrack('t1', 'Karma Police', 'Radiohead')],
       albums: [makeAlbum('a1', 'OK Computer', 'Radiohead')],
       artists: [makeArtist('radiohead', 'Radiohead')],
       playlists: [makePlaylist('p1', 'Chill Mix')],
@@ -133,7 +126,7 @@ describe('CmdKPalette — categorized rendering', () => {
   it('hides empty groups', () => {
     // #given only tracks have results
     setSearchResult({
-      tracks: [makeTrack('t1', 'Karma Police', 'Radiohead')],
+      tracks: [makeSearchTrack('t1', 'Karma Police', 'Radiohead')],
     });
     render(<CmdKPalette />);
     openPalette();
@@ -151,7 +144,7 @@ describe('CmdKPalette — categorized rendering', () => {
   it('renders groups in fixed order: Tracks, Albums, Artists, Playlists', () => {
     // #given
     setSearchResult({
-      tracks: [makeTrack('t1', 'A')],
+      tracks: [makeSearchTrack('t1', 'A')],
       albums: [makeAlbum('a1', 'B')],
       artists: [makeArtist('c', 'C')],
       playlists: [makePlaylist('p1', 'D')],
@@ -200,7 +193,7 @@ describe('CmdKPalette — categorized rendering', () => {
   it('renders track subtitle as the artist string', () => {
     // #given
     setSearchResult({
-      tracks: [makeTrack('t1', 'Karma Police', 'Radiohead')],
+      tracks: [makeSearchTrack('t1', 'Karma Police', 'Radiohead')],
     });
     render(<CmdKPalette />);
     openPalette();
@@ -253,7 +246,7 @@ describe('CmdKPalette — selection routing', () => {
 
   it('invokes onSelectTrack and closes the palette when a track is selected', () => {
     // #given
-    const track = makeTrack('t1', 'Karma Police', 'Radiohead');
+    const track = makeSearchTrack('t1', 'Karma Police', 'Radiohead');
     setSearchResult({ tracks: [track] });
     const onSelectTrack = vi.fn();
     render(<CmdKPalette onSelectTrack={onSelectTrack} />);
@@ -338,7 +331,7 @@ describe('CmdKPalette — selection routing', () => {
 
   it('clears the query after a selection (next open starts empty)', () => {
     // #given
-    setSearchResult({ tracks: [makeTrack('t1', 'X')] });
+    setSearchResult({ tracks: [makeSearchTrack('t1', 'X')] });
     const onSelectTrack = vi.fn();
     render(<CmdKPalette onSelectTrack={onSelectTrack} />);
     openPalette();
@@ -371,7 +364,7 @@ describe('CmdKPalette — keyboard navigation', () => {
 
   it('selects across groups when Enter is pressed (cmdk auto-selects the first match)', () => {
     // #given
-    const track = makeTrack('t1', 'Karma Police', 'Radiohead');
+    const track = makeSearchTrack('t1', 'Karma Police', 'Radiohead');
     setSearchResult({
       tracks: [track],
       albums: [makeAlbum('a1', 'OK Computer', 'Radiohead')],
@@ -395,7 +388,7 @@ describe('CmdKPalette — keyboard navigation', () => {
 
   it('moves selection across groups with ArrowDown', () => {
     // #given two groups, one item each
-    const track = makeTrack('t1', 'Karma');
+    const track = makeSearchTrack('t1', 'Karma');
     const album = makeAlbum('a1', 'OK Computer');
     setSearchResult({ tracks: [track], albums: [album] });
     const onSelectTrack = vi.fn();
