@@ -10,7 +10,7 @@ import { TrackProvider } from '@/contexts/TrackContext';
 import { VisualEffectsProvider } from '@/contexts/visualEffects';
 import { ColorProvider } from '@/contexts/ColorContext';
 import { ProviderProvider } from '@/contexts/ProviderContext';
-import { makeMediaTrack } from '@/test/fixtures';
+import { makeTrack } from '@/test/fixtures';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
 import { defined } from '@/test/defined';
 
@@ -144,8 +144,8 @@ const AllProviders = ({ children }: { children: React.ReactNode }) => (
 );
 
 function makeSession(overrides?: Partial<SessionSnapshot>): SessionSnapshot {
-  const trackA = makeMediaTrack({ id: 'track-a', name: 'Song A', artists: 'Artist A' });
-  const trackB = makeMediaTrack({ id: 'track-b', name: 'Song B', artists: 'Artist B' });
+  const trackA = makeTrack({ id: 'track-a', name: 'Song A', artists: 'Artist A' });
+  const trackB = makeTrack({ id: 'track-b', name: 'Song B', artists: 'Artist B' });
   return {
     selection: {
       type: 'collection',

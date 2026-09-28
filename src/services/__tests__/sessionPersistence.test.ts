@@ -8,16 +8,9 @@ import {
 } from '../sessionPersistence';
 import type { SessionSnapshot } from '../sessionPersistence';
 import type { PlaybackSelection } from '@/types/domain';
+import { createStorageMock } from '@/test/storageMock';
 
-const localStorageMock = (() => {
-  let store: Record<string, string> = {};
-  return {
-    getItem: (key: string) => store[key] ?? null,
-    setItem: (key: string, value: string) => { store[key] = value; },
-    removeItem: (key: string) => { delete store[key]; },
-    clear: () => { store = {}; },
-  };
-})();
+const localStorageMock = createStorageMock();
 
 const baseSelection: PlaybackSelection = {
   type: 'collection',

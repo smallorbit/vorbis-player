@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { ThemeProvider } from 'styled-components';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { theme } from '@/styles/theme';
-import { makeMediaTrack } from '@/test/fixtures';
+import { makeTrack } from '@/test/fixtures';
 import { defined } from '@/test/defined';
 
 vi.mock('@/contexts/PlayerSizingContext', () => ({
@@ -51,8 +51,8 @@ describe('QueueDrawer', () => {
     isOpen: true,
     onClose: vi.fn(),
     tracks: [
-      makeMediaTrack({ id: 'a', name: 'Track A' }),
-      makeMediaTrack({ id: 'b', name: 'Track B' }),
+      makeTrack({ id: 'a', name: 'Track A' }),
+      makeTrack({ id: 'b', name: 'Track B' }),
     ],
     currentTrackIndex: 0,
     onTrackSelect: vi.fn(),

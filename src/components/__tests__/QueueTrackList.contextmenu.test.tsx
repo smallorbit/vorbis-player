@@ -3,7 +3,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
-import { makeMediaTrack } from '@/test/fixtures';
+import { makeTrack } from '@/test/fixtures';
 
 // Render rows plainly (no real dnd-kit gestures), but keep the REAL useLongPress
 // and REAL QueueContextMenu so the trigger path is exercised end-to-end.
@@ -44,8 +44,8 @@ import QueueTrackList from '../QueueTrackList';
 
 function renderList() {
   const tracks = [
-    makeMediaTrack({ id: 'track-1', name: 'Song A' }),
-    makeMediaTrack({ id: 'track-2', name: 'Song B' }),
+    makeTrack({ id: 'track-1', name: 'Song A' }),
+    makeTrack({ id: 'track-2', name: 'Song B' }),
   ];
   render(
     <ThemeProvider theme={theme}>

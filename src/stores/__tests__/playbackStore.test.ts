@@ -55,18 +55,16 @@ vi.mock('@/services/providerRegistry', () => ({
 import { playbackStore } from '@/stores/playbackStore';
 import { queueStore } from '@/stores/queueStore';
 import type { MediaTrack } from '@/types/domain';
+import { makeTrack as makeTrackFixture } from '@/test/fixtures';
 
 function makeTrack(id: string, provider: ProviderId = 'spotify'): MediaTrack {
-  return {
+  return makeTrackFixture({
     id,
     provider,
     playbackRef: { provider, ref: `ref-${id}` },
     name: `Track ${id}`,
-    artists: 'Artist',
-    album: 'Album',
     durationMs: 200_000,
-    genres: [],
-  };
+  });
 }
 
 function playing(trackId: string, positionMs = 1000, overrides?: Partial<PlaybackState>): PlaybackState {

@@ -1,27 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { DropboxAuthAdapter } from '../dropboxAuthAdapter';
+import { createStorageMock } from '@/test/storageMock';
 
 // jsdom clears both localStorage and sessionStorage when window.location.href is assigned
 // a cross-origin URL (which beginLogin() does when redirecting to Dropbox). Replace both
 // with reliable in-memory implementations so stored values survive the redirect.
-function makeStorageMock() {
-  let store: Record<string, string> = {};
-  return {
-    getItem: (key: string): string | null => store[key] ?? null,
-    setItem: (key: string, value: string): void => {
-      store[key] = value;
-    },
-    removeItem: (key: string): void => {
-      delete store[key];
-    },
-    clear: (): void => {
-      store = {};
-    },
-  };
-}
-
-const localStorageMock = makeStorageMock();
-const sessionStorageMock = makeStorageMock();
+const localStorageMock = createStorageMock();
+const sessionStorageMock = createStorageMock();
 
 vi.stubGlobal('localStorage', localStorageMock);
 vi.stubGlobal('sessionStorage', sessionStorageMock);

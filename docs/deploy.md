@@ -39,14 +39,18 @@ requirements — no Node runtime, no serverless functions, no build hooks.
 
 ## `npm run deploy` — the deploy driver
 
-`scripts/deploy.cjs` builds `dist/` and then invokes a deploy command you
-define via environment variables. It is host-agnostic: it never references a
-specific provider.
+`scripts/deploy.ts` runs `npm run test:run`, builds once, then invokes a deploy
+command you define via environment variables. It is host-agnostic: it never
+references a specific provider.
 
 | npm script | Command | `DEPLOY_ENV` passed to target |
 |---|---|---|
-| `npm run deploy` | `node scripts/deploy.cjs --prod` | `production` |
-| `npm run deploy:preview` | `node scripts/deploy.cjs` | `preview` |
+| `npm run deploy` | `tsx scripts/deploy.ts --prod` | `production` |
+| `npm run deploy:preview` | `tsx scripts/deploy.ts` | `preview` |
+
+When `DEPLOY_TARGET` includes both `vercel` and `--prebuilt`, the driver runs
+`npx vercel build` (not `npm run build`) so the subsequent `vercel deploy
+--prebuilt` does not rebuild the app.
 
 ### Contract
 
@@ -62,8 +66,9 @@ it never assumes a default host.
 ### Examples
 
 ```bash
-# Vercel CLI
-DEPLOY_TARGET="vercel" DEPLOY_TARGET_PROD="vercel --prod" npm run deploy
+# Vercel CLI (project-linked; no global install — use npx)
+DEPLOY_TARGET="npx vercel deploy --prebuilt" \
+  DEPLOY_TARGET_PROD="npx vercel deploy --prod --prebuilt" npm run deploy
 
 # Netlify CLI
 DEPLOY_TARGET="netlify deploy --dir=dist" \

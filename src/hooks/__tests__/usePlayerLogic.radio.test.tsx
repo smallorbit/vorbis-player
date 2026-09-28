@@ -109,7 +109,7 @@ vi.mock('@/providers/registry', () => ({
   },
 }));
 
-function makeMediaTrack(overrides: Partial<MediaTrack> & { name: string; artists: string }): MediaTrack {
+function makeNamedTrack(overrides: Partial<MediaTrack> & { name: string; artists: string }): MediaTrack {
   return makeTrack({
     id: `mt-${overrides.name}-${overrides.artists}`.toLowerCase().replace(/\s+/g, '-'),
     playbackRef: { provider: 'spotify', ref: `spotify:track:${overrides.name}` },
@@ -152,8 +152,8 @@ describe('usePlayerLogic — radio start', () => {
 
   it('does not call playTrack when starting radio (preserves current track playback)', async () => {
     // #given
-    const generatedA = makeMediaTrack({ name: 'Karma Police', artists: 'Radiohead' });
-    const generatedB = makeMediaTrack({ name: 'No Surprises', artists: 'Radiohead' });
+    const generatedA = makeNamedTrack({ name: 'Karma Police', artists: 'Radiohead' });
+    const generatedB = makeNamedTrack({ name: 'No Surprises', artists: 'Radiohead' });
 
     useRadioMock.mockReturnValue({
       ...defaultRadioReturn,
@@ -184,8 +184,8 @@ describe('usePlayerLogic — radio start', () => {
   it('sets queue with current track at index 0 and generated tracks after', async () => {
     // #given
     const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead', playbackRef: { provider: 'spotify', ref: 'spotify:track:creep' } });
-    const generatedA = makeMediaTrack({ name: 'Karma Police', artists: 'Radiohead' });
-    const generatedB = makeMediaTrack({ name: 'No Surprises', artists: 'Radiohead' });
+    const generatedA = makeNamedTrack({ name: 'Karma Police', artists: 'Radiohead' });
+    const generatedB = makeNamedTrack({ name: 'No Surprises', artists: 'Radiohead' });
 
     useRadioMock.mockReturnValue({
       ...defaultRadioReturn,
@@ -222,8 +222,8 @@ describe('usePlayerLogic — radio start', () => {
   it('deduplicates seed track from generated queue when it appears in recommendations', async () => {
     // #given
     const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead', playbackRef: { provider: 'spotify', ref: 'spotify:track:creep' } });
-    const generatedIncludingSeed = makeMediaTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });
-    const generatedB = makeMediaTrack({ name: 'No Surprises', artists: 'Radiohead' });
+    const generatedIncludingSeed = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });
+    const generatedB = makeNamedTrack({ name: 'No Surprises', artists: 'Radiohead' });
 
     useRadioMock.mockReturnValue({
       ...defaultRadioReturn,
@@ -256,8 +256,8 @@ describe('usePlayerLogic — radio start', () => {
   it('deduplicates seed by normalized artist+title when recommendation has different id', async () => {
     // #given
     const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead', playbackRef: { provider: 'spotify', ref: 'spotify:track:creep' } });
-    const seedDuplicate = makeMediaTrack({ id: 'dup-1', name: 'Creep', artists: 'Radiohead' });
-    const generatedB = makeMediaTrack({ name: 'No Surprises', artists: 'Radiohead' });
+    const seedDuplicate = makeTrack({ id: 'dup-1', name: 'Creep', artists: 'Radiohead' });
+    const generatedB = makeNamedTrack({ name: 'No Surprises', artists: 'Radiohead' });
 
     useRadioMock.mockReturnValue({
       ...defaultRadioReturn,
@@ -290,7 +290,7 @@ describe('usePlayerLogic — radio start', () => {
   it('uses currentTrack as fallback seed when the queue entry does not match (Spotify flow)', async () => {
     // #given
     const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead', playbackRef: { provider: 'spotify', ref: 'spotify:track:creep' } });
-    const generatedA = makeMediaTrack({ name: 'Karma Police', artists: 'Radiohead' });
+    const generatedA = makeNamedTrack({ name: 'Karma Police', artists: 'Radiohead' });
 
     useRadioMock.mockReturnValue({
       ...defaultRadioReturn,

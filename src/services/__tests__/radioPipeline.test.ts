@@ -3,7 +3,7 @@ import type { MediaTrack } from '@/types/domain';
 import type { CatalogProvider } from '@/types/providers';
 import type { RadioResult } from '@/types/radio';
 import { runRadioPipeline } from '@/services/radioPipeline';
-import { makeMediaTrack, makeProviderDescriptor } from '@/test/fixtures';
+import { makeTrack, makeProviderDescriptor } from '@/test/fixtures';
 import { defined } from '@/test/defined';
 
 function makeRadioResult(overrides?: Partial<RadioResult>): RadioResult {
@@ -37,7 +37,7 @@ describe('runRadioPipeline', () => {
   describe('early returns', () => {
     it('returns null when generateQueue resolves to null', async () => {
       // #given
-      const seedTrack = makeMediaTrack({ id: 'seed-1', name: 'Test Track', artists: 'Test Artist' });
+      const seedTrack = makeTrack({ id: 'seed-1', name: 'Test Track', artists: 'Test Artist' });
       const catalogProvider = makeCatalogProvider([seedTrack]);
       const generateQueue = vi.fn().mockResolvedValue(null);
 
@@ -56,7 +56,7 @@ describe('runRadioPipeline', () => {
 
     it('returns null when generateQueue returns an empty queue', async () => {
       // #given
-      const seedTrack = makeMediaTrack({ id: 'seed-1', name: 'Test Track', artists: 'Test Artist' });
+      const seedTrack = makeTrack({ id: 'seed-1', name: 'Test Track', artists: 'Test Artist' });
       const catalogProvider = makeCatalogProvider([seedTrack]);
       const generateQueue = vi.fn().mockResolvedValue(makeRadioResult({ queue: [] }));
 
@@ -77,9 +77,9 @@ describe('runRadioPipeline', () => {
   describe('queue construction', () => {
     it('pins the seed track at index 0 in the returned queue', async () => {
       // #given
-      const seedTrack = makeMediaTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });
-      const rec1 = makeMediaTrack({ id: 'rec-1', name: 'Karma Police', artists: 'Radiohead' });
-      const rec2 = makeMediaTrack({ id: 'rec-2', name: 'Lucky', artists: 'Radiohead' });
+      const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });
+      const rec1 = makeTrack({ id: 'rec-1', name: 'Karma Police', artists: 'Radiohead' });
+      const rec2 = makeTrack({ id: 'rec-2', name: 'Lucky', artists: 'Radiohead' });
       const catalogProvider = makeCatalogProvider([rec1, rec2]);
       const generateQueue = vi.fn().mockResolvedValue(
         makeRadioResult({ queue: [rec1, rec2] }),
@@ -101,9 +101,9 @@ describe('runRadioPipeline', () => {
 
     it('deduplicates the seed track from recommendations by id', async () => {
       // #given
-      const seedTrack = makeMediaTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });
-      const seedDuplicate = makeMediaTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });
-      const rec = makeMediaTrack({ id: 'rec-1', name: 'Karma Police', artists: 'Radiohead' });
+      const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });
+      const seedDuplicate = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });
+      const rec = makeTrack({ id: 'rec-1', name: 'Karma Police', artists: 'Radiohead' });
       const catalogProvider = makeCatalogProvider([rec]);
       const generateQueue = vi.fn().mockResolvedValue(
         makeRadioResult({ queue: [seedDuplicate, rec] }),
@@ -126,9 +126,9 @@ describe('runRadioPipeline', () => {
 
     it('deduplicates the seed track by normalized artists||name when id differs', async () => {
       // #given
-      const seedTrack = makeMediaTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });
-      const sameTrackDifferentId = makeMediaTrack({ id: 'different-id', name: 'Creep', artists: 'Radiohead' });
-      const rec = makeMediaTrack({ id: 'rec-1', name: 'Karma Police', artists: 'Radiohead' });
+      const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });
+      const sameTrackDifferentId = makeTrack({ id: 'different-id', name: 'Creep', artists: 'Radiohead' });
+      const rec = makeTrack({ id: 'rec-1', name: 'Karma Police', artists: 'Radiohead' });
       const catalogProvider = makeCatalogProvider([rec]);
       const generateQueue = vi.fn().mockResolvedValue(
         makeRadioResult({ queue: [sameTrackDifferentId, rec] }),
@@ -154,8 +154,8 @@ describe('runRadioPipeline', () => {
   describe('catalog fallback', () => {
     it('falls back to kind:liked catalog when kind:folder returns empty array', async () => {
       // #given
-      const seedTrack = makeMediaTrack({ id: 'seed-1', name: 'Test Track', artists: 'Test Artist' });
-      const likedTrack = makeMediaTrack({ id: 'liked-1', name: 'Liked Track', artists: 'Other Artist' });
+      const seedTrack = makeTrack({ id: 'seed-1', name: 'Test Track', artists: 'Test Artist' });
+      const likedTrack = makeTrack({ id: 'liked-1', name: 'Liked Track', artists: 'Other Artist' });
       const catalogProvider = makeCatalogProvider([], [likedTrack]);
       const generateQueue = vi.fn().mockResolvedValue(
         makeRadioResult({ queue: [likedTrack] }),
@@ -185,9 +185,9 @@ describe('runRadioPipeline', () => {
   describe('search resolution', () => {
     it('resolves unmatched suggestions via searchProviders and adds non-duplicate tracks', async () => {
       // #given
-      const seedTrack = makeMediaTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });
-      const catalogTrack = makeMediaTrack({ id: 'rec-1', name: 'Karma Police', artists: 'Radiohead' });
-      const resolvedTrack = makeMediaTrack({ id: 'resolved-1', name: 'Missing Song', artists: 'Missing Artist' });
+      const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });
+      const catalogTrack = makeTrack({ id: 'rec-1', name: 'Karma Police', artists: 'Radiohead' });
+      const resolvedTrack = makeTrack({ id: 'resolved-1', name: 'Missing Song', artists: 'Missing Artist' });
       const catalogProvider = makeCatalogProvider([catalogTrack]);
 
       const searchProvider = makeProviderDescriptor({
@@ -231,9 +231,9 @@ describe('runRadioPipeline', () => {
 
     it('skips unauthenticated search providers silently', async () => {
       // #given
-      const seedTrack = makeMediaTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });
-      const catalogTrack = makeMediaTrack({ id: 'rec-1', name: 'Karma Police', artists: 'Radiohead' });
-      const resolvedTrack = makeMediaTrack({ id: 'resolved-1', name: 'Missing Song', artists: 'Missing Artist' });
+      const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });
+      const catalogTrack = makeTrack({ id: 'rec-1', name: 'Karma Police', artists: 'Radiohead' });
+      const resolvedTrack = makeTrack({ id: 'resolved-1', name: 'Missing Song', artists: 'Missing Artist' });
       const catalogProvider = makeCatalogProvider([catalogTrack]);
 
       const unauthenticatedProvider = makeProviderDescriptor({
@@ -278,9 +278,9 @@ describe('runRadioPipeline', () => {
 
     it('does not add resolved tracks that duplicate existing queue entries by artists||name', async () => {
       // #given
-      const seedTrack = makeMediaTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });
-      const catalogTrack = makeMediaTrack({ id: 'rec-1', name: 'Karma Police', artists: 'Radiohead' });
-      const duplicateResolved = makeMediaTrack({ id: 'resolved-dup', name: 'Karma Police', artists: 'Radiohead' });
+      const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });
+      const catalogTrack = makeTrack({ id: 'rec-1', name: 'Karma Police', artists: 'Radiohead' });
+      const duplicateResolved = makeTrack({ id: 'resolved-dup', name: 'Karma Police', artists: 'Radiohead' });
       const catalogProvider = makeCatalogProvider([catalogTrack]);
 
       const searchProvider = makeProviderDescriptor({
@@ -327,8 +327,8 @@ describe('runRadioPipeline', () => {
   describe('onProgress lifecycle', () => {
     it('calls onProgress in order: fetching-catalog → generating → resolving → done when unmatched exist', async () => {
       // #given
-      const seedTrack = makeMediaTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });
-      const rec = makeMediaTrack({ id: 'rec-1', name: 'Karma Police', artists: 'Radiohead' });
+      const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });
+      const rec = makeTrack({ id: 'rec-1', name: 'Karma Police', artists: 'Radiohead' });
       const catalogProvider = makeCatalogProvider([rec]);
 
       const searchProvider = makeProviderDescriptor({
@@ -372,8 +372,8 @@ describe('runRadioPipeline', () => {
 
     it('skips the resolving phase when unmatchedSuggestions is empty', async () => {
       // #given
-      const seedTrack = makeMediaTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });
-      const rec = makeMediaTrack({ id: 'rec-1', name: 'Karma Police', artists: 'Radiohead' });
+      const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });
+      const rec = makeTrack({ id: 'rec-1', name: 'Karma Police', artists: 'Radiohead' });
       const catalogProvider = makeCatalogProvider([rec]);
       const generateQueue = vi.fn().mockResolvedValue(
         makeRadioResult({
@@ -401,10 +401,10 @@ describe('runRadioPipeline', () => {
   describe('stats', () => {
     it('correctly calculates catalogMatches, searchResolved, and total', async () => {
       // #given
-      const seedTrack = makeMediaTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });
-      const catalogTrack1 = makeMediaTrack({ id: 'rec-1', name: 'Karma Police', artists: 'Radiohead' });
-      const catalogTrack2 = makeMediaTrack({ id: 'rec-2', name: 'Lucky', artists: 'Radiohead' });
-      const resolvedTrack = makeMediaTrack({ id: 'resolved-1', name: 'Missing Song', artists: 'Missing Artist' });
+      const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });
+      const catalogTrack1 = makeTrack({ id: 'rec-1', name: 'Karma Police', artists: 'Radiohead' });
+      const catalogTrack2 = makeTrack({ id: 'rec-2', name: 'Lucky', artists: 'Radiohead' });
+      const resolvedTrack = makeTrack({ id: 'resolved-1', name: 'Missing Song', artists: 'Missing Artist' });
       const catalogProvider = makeCatalogProvider([catalogTrack1, catalogTrack2]);
 
       const searchProvider = makeProviderDescriptor({
@@ -451,8 +451,8 @@ describe('runRadioPipeline', () => {
 
     it('reports zero stats when no match data is available', async () => {
       // #given
-      const seedTrack = makeMediaTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });
-      const rec = makeMediaTrack({ id: 'rec-1', name: 'Karma Police', artists: 'Radiohead' });
+      const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });
+      const rec = makeTrack({ id: 'rec-1', name: 'Karma Police', artists: 'Radiohead' });
       const catalogProvider = makeCatalogProvider([rec]);
       const generateQueue = vi.fn().mockResolvedValue(
         makeRadioResult({

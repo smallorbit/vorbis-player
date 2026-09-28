@@ -1,5 +1,6 @@
 import 'fake-indexeddb/auto';
 import '@testing-library/jest-dom';
+import { createStorageMock } from '@/test/storageMock';
 
 // Mock environment variables
 Object.defineProperty(import.meta, 'env', {
@@ -13,26 +14,14 @@ Object.defineProperty(import.meta, 'env', {
   writable: true
 });
 
-// Mock localStorage
-const localStorageMock = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
-};
+const localStorageMock = createStorageMock();
 Object.defineProperty(window, 'localStorage', {
-  value: localStorageMock
+  value: localStorageMock,
 });
 
-// Mock sessionStorage
-const sessionStorageMock = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
-};
+const sessionStorageMock = createStorageMock();
 Object.defineProperty(window, 'sessionStorage', {
-  value: sessionStorageMock
+  value: sessionStorageMock,
 });
 
 // Mock window.location
@@ -112,12 +101,6 @@ beforeEach(async () => {
 // Clean up after each test
 afterEach(() => {
   vi.clearAllMocks();
-  localStorageMock.getItem.mockClear();
-  localStorageMock.setItem.mockClear();
-  localStorageMock.removeItem.mockClear();
-  localStorageMock.clear.mockClear();
-  sessionStorageMock.getItem.mockClear();
-  sessionStorageMock.setItem.mockClear();
-  sessionStorageMock.removeItem.mockClear();
-  sessionStorageMock.clear.mockClear();
+  localStorageMock.clear();
+  sessionStorageMock.clear();
 });

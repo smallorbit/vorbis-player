@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useRadio } from '../useRadio';
-import { makeMediaTrack } from '@/test/fixtures';
+import { makeTrack } from '@/test/fixtures';
 import { createDeferredFn } from '@/test/asyncRace';
 import type { MediaTrack } from '@/types/domain';
 import type { RadioResult, RadioSeed } from '@/types/radio';
@@ -22,7 +22,7 @@ import type { RadioMatchStats } from '@/types/radio';
 const seed: RadioSeed = { type: 'track', artist: 'Radiohead', track: 'Creep' };
 
 function track(id: string, name: string): MediaTrack {
-  return makeMediaTrack({ id, name, provider: 'spotify' });
+  return makeTrack({ id, name, provider: 'spotify' });
 }
 
 function matchStats(matched: number): RadioMatchStats {

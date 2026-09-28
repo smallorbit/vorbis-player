@@ -1,18 +1,17 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { queueStore } from '@/stores/queueStore';
 import type { MediaTrack } from '@/types/domain';
+import { makeTrack as makeTrackFixture } from '@/test/fixtures';
 
 function makeTrack(id: string, provider: 'spotify' | 'dropbox' = 'spotify'): MediaTrack {
-  return {
+  return makeTrackFixture({
     id,
     provider,
     playbackRef: { provider, ref: `ref-${id}` },
     name: `Track ${id}`,
-    artists: 'Artist',
     album: 'Album',
     durationMs: 1000,
-    genres: [],
-  };
+  });
 }
 
 const t = (ids: string[]) => ids.map((id) => makeTrack(id));

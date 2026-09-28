@@ -54,17 +54,12 @@ env var, `npm run deploy`, and staging PR deploys), see
 
 ### Option B: Deploy via Vercel CLI
 
-1. **Install Vercel CLI**:
+1. **Login to Vercel** (uses `npx`; no global CLI install):
    ```bash
-   npm install -g vercel
+   npx vercel login
    ```
 
-2. **Login to Vercel**:
-   ```bash
-   vercel login
-   ```
-
-3. **Deploy**:
+2. **Deploy**:
    ```bash
    # Deploy preview (optional)
    npm run deploy:preview

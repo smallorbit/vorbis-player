@@ -13,23 +13,26 @@ import type { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import { vi } from 'vitest';
 
 export function makeTrack(overrides: Partial<MediaTrack> = {}): MediaTrack {
-  return {
+  const base = {
     id: 'track-1',
-    provider: 'spotify',
-    playbackRef: { provider: 'spotify', ref: 'spotify:track:track-1' },
+    provider: 'spotify' as const,
     name: 'Test Track',
     artists: 'Test Artist',
     album: 'Test Album',
     albumId: 'album-1',
     durationMs: 210000,
     image: 'https://i.scdn.co/image/test',
-    genres: [],
+    genres: [] as string[],
     ...overrides,
   };
-}
-
-export function makeMediaTrack(overrides: Partial<MediaTrack> = {}): MediaTrack {
-  return makeTrack(overrides);
+  const provider = base.provider;
+  const id = base.id;
+  const playbackRef =
+    overrides.playbackRef ??
+    (provider === 'dropbox'
+      ? { provider, ref: `/music/${id}.mp3` }
+      : { provider, ref: `spotify:track:${id}` });
+  return { ...base, playbackRef };
 }
 
 export function makeCollection(

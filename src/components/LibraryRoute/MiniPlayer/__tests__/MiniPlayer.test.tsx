@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
 import type { MediaTrack } from '@/types/domain';
+import { makeTrack } from '@/test/fixtures';
 
 const { mockCurrentTrack } = vi.hoisted(() => ({
   mockCurrentTrack: vi.fn<() => { currentTrack: MediaTrack | null }>(),
@@ -13,19 +14,6 @@ vi.mock('@/contexts/TrackContext', () => ({
 }));
 
 import MiniPlayer, { type MiniPlayerProps } from '../MiniPlayer';
-
-function makeTrack(overrides: Partial<MediaTrack> = {}): MediaTrack {
-  return {
-    id: 't1',
-    name: 'Test Song',
-    artists: 'Test Artist',
-    duration_ms: 1000,
-    image: 'https://example.com/art.png',
-    provider: 'spotify',
-    uri: 'spotify:track:t1',
-    ...overrides,
-  } as MediaTrack;
-}
 
 function renderMP(propsOverrides: Partial<MiniPlayerProps> = {}) {
   const props: MiniPlayerProps = {
@@ -69,7 +57,7 @@ describe('MiniPlayer', () => {
     renderMP();
 
     // #then
-    expect(screen.getByText('Test Song')).toBeInTheDocument();
+    expect(screen.getByText('Test Track')).toBeInTheDocument();
     expect(screen.getByText('Test Artist')).toBeInTheDocument();
   });
 

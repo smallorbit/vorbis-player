@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { DropboxPlaybackAdapter } from '../dropboxPlaybackAdapter';
 import type { DropboxCatalogAdapter } from '../dropboxCatalogAdapter';
-import { makeMediaTrack } from '@/test/fixtures';
+import { makeTrack } from '@/test/fixtures';
 import type { PlaybackState } from '@/types/domain';
 import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
 import { defined } from '@/test/defined';
@@ -124,7 +124,7 @@ describe('DropboxPlaybackAdapter', () => {
 
   it('playTrack calls catalog.getTemporaryLink and sets audio src', async () => {
     // #given
-    const track = makeMediaTrack({ id: 'track-1', name: 'Test Track', artists: 'Test Artist' });
+    const track = makeTrack({ id: 'track-1', name: 'Test Track', artists: 'Test Artist' });
     await adapter.initialize();
 
     // #when
@@ -138,7 +138,7 @@ describe('DropboxPlaybackAdapter', () => {
 
   it('seek sets audio.currentTime in seconds', async () => {
     // #given
-    const track = makeMediaTrack({ id: 'track-1', name: 'Test Track', artists: 'Test Artist' });
+    const track = makeTrack({ id: 'track-1', name: 'Test Track', artists: 'Test Artist' });
     await adapter.initialize();
     await adapter.playTrack(track);
 
@@ -151,7 +151,7 @@ describe('DropboxPlaybackAdapter', () => {
 
   it('subscribe receives state updates and returns unsubscribe', async () => {
     // #given
-    const track = makeMediaTrack({ id: 'track-1', name: 'Test Track', artists: 'Test Artist' });
+    const track = makeTrack({ id: 'track-1', name: 'Test Track', artists: 'Test Artist' });
     const listener = vi.fn<(state: PlaybackState | null) => void>();
 
     await adapter.initialize();
@@ -185,7 +185,7 @@ describe('DropboxPlaybackAdapter', () => {
 
   it('pause calls audio.pause', async () => {
     // #given
-    const track = makeMediaTrack({ id: 'track-1', name: 'Test Track', artists: 'Test Artist' });
+    const track = makeTrack({ id: 'track-1', name: 'Test Track', artists: 'Test Artist' });
     await adapter.initialize();
     await adapter.playTrack(track);
 
@@ -198,7 +198,7 @@ describe('DropboxPlaybackAdapter', () => {
 
   it('resume calls audio.play', async () => {
     // #given
-    const track = makeMediaTrack({ id: 'track-1', name: 'Test Track', artists: 'Test Artist' });
+    const track = makeTrack({ id: 'track-1', name: 'Test Track', artists: 'Test Artist' });
     await adapter.initialize();
     await adapter.playTrack(track);
     mockAudio.play.mockClear();
@@ -231,7 +231,7 @@ describe('DropboxPlaybackAdapter', () => {
 
   it('getLastPlayTime returns the timestamp of the last playTrack call', async () => {
     // #given
-    const track = makeMediaTrack({ id: 'track-1', name: 'Test Track', artists: 'Test Artist' });
+    const track = makeTrack({ id: 'track-1', name: 'Test Track', artists: 'Test Artist' });
     await adapter.initialize();
 
     // #when
@@ -247,7 +247,7 @@ describe('DropboxPlaybackAdapter', () => {
 
   it('returns valid PlaybackState after playTrack', async () => {
     // #given
-    const track = makeMediaTrack({ id: 'track-1', name: 'Test Track', artists: 'Test Artist' });
+    const track = makeTrack({ id: 'track-1', name: 'Test Track', artists: 'Test Artist' });
     await adapter.initialize();
     mockAudio.paused = false;
     mockAudio.ended = false;
@@ -273,7 +273,7 @@ describe('DropboxPlaybackAdapter', () => {
 
     it('emits paused state synchronously with track durationMs, then updates to audio durationMs after metadata loads', async () => {
       // #given — track.durationMs = 300_000 (cached); real audio = 200s = 200_000ms
-      const track = makeMediaTrack({ id: 'track-hydrate', durationMs: 300_000 });
+      const track = makeTrack({ id: 'track-hydrate', durationMs: 300_000 });
       const listener = vi.fn();
       await adapter.initialize();
       adapter.subscribe(listener);
@@ -314,7 +314,7 @@ describe('DropboxPlaybackAdapter', () => {
       // Subscribers must never see { positionMs: 0, durationMs: <real> } during that window.
 
       // #given — saved position 45s; real audio 200s; currentTime NOT pre-set (mirrors real DOM)
-      const track = makeMediaTrack({ id: 'track-noflicker', durationMs: 300_000 });
+      const track = makeTrack({ id: 'track-noflicker', durationMs: 300_000 });
       const listener = vi.fn();
       await adapter.initialize();
       adapter.subscribe(listener);
@@ -341,7 +341,7 @@ describe('DropboxPlaybackAdapter', () => {
 
     it('omits durationMs metadata when audio.duration is Infinity', async () => {
       // #given — track.durationMs = 180_000; audio stream has Infinity duration (live)
-      const track = makeMediaTrack({ id: 'track-live', durationMs: 180_000 });
+      const track = makeTrack({ id: 'track-live', durationMs: 180_000 });
       const listener = vi.fn();
       await adapter.initialize();
       adapter.subscribe(listener);
@@ -375,11 +375,11 @@ describe('DropboxPlaybackAdapter', () => {
 
     it('does not clobber audio.src when a track is already loaded (next-track prewarm)', async () => {
       // #given
-      const current = makeMediaTrack({
+      const current = makeTrack({
         id: 'current',
         playbackRef: { provider: 'dropbox', ref: '/Music/current.mp3' },
       });
-      const upcoming = makeMediaTrack({
+      const upcoming = makeTrack({
         id: 'upcoming',
         playbackRef: { provider: 'dropbox', ref: '/Music/upcoming.mp3' },
       });
@@ -399,11 +399,11 @@ describe('DropboxPlaybackAdapter', () => {
 
     it('cancels a pending prepareTrack when a new src is set by playTrack', async () => {
       // #given
-      const trackA = makeMediaTrack({
+      const trackA = makeTrack({
         id: 'track-a',
         playbackRef: { provider: 'dropbox', ref: '/Music/A/01.mp3' },
       });
-      const trackB = makeMediaTrack({
+      const trackB = makeTrack({
         id: 'track-b',
         playbackRef: { provider: 'dropbox', ref: '/Music/B/01.mp3' },
       });
@@ -434,7 +434,7 @@ describe('DropboxPlaybackAdapter', () => {
     it('emits synchronous hydrate state even when getTemporaryLink later rejects', async () => {
       // #given — audio loading is best-effort; the synchronous UI emit still
       // fires so the seek bar shows the saved position, even if audio fails to load.
-      const track = makeMediaTrack({
+      const track = makeTrack({
         id: 'track-fail',
         playbackRef: { provider: 'dropbox', ref: '/Music/fail.mp3' },
         durationMs: 210_000,
@@ -465,7 +465,7 @@ describe('DropboxPlaybackAdapter', () => {
   describe('probePlayable', () => {
     it('returns true when getTemporaryLink resolves', async () => {
       // #given — live file: catalog hands back a fresh download link
-      const track = makeMediaTrack({
+      const track = makeTrack({
         id: 'track-ok',
         playbackRef: { provider: 'dropbox', ref: '/Music/ok.mp3' },
       });
@@ -481,7 +481,7 @@ describe('DropboxPlaybackAdapter', () => {
 
     it('returns false when getTemporaryLink rejects (file moved/gone)', async () => {
       // #given — catalog couldn't find the file (moved/renamed/deleted)
-      const track = makeMediaTrack({
+      const track = makeTrack({
         id: 'track-gone',
         playbackRef: { provider: 'dropbox', ref: '/Music/gone.mp3' },
       });
@@ -499,7 +499,7 @@ describe('DropboxPlaybackAdapter', () => {
     it('rethrows AuthExpiredError so the caller can abort hydrate', async () => {
       // #given — Dropbox refresh-token exchange failed mid-probe
       const { AuthExpiredError } = await import('@/providers/errors');
-      const track = makeMediaTrack({
+      const track = makeTrack({
         id: 'track-auth',
         playbackRef: { provider: 'dropbox', ref: '/Music/auth.mp3' },
       });
@@ -515,7 +515,7 @@ describe('DropboxPlaybackAdapter', () => {
   describe('playTrack error recovery', () => {
     it('rejects with UnavailableTrackError when the audio element fires error during initial play', async () => {
       // #given — audio element fails to decode/load; play() resolves but error event fires
-      const track = makeMediaTrack({
+      const track = makeTrack({
         id: 'track-broken',
         name: 'Broken Track',
         playbackRef: { provider: 'dropbox', ref: '/Music/broken.mp3' },
@@ -532,7 +532,7 @@ describe('DropboxPlaybackAdapter', () => {
 
     it('rejects with UnavailableTrackError when audio.play() itself rejects', async () => {
       // #given — autoplay policy blocks play, or some other terminal play() rejection
-      const track = makeMediaTrack({
+      const track = makeTrack({
         id: 'track-blocked',
         name: 'Blocked Track',
         playbackRef: { provider: 'dropbox', ref: '/Music/blocked.mp3' },
@@ -546,7 +546,7 @@ describe('DropboxPlaybackAdapter', () => {
 
     it('rethrows AuthExpiredError from catalog.getTemporaryLink unchanged', async () => {
       // #given — Dropbox refresh-token exchange failed before audio src is assigned
-      const track = makeMediaTrack({
+      const track = makeTrack({
         id: 'track-auth',
         name: 'Auth Track',
         playbackRef: { provider: 'dropbox', ref: '/Music/auth.mp3' },
@@ -562,12 +562,12 @@ describe('DropboxPlaybackAdapter', () => {
 
     it('ignores a stale error event after a superseding playTrack', async () => {
       // #given — first playTrack pending; a second playTrack supersedes it via prepareGeneration
-      const trackA = makeMediaTrack({
+      const trackA = makeTrack({
         id: 'track-a',
         name: 'Track A',
         playbackRef: { provider: 'dropbox', ref: '/Music/a.mp3' },
       });
-      const trackB = makeMediaTrack({
+      const trackB = makeTrack({
         id: 'track-b',
         name: 'Track B',
         playbackRef: { provider: 'dropbox', ref: '/Music/b.mp3' },
