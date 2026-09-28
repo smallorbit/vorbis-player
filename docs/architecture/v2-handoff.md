@@ -2,7 +2,7 @@
 
 **Initiative label:** [`project:vorbis-player-architecture-v2`](https://github.com/smallorbit/vorbis-player/labels/project%3Avorbis-player-architecture-v2) (RFC 0001)  
 **Working mode:** **one workstream (epic) at a time**; within an epic, **one child issue at a time**.  
-**Updated:** 2026-09-27 (after #1734)
+**Updated:** 2026-09-27 (after #1735)
 
 Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tier-codebase.md`, which is **not yet on `main`** — landing that RFC is part of **[WS11](https://github.com/smallorbit/vorbis-player/issues/1757)**.
 
@@ -15,7 +15,7 @@ Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tie
 | WS1 | [#1685](https://github.com/smallorbit/vorbis-player/issues/1685) Neutral domain model | **Done** |
 | WS2 | [#1692](https://github.com/smallorbit/vorbis-player/issues/1692) PlaybackStore + QueueStore | **Done** |
 | WS3 | [#1699](https://github.com/smallorbit/vorbis-player/issues/1699) State, persistence & events | **Done** |
-| WS10 | [#1729](https://github.com/smallorbit/vorbis-player/issues/1729) Close the toolchain blind spots | **In progress** (5/8) |
+| WS10 | [#1729](https://github.com/smallorbit/vorbis-player/issues/1729) Close the toolchain blind spots | **In progress** (6/8) |
 | WS4–WS9, WS11–WS12 | Reliability → DevBug | Open (do not start until WS10 closes) |
 
 Pre-initiative foundations already on `main`: async-race harness, honest e2e, full CI gate (coverage + knip + audit ≥ high).
@@ -24,7 +24,7 @@ Pre-initiative foundations already on `main`: async-race harness, honest e2e, fu
 
 ## Do this next
 
-### Immediate: continue WS10 at #1735
+### Immediate: continue WS10 at #1736
 
 Epic: **[#1729 — Close the toolchain blind spots](https://github.com/smallorbit/vorbis-player/issues/1729)**  
 Principle: P3 — conventions are machine-enforced or they are wishes.
@@ -36,8 +36,8 @@ Principle: P3 — conventions are machine-enforced or they are wishes.
 | 1732 | Turn on type-aware lint and finish the strictness epic | **Closed** | PR [#1785](https://github.com/smallorbit/vorbis-player/pull/1785) |
 | 1733 | Declare and enforce the layering order | **Closed** | PR [#1787](https://github.com/smallorbit/vorbis-player/pull/1787) — F76, F93 (see merged context below) |
 | 1734 | Make e2e run against the prod build with a real Dropbox snapshot | **Closed** | F74, F71, F83 — see merged context below |
-| **1735** | **Add boundary tests for the Spotify SDK/API layer** | **← NEXT** | |
-| 1736 | Clean up test infrastructure and scripts | Open | |
+| 1735 | Add boundary tests for the Spotify SDK/API layer | **Closed** | F53 — see merged context below |
+| **1736** | **Clean up test infrastructure and scripts** | **← NEXT** | |
 | 1737 | Set the dependency-upgrade policy | Open | Routine `npm update` already landed in #1731; this issue is the written policy + the React 19 / Vite 8 / Vitest 4 RFC (not piecemeal). Remaining moderate vitest advisories need that major. |
 
 **WS10 exit criteria** (from epic): `tsc -b` covers 100% of TS in the repo; CI fails on coverage regression, knip findings, audit ≥ high, circular value imports, empty e2e run, chunk misplacement.
@@ -117,9 +117,16 @@ Make e2e run against the prod build with a synthetic Dropbox snapshot (F74, F71,
 - **Fixtures:** committed synthetic `dropbox-snapshot.json`; `require-snapshot.ts` hard-fails on hollow fixtures (no silent skips)
 - **Unit:** `useProviderPlayback.transitionMatrix.test.ts` — cross-provider pause / driving-provider matrix
 
-## Context for #1735 (next implementation)
+## Context for #1735 (merged)
 
-**Issue:** [#1735 — Add boundary tests for the Spotify SDK/API layer](https://github.com/smallorbit/vorbis-player/issues/1735).
+Add boundary tests for the Spotify SDK/API layer (F53).
+
+- **`spotifyPlayerPlayback.test.ts`:** fetch boundary — shuffle-once, play payload, 429 + `Retry-After`, transfer retry/backoff, device-active polling
+- **`spotifyPlayer.boundary.test.ts`:** stub `window.Spotify.Player` — transfer TTL vs `force`, `waitForPlaybackOrResume` settle-once + timeout fallback
+
+## Context for #1736 (next implementation)
+
+**Issue:** [#1736 — Clean up test infrastructure and scripts](https://github.com/smallorbit/vorbis-player/issues/1736).
 
 Do **not** start WS4–WS9 / WS11–WS12 until WS10 closes.
 
@@ -139,7 +146,7 @@ Do **not** start WS4–WS9 / WS11–WS12 until WS10 closes.
 
 - Label board: https://github.com/smallorbit/vorbis-player/labels/project%3Avorbis-player-architecture-v2  
 - WS10 epic: https://github.com/smallorbit/vorbis-player/issues/1729  
-- Next issue: https://github.com/smallorbit/vorbis-player/issues/1735  
+- Next issue: https://github.com/smallorbit/vorbis-player/issues/1736  
 - Coverage thresholds: `vite.config.ts` (`test.coverage.thresholds`)  
 - knip config: `knip.json`  
 - Test tsconfig: `tsconfig.test.json`  
