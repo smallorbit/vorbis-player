@@ -77,7 +77,7 @@ Optional WS2 leftovers if they surface: [#1770](https://github.com/smallorbit/vo
 Wire coverage ratchet, knip, and `npm audit` into CI (F51, F52). On `main` via [#1783](https://github.com/smallorbit/vorbis-player/pull/1783).
 
 - CI `checks` job: `npm run knip`, `npm run audit:ci` (`--audit-level=high`), `npm run test:coverage` (replaces `test:run`)
-- Coverage: `all: true` over `src/**/*.{ts,tsx}`; per-directory floors in `vite.config.ts` (ratchet-only). Excludes `src/main.tsx` and `src/workers/**`. **Set function floors from the GitHub runner** — e.g. `src/contexts` functions measured 60.78% on CI vs ~75% locally.
+- Coverage: `all: true` over `src/**/*.{ts,tsx}`; excludes `src/main.tsx` and `src/workers/**`. Per-directory **threshold floors removed** (report-only); historically ratcheted in `vite.config.ts` until #1737 follow-up.
 - knip: `ignoreExportsUsedInFile` for types; ambient `.d.ts` ignored; dead re-exports removed so `npx knip` is clean
 - Audit: `npm update` + `sharp@^0.35.4`. Remaining vitest advisories are **moderate** → #1737
 
@@ -90,7 +90,6 @@ Turn on type-aware lint and finish the strictness epic (F85, F32). On `main` via
 - `eslint.config.js`: `projectService` on production `src/**/*.{ts,tsx}` (excludes `__tests__`, `src/test`) — `no-floating-promises`, `no-unsafe-*`, `no-non-null-assertion`
 - `vorbis/props-explicit-undefined`: optional Props fields must not include `| null` (F32)
 - Shared parsers: `oauthTokenResponse.ts`, `authPostMessage.ts`, `spotifyApiErrorBody.ts` (+ unit tests)
-- Services coverage floor ratchet adjusted 78→77 after typed JSON guards (#1732)
 
 **Deferred (do not expand #1734 to cover unless required):** extend the same type-aware ESLint block to `src/**/__tests__/**` and `src/test/**` once layering is stable.
 
@@ -157,7 +156,7 @@ Set the dependency-upgrade policy (F94).
 - Dependency policy: [`docs/dependency-upgrades.md`](../dependency-upgrades.md)  
 - Toolchain RFC: [`docs/rfcs/0002-coordinated-toolchain-upgrade.md`](../rfcs/0002-coordinated-toolchain-upgrade.md)  
 - Suggested next epic: [WS6 a11y #1721](https://github.com/smallorbit/vorbis-player/issues/1721)  
-- Coverage thresholds: `vite.config.ts` (`test.coverage.thresholds`)  
+- Coverage config: `vite.config.ts` (`test.coverage`, report-only)  
 - knip config: `knip.json`  
 - Test tsconfig: `tsconfig.test.json`  
 - E2E tsconfig: `tsconfig.e2e.json`  

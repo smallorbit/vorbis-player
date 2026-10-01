@@ -26,7 +26,7 @@ Tailwind 4, ESLint 10, and TypeScript 7 are also multiple majors behind (F94). T
    npm run audit:ci
    ```
 3. Commit **both** `package.json` and `package-lock.json` when ranges change.
-4. CI already runs coverage ratchet, knip, and `audit:ci` (`--audit-level=high`) — see [#1731](https://github.com/smallorbit/vorbis-player/pull/1783).
+4. CI runs unit tests with coverage (informational report only), knip, and `audit:ci` (`--audit-level=high`) — see [#1731](https://github.com/smallorbit/vorbis-player/pull/1783).
 
 ### Security advisories
 

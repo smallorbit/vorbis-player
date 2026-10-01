@@ -5,7 +5,7 @@
 | **Status** | Proposed |
 | **Authors** | WS10 / [#1737](https://github.com/smallorbit/vorbis-player/issues/1737) |
 | **Findings** | F94 (RFC 0001) |
-| **Depends on** | WS10 exit criteria met ([#1729](https://github.com/smallorbit/vorbis-player/issues/1729)): full-repo `tsc -b`, CI coverage/knip/audit/circular/e2e/chunk gates |
+| **Depends on** | WS10 exit criteria met ([#1729](https://github.com/smallorbit/vorbis-player/issues/1729)): full-repo `tsc -b`, CI unit tests/knip/audit/circular/e2e/chunk gates |
 
 ## Summary
 
@@ -61,7 +61,7 @@ Production runtime deps (Radix, styled-components, dnd-kit, etc.) should be **re
 
 Order **inside the stack** (each step keeps CI green):
 
-1. **Vitest + coverage + `@vitest/ui`** — update `vite.config.ts` `test` block, coverage thresholds if paths change, fix pool/globals breaking changes.
+1. **Vitest + coverage + `@vitest/ui`** — update `vite.config.ts` `test` block, fix pool/globals breaking changes.
 2. **Vite + `@vitejs/plugin-react`** — align `build`, `server`, `preview`, and e2e `build:e2e` scripts; re-verify manual chunks and `check:circular`.
 3. **React 19 + types** — bump `react`, `react-dom`, `@types/react`, `@types/react-dom`; address StrictMode/double-effect tests if behavior changes; run RTL tests with `@testing-library/react` peer bump.
 4. **Tailwind 4** (if not deferred by explicit team decision) — postcss/tailwind config, shadcn token CSS, verify Radix primitives unchanged visually via capture or spot-check.
@@ -79,7 +79,7 @@ Required before merge:
 npx tsc -b --noEmit
 npm run lint
 npm run test:run
-npm run test:coverage    # thresholds must not regress
+npm run test:coverage    # informational report
 npm run knip
 npm run audit:ci
 npm run check:circular
