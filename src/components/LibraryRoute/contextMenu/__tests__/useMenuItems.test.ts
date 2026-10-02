@@ -149,12 +149,12 @@ describe('useMenuItems', () => {
     ]);
   });
 
-  it('disables Play Next and Start Radio when handlers are undefined', () => {
+  it('disables Play Next when handler is undefined; Start Radio stays disabled until collection radio ships', () => {
     // #when
     const { result } = renderHook(() =>
       useMenuItems(
         makeRequest({ kind: 'playlist' }),
-        makeCallbacks({ onPlayNext: undefined, onStartRadioForCollection: undefined }),
+        makeCallbacks({ onPlayNext: undefined }),
       ),
     );
 

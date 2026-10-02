@@ -3,7 +3,7 @@ import { usePinnedItems } from '@/hooks/usePinnedItems';
 import { useRecentlyPlayedCollections } from '@/hooks/useRecentlyPlayedCollections';
 import { useLikedSection } from '../hooks';
 import type { ContextMenuRequest } from '../types';
-import type { CollectionRef, CollectionSelection, MediaTrack, ProviderId } from '@/types/domain';
+import type { CollectionSelection, MediaTrack, ProviderId } from '@/types/domain';
 import { useLikedTracksForProvider } from './useLikedTracksForProvider';
 import { useAlbumSavedStatus } from './useAlbumSavedStatus';
 import { useQueueLikedFromCollection } from './useQueueLikedFromCollection';
@@ -23,7 +23,6 @@ export interface UseMenuItemsCallbacks {
   onPlayCollection: (selection: CollectionSelection) => void;
   onAddToQueue?: ((selection: CollectionSelection) => void | Promise<unknown>) | undefined;
   onPlayNext?: ((selection: CollectionSelection) => void) | undefined;
-  onStartRadioForCollection?: ((ref: CollectionRef) => void) | undefined;
   onPlayLikedTracks: (
     tracks: MediaTrack[],
     selection: CollectionSelection,
@@ -40,7 +39,6 @@ export function useMenuItems(
     onPlayCollection,
     onAddToQueue,
     onPlayNext,
-    onStartRadioForCollection,
     onPlayLikedTracks,
     onQueueLikedTracks,
   } = callbacks;
@@ -68,7 +66,8 @@ export function useMenuItems(
   );
 
   const playNextDisabled = !onPlayNext;
-  const startRadioDisabled = !onStartRadioForCollection;
+  // Collection-scoped radio is not wired yet (#1739 — removed dead five-file prop chain).
+  const startRadioDisabled = true;
 
   return useMemo<MenuItem[]>(() => {
     if (!request) return [];
@@ -129,11 +128,7 @@ export function useMenuItems(
         }
       }),
       onTogglePin: closeAfter(isPinned ? 'Unpin' : 'Pin', togglePin),
-      onStartRadio: closeAfter('Start Radio', () => {
-        if (onStartRadioForCollection && request.selection.type === 'collection' && (isPlaylistKind || isAlbumKind)) {
-          onStartRadioForCollection(request.selection.ref);
-        }
-      }),
+      onStartRadio: closeAfter('Start Radio', () => {}),
       isPinned,
       startRadioDisabled: startRadioDisabled || isLikedKind,
       playNextDisabled: playNextDisabled || isLikedKind,
@@ -169,7 +164,6 @@ export function useMenuItems(
     onPlayCollection,
     onAddToQueue,
     onPlayNext,
-    onStartRadioForCollection,
     onPlayLikedTracks,
     loadLikedTracks,
     removeRecent,

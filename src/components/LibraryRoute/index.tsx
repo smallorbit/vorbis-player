@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
-import type { AddToQueueResult, CollectionRef, CollectionSelection, MediaTrack } from '@/types/domain';
+import type { AddToQueueResult, CollectionSelection, MediaTrack } from '@/types/domain';
+import { usePlaybackActions } from '@/contexts/PlaybackActionsContext';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
 import { LibraryRouteRoot, MobileLayout, DesktopLayout } from './styled';
 import HomeView from './views/HomeView';
@@ -24,17 +25,10 @@ interface LibraryRouteProps {
   onResume?: (() => void) | undefined;
   lastSession: SessionSnapshot | null;
   onPlayNext?: ((selection: CollectionSelection) => void) | undefined;
-  onStartRadioForCollection?: ((ref: CollectionRef) => void) | undefined;
   initialSearchQuery?: string | undefined;
   isPlaying: boolean;
   isRadioAvailable?: boolean | undefined;
   isRadioGenerating?: boolean | undefined;
-  onMiniPlay: () => void;
-  onMiniPause: () => void;
-  onMiniNext: () => void;
-  onMiniPrevious: () => void;
-  onMiniExpand: () => void;
-  onMiniStartRadio?: (() => void) | undefined;
   onClose?: (() => void) | undefined;
 }
 
@@ -46,20 +40,21 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
   lastSession,
   onAddToQueue,
   onPlayNext,
-  onStartRadioForCollection,
   initialSearchQuery,
   isPlaying,
   isRadioAvailable,
   isRadioGenerating,
-  onMiniPlay,
-  onMiniPause,
-  onMiniNext,
-  onMiniPrevious,
-  onMiniExpand,
-  onMiniStartRadio,
   onClose,
 }) => {
   const { isMobile } = usePlayerSizingContext();
+  const {
+    onPlay: onMiniPlay,
+    onPause: onMiniPause,
+    onNext: onMiniNext,
+    onPrevious: onMiniPrevious,
+    onExpand: onMiniExpand,
+    onStartRadio: onMiniStartRadio,
+  } = usePlaybackActions();
   const [view, setView] = useState<LibraryRouteView>('home');
   // initialSearchQuery seeds the search input once on mount. Subsequent prop changes
   // are ignored — safe today because AudioPlayer clears pendingLibraryQueryRef before
@@ -177,7 +172,6 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
         onPlayCollection={handleSelectCollection}
         onAddToQueue={handleAddToQueueAction}
         onPlayNext={onPlayNext}
-        onStartRadioForCollection={onStartRadioForCollection}
         onPlayLikedTracks={handlePlayLikedFromMenu}
         onQueueLikedTracks={onQueueLikedTracks}
       />

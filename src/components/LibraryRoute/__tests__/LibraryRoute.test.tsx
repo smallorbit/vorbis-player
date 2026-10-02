@@ -5,6 +5,8 @@ import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
 import LibraryRoute from '../index';
 import { makePlayerSizingValue, makeTrack } from '@/test/fixtures';
+import { withPlaybackActions } from '@/test/playbackActions';
+import { noopPlaybackActions, type PlaybackActionsValue } from '@/contexts/PlaybackActionsContext';
 
 vi.mock('@/contexts/PlayerSizingContext', () => ({
   usePlayerSizingContext: vi.fn(),
@@ -77,18 +79,17 @@ const baseProps: React.ComponentProps<typeof LibraryRoute> = {
   onAddToQueue: vi.fn().mockResolvedValue(null),
   lastSession: null,
   isPlaying: false,
-  onMiniPlay: vi.fn(),
-  onMiniPause: vi.fn(),
-  onMiniNext: vi.fn(),
-  onMiniPrevious: vi.fn(),
-  onMiniExpand: vi.fn(),
 };
 
-function renderRoute(propsOverrides: Partial<React.ComponentProps<typeof LibraryRoute>> = {}) {
+function renderRoute(
+  propsOverrides: Partial<React.ComponentProps<typeof LibraryRoute>> = {},
+  playbackOverrides: Partial<PlaybackActionsValue> = {},
+) {
   const props: React.ComponentProps<typeof LibraryRoute> = { ...baseProps, ...propsOverrides };
+  const playback: PlaybackActionsValue = { ...noopPlaybackActions, ...playbackOverrides };
   return render(
     <ThemeProvider theme={theme}>
-      <LibraryRoute {...props} />
+      {withPlaybackActions(<LibraryRoute {...props} />, playback)}
     </ThemeProvider>,
   );
 }
@@ -170,7 +171,7 @@ describe('LibraryRoute', () => {
     const onMiniExpand = vi.fn();
 
     // #when
-    renderRoute({ onMiniExpand });
+    renderRoute({}, { onExpand: onMiniExpand });
     fireEvent.click(screen.getByTestId('mini-expand'));
 
     // #then

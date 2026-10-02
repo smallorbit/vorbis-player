@@ -76,17 +76,13 @@ vi.mock('@/hooks/useRecentlyPlayedCollections', () => ({
 }));
 
 import LibraryRoute from '../LibraryRoute';
+import { withPlaybackActions } from '@/test/playbackActions';
 
 const baseProps: React.ComponentProps<typeof LibraryRoute> = {
   onSelectCollection: vi.fn(),
   onAddToQueue: vi.fn().mockResolvedValue(null),
   lastSession: null,
   isPlaying: false,
-  onMiniPlay: vi.fn(),
-  onMiniPause: vi.fn(),
-  onMiniNext: vi.fn(),
-  onMiniPrevious: vi.fn(),
-  onMiniExpand: vi.fn(),
 };
 
 /**
@@ -125,12 +121,14 @@ function PendingQueryHarness() {
       <button onClick={openLibrary}>Open without query</button>
       <button onClick={closeLibrary}>Close</button>
       {open && (
-        <LibraryRoute
-          key={String(open) + String(initialSearchQuery)}
-          {...baseProps}
-          initialSearchQuery={initialSearchQuery}
-          onClose={closeLibrary}
-        />
+        withPlaybackActions(
+          <LibraryRoute
+            key={String(open) + String(initialSearchQuery)}
+            {...baseProps}
+            initialSearchQuery={initialSearchQuery}
+            onClose={closeLibrary}
+          />,
+        )
       )}
     </ThemeProvider>
   );
