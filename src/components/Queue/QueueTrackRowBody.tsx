@@ -31,7 +31,7 @@ const PlayingIcon = () => (
   </PlayIcon>
 );
 
-export const QueueHeartIcon = ({ filled }: { filled: boolean }) => (
+const QueueHeartIcon = ({ filled }: { filled: boolean }) => (
   <svg
     viewBox="0 0 24 24"
     fill={filled ? 'currentColor' : 'none'}
