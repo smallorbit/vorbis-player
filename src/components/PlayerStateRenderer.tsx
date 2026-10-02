@@ -3,7 +3,6 @@ import styled from 'styled-components';
 import type { AddToQueueResult, CollectionSelection, MediaTrack, PlaybackSelection } from '@/types/domain';
 import { isSessionStale, type SessionSnapshot } from '@/services/sessionPersistence';
 import type { RestoreSessionResult } from '@/hooks/usePlayerLogic';
-import { cardBase } from '@/styles/utils';
 import { theme } from '@/styles/theme';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { useQapEnabled } from '@/hooks/useQapEnabled';
@@ -12,23 +11,14 @@ import QuickAccessPanel from './QuickAccessPanel';
 import SettingsGearButton from './SettingsGearButton';
 import WelcomeScreen from './WelcomeScreen';
 import { PlaybackActionsProvider, noopPlaybackActions } from '@/contexts/PlaybackActionsContext';
-import { PlayerStateIdleLoadingCard } from './PlayerStateIdleLoadingCard';
+import { PlayerStateIdleCardShell, PlayerStateIdleLoadingCard } from './PlayerStateIdleLoadingCard';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const LibraryRouteLazy = React.lazy(() => import('./LibraryRoute'));
 
-const ConnectCard = styled.div`
-  ${cardBase};
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  border-radius: 1.25rem;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  box-shadow: ${({ theme }) => theme.shadows.albumArt};
-  background: ${({ theme }) => theme.colors.muted.background};
-  backdrop-filter: blur(12px);
+const ConnectCard = styled(PlayerStateIdleCardShell)`
   display: flex;
   flex-direction: column;
 `;
@@ -156,7 +146,14 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
                 Sign in to your {providerName} account to access your music.
                 {activeDescriptor?.subscriptionNote && ` ${activeDescriptor.subscriptionNote}`}
               </p>
-              <Button type="button" onClick={handleConnectClick}>
+              <Button
+                type="button"
+                onClick={handleConnectClick}
+                style={{
+                  backgroundColor: theme.colors.cta,
+                  color: theme.colors.foregroundDark,
+                }}
+              >
                 Connect {providerName}
               </Button>
             </CardContent>
@@ -166,7 +163,10 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
     }
 
     return (
-      <Alert variant="destructive" className="w-full">
+      <Alert
+        variant="destructive"
+        className="w-full border-destructive/80 bg-destructive/15"
+      >
         <AlertDescription style={{ color: theme.colors.errorText }}>
           Error: {error}
         </AlertDescription>

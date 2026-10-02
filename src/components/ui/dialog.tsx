@@ -3,12 +3,13 @@ import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { DIALOG_Z_INDEX } from "@/styles/zIndexLayers"
+import { DIALOG_OVERLAY_Z_INDEX, DIALOG_Z_INDEX } from "@/styles/zIndexLayers"
 
 /**
  * Dialog primitive overrides for vorbis-player:
  *
- * - z-index is forced to DIALOG_Z_INDEX (see src/styles/zIndexLayers.ts).
+ * - Overlay z-index is DIALOG_OVERLAY_Z_INDEX; content is DIALOG_Z_INDEX
+ *   (see src/styles/zIndexLayers.ts).
  *   The shadcn default `z-50` (Tailwind = 50) sits far below the BottomBar
  *   (max z-index 1350 in src/components/BottomBar/styled.ts). Without this
  *   override every dialog renders behind the BottomBar.
@@ -36,7 +37,7 @@ const DialogOverlay = React.forwardRef<
       "fixed inset-0 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className
     )}
-    style={{ zIndex: DIALOG_Z_INDEX, ...style }}
+    style={{ zIndex: DIALOG_OVERLAY_Z_INDEX, ...style }}
     {...props}
   />
 ))

@@ -33,7 +33,8 @@ const shimmer = keyframes`
   }
 `;
 
-const LoadingCard = styled.div`
+/** Full-bleed idle card chrome shared by loading and connect surfaces. */
+export const PlayerStateIdleCardShell = styled.div`
   ${cardBase};
   position: absolute;
   top: 0;
@@ -140,7 +141,7 @@ export function PlayerStateIdleLoadingCard({
   subtext,
 }: PlayerStateIdleLoadingCardProps): React.ReactElement {
   return (
-    <LoadingCard>
+    <PlayerStateIdleCardShell>
       <LoadingContainer>
         <MusicIcon />
         <LoadingText>
@@ -149,6 +150,6 @@ export function PlayerStateIdleLoadingCard({
         </LoadingText>
         <ProgressBar />
       </LoadingContainer>
-    </LoadingCard>
+    </PlayerStateIdleCardShell>
   );
 }

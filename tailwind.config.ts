@@ -1,15 +1,11 @@
 import type { Config } from 'tailwindcss';
 import { theme } from './src/styles/theme';
 
-const screens = Object.fromEntries(
-  Object.entries(theme.breakpointPixels).map(([key, px]) => [key, `${px}px`]),
-) as Record<string, string>;
-
 const config: Config = {
   darkMode: 'class',
   content: ['./src/**/*.{ts,tsx}'],
   theme: {
-    screens,
+    screens: theme.breakpoints,
     extend: {
       colors: {
         border: 'hsl(var(--border))',

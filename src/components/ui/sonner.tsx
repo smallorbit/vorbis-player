@@ -5,7 +5,7 @@ import { TOAST_Z_INDEX } from '@/styles/zIndexLayers';
 /**
  * Toaster wrapper — mounts at app root.
  *
- * - z-index 1410: clears BottomBar (theme.zIndex.modal = 1400) and Dialog overlay (1405).
+ * - z-index 1410: clears BottomBar (theme.zIndex.modal = 1400) and dialog content (1405).
  *   Matches the prior hand-rolled Toast.tsx (`theme.zIndex.modal + 10`).
  * - position="bottom-center": toasts rise from the bottom (issue #1664). The bottom offset
  *   reads `--vp-toast-offset`, a variable the BottomBar publishes on `:root` while it is
