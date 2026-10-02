@@ -11,7 +11,7 @@ import { providerRegistry } from '@/providers/registry';
 import { queueStore } from '@/stores/queueStore';
 import type { ProviderId } from '@/types/domain';
 import type { RadioState, RadioProgress } from '@/types/radio';
-import QueueSkeleton from '@/components/QueueSkeleton';
+import QueueSkeleton from '@/components/Queue/QueueSkeleton';
 
 const SaveQueueDialog = lazy(() => import('@/components/SaveQueueDialog'));
 const QueueDrawer = lazy(() => import('@/components/QueueDrawer'));

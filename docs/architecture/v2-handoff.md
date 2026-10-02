@@ -16,7 +16,7 @@ Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tie
 | WS2 | [#1692](https://github.com/smallorbit/vorbis-player/issues/1692) PlaybackStore + QueueStore | **Done** |
 | WS3 | [#1699](https://github.com/smallorbit/vorbis-player/issues/1699) State, persistence & events | **Done** |
 | WS10 | [#1729](https://github.com/smallorbit/vorbis-player/issues/1729) Close the toolchain blind spots | **Done** (8/8) |
-| WS7 | [#1738](https://github.com/smallorbit/vorbis-player/issues/1738) Component & styling coherence | **In progress** (0/4 → #1739) |
+| WS7 | [#1738](https://github.com/smallorbit/vorbis-player/issues/1738) Component & styling coherence | **In progress** (#1740 active) |
 | WS4–WS6, WS8–WS9, WS11–WS12 | Reliability → DevBug | Open (one epic at a time) |
 
 Pre-initiative foundations already on `main`: async-race harness, honest e2e, full CI gate (coverage + knip + audit ≥ high).
@@ -25,14 +25,14 @@ Pre-initiative foundations already on `main`: async-race harness, honest e2e, fu
 
 ## Do this next
 
-### Immediate: continue WS7 at #1739
+### Immediate: continue WS7 at #1740 (stacked on #1739 / PR #1792)
 
 Epic: **[#1738 — Component & styling coherence](https://github.com/smallorbit/vorbis-player/issues/1738)**
 
 | # | Issue | State | Notes |
 |---|--------|--------|--------|
-| **1739** | **Put AudioPlayer on a diet and add a PlaybackActions context** | **← active** | F25, F26 |
-| 1740 | Consolidate the queue feature into `src/components/Queue/` | Open | |
+| 1739 | Put AudioPlayer on a diet and add a PlaybackActions context | **Closed** (PR [#1792](https://github.com/smallorbit/vorbis-player/pull/1792)) | F25, F26 |
+| **1740** | **Consolidate the queue feature into `src/components/Queue/`** | **← active** | F12, F43 — stack on #1792 |
 | 1741 | Delete the fourth styling system and unify tokens | Open | |
 | 1742 | Sweep: icons, ResumeHero, useIsTouchDevice | Open | |
 
