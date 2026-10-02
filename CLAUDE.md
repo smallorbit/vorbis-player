@@ -20,6 +20,7 @@ Deep-dive references — load on demand:
 | shadcn/ui integration, theme bridge, canonical patterns, z-index | `docs/architecture/shadcn.md` |
 | Architecture v2 initiative status + next issue (agent handoff) | `docs/architecture/v2-handoff.md` |
 | Source dependency layering + circular-import gate | `docs/architecture/layering.md` |
+| npm upgrade policy (routine vs coordinated majors) | `docs/dependency-upgrades.md` |
 
 User-facing docs live in `docs/features/` and `docs/providers/`. Troubleshooting (provider issues, layout pitfalls, debug logging) is in `docs/troubleshooting.md`.
 

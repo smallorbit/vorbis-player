@@ -7,6 +7,7 @@ This directory contains all project documentation organized by category.
 - **[Getting Started](./getting-started.md)** — Installation, environment setup, and first run
 - **[User Guide](./user-guide.md)** — All player features, controls, and keyboard shortcuts
 - **[Contributing](./contributing.md)** — Development setup, project structure, coding conventions
+- **[Dependency upgrades](./dependency-upgrades.md)** — Routine `npm update` vs coordinated major bumps (RFC 0002)
 - **[Troubleshooting](./troubleshooting.md)** — Common issues and solutions
 
 ## Providers
