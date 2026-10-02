@@ -5,7 +5,8 @@ import type { ContextMenuRequest } from '../types';
 import type { CollectionSelection, MediaTrack } from '@/types/domain';
 import { isMenuActionError } from './menuItemsForKind';
 import { useMenuItems, type UseMenuItemsCallbacks } from './useMenuItems';
-import { MenuItemButton, MenuRoot, VirtualAnchor } from './LibraryContextMenu.styled';
+import { MenuItemButton, MenuRoot, VirtualAnchor } from '@/components/ui/context-menu.styled';
+import { useRovingMenuKeyDown } from '@/hooks/useRovingMenuKeyDown';
 
 export interface LibraryContextMenuProps {
   request: ContextMenuRequest | null;
@@ -55,27 +56,7 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
     [onReturnFocusClose],
   );
 
-  const handleMenuKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    const items = Array.from(
-      e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)'),
-    );
-    if (!items.length) return;
-    const idx = items.indexOf(document.activeElement as HTMLButtonElement);
-
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      items[(idx + 1) % items.length]?.focus();
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      items[(idx - 1 + items.length) % items.length]?.focus();
-    } else if (e.key === 'Home') {
-      e.preventDefault();
-      items[0]?.focus();
-    } else if (e.key === 'End') {
-      e.preventDefault();
-      items[items.length - 1]?.focus();
-    }
-  }, []);
+  const handleMenuKeyDown = useRovingMenuKeyDown();
 
   const callbacks = useMemo<UseMenuItemsCallbacks>(
     () => ({

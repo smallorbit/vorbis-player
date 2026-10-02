@@ -61,7 +61,7 @@ vi.mock('@/hooks/useHorizontalSwipeToRemove', () => ({
   })),
 }));
 
-vi.mock('./QueueContextMenu', () => ({
+vi.mock('../QueueContextMenu', () => ({
   QueueContextMenu: () => null,
 }));
 

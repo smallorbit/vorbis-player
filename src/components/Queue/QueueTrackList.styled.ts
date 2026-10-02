@@ -1,6 +1,5 @@
 import styled from 'styled-components';
-import { Card, CardHeader, CardContent, CardDescription } from '../components/styled';
-import { ScrollArea } from '../components/styled';
+import { Card, CardHeader, CardContent, CardDescription, ScrollArea } from '@/components/styled';
 
 export const QueueListRoot = styled.div`
   width: 100%;
