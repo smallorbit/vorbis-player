@@ -63,7 +63,7 @@ export const CollectionName = styled.div`
 
 export const ResumeButton = styled.button`
   appearance: none;
-  background: ${theme.colors.primary};
+  background: ${theme.colors.cta};
   color: ${theme.colors.white};
   border: none;
   padding: ${theme.spacing.sm} ${theme.spacing.lg};
@@ -74,7 +74,7 @@ export const ResumeButton = styled.button`
   flex-shrink: 0;
 
   &:hover {
-    background: ${theme.colors.primaryHover};
+    background: ${theme.colors.ctaHover};
   }
 
   &:focus-visible {

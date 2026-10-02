@@ -65,7 +65,7 @@ export const SliderInput = styled.input.attrs({ type: 'range' })`
   flex: 1;
   min-width: 0;
   height: 6px;
-  accent-color: ${({ theme }) => theme.colors.primary};
+  accent-color: ${({ theme }) => theme.colors.focusRing};
 `;
 
 export const NumberInput = styled.input.attrs({ type: 'number' })`
@@ -79,7 +79,7 @@ export const NumberInput = styled.input.attrs({ type: 'number' })`
 
   &:focus {
     outline: none;
-    border-color: ${({ theme }) => theme.colors.primary};
+    border-color: ${({ theme }) => theme.colors.focusRing};
   }
 `;
 
@@ -106,8 +106,8 @@ export const Button = styled.button<{ $variant?: 'primary' | 'secondary' | undef
   ${({ $variant, theme }) =>
     $variant === 'primary' &&
     `
-    border-color: ${theme.colors.primary};
-    background: ${theme.colors.primary};
+    border-color: ${theme.colors.focusRing};
+    background: ${theme.colors.focusRing};
     color: ${theme.colors.white};
     &:hover { filter: brightness(1.1); }
   `}
@@ -128,6 +128,6 @@ export const JsonArea = styled.textarea`
 
   &:focus {
     outline: none;
-    border-color: ${({ theme }) => theme.colors.primary};
+    border-color: ${({ theme }) => theme.colors.focusRing};
   }
 `;

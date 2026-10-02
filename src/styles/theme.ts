@@ -1,3 +1,24 @@
+import { Z_INDEX_LAYERS } from './zIndexLayers';
+
+const breakpointPixels = {
+  xs: 320,
+  sm: 375,
+  md: 480,
+  lg: 700,
+  xl: 1280,
+  '2xl': 1536,
+  '3xl': 1920,
+} as const;
+
+const breakpoints = {
+  xs: `${breakpointPixels.xs}px`,
+  sm: `${breakpointPixels.sm}px`,
+  md: `${breakpointPixels.md}px`,
+  lg: `${breakpointPixels.lg}px`,
+  xl: `${breakpointPixels.xl}px`,
+  '2xl': `${breakpointPixels['2xl']}px`,
+  '3xl': `${breakpointPixels['3xl']}px`,
+} as const;
 
 export const theme = {
   colors: {
@@ -7,13 +28,14 @@ export const theme = {
     foreground: 'rgba(255, 255, 255, 0.87)',
     foregroundDark: '#213547',
     
-    // Primary colors
-    primary: '#646cff',
-    primaryHover: '#535bf2',
+    // Focus rings and filled CTAs (styled-components palette — not shadcn `--primary`)
+    focusRing: '#ffffff',
+    cta: '#f5f5f0',
+    ctaHover: '#ffffff',
     
     // Secondary colors
     secondary: '#905252',
-    secondaryHover: '#646cff',
+    secondaryHover: '#a86a6a',
     
     // Accent colors
     accent: '#f5f5f0',
@@ -45,7 +67,7 @@ export const theme = {
     
     // Border colors
     border: 'rgba(255, 255, 255, 0.2)',
-    borderHover: '#646cff',
+    borderHover: 'rgba(255, 255, 255, 0.45)',
     
     // Muted colors
     muted: {
@@ -174,37 +196,8 @@ export const theme = {
     slideIn: 'slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
   },
   
-  breakpoints: {
-    // Mobile devices
-    xs: '320px',
-    sm: '375px',
-    md: '480px',
-    lg: '700px',
-    xl: '1280px',
-    '2xl': '1536px',
-    '3xl': '1920px'
-  },
-
-  breakpointPixels: {
-    xs: 320,
-    sm: 375,
-    md: 480,
-    lg: 700,
-    xl: 1280,
-    '2xl': 1536,
-    '3xl': 1920
-  },
-  
-  
-  // Container query breakpoints for component-level responsive behavior
-  containerBreakpoints: {
-    xs: '320px',
-    sm: '480px',
-    md: '700px',
-    lg: '1024px',
-    xl: '1280px',
-    '2xl': '1536px'
-  },
+  breakpoints,
+  breakpointPixels,
   
   zIndex: {
     auto: 'auto',
@@ -217,8 +210,8 @@ export const theme = {
     zenBackdrop: '1348',
     zenTrigger: '1349',
     mobileMenu: '1350',
-    modal: '1400',
-    popover: '1500',
+    modal: String(Z_INDEX_LAYERS.modal),
+    popover: String(Z_INDEX_LAYERS.popover),
     skipLink: '1600',
     toast: '1700',
     tooltip: '1800',
@@ -249,8 +242,8 @@ export const theme = {
       desktop: '500px'
     },
     breakpoints: {
-      mobile: '700px',
-      tablet: '1024px'
+      mobile: breakpoints.lg,
+      tablet: '1024px',
     },
     backdropBlur: '20px',
     transitionDuration: 300,
@@ -271,5 +264,5 @@ export const theme = {
   }
 } as const;
 
-export const BREAKPOINTS_PX = theme.breakpointPixels;
+export const BREAKPOINTS_PX = breakpointPixels;
 

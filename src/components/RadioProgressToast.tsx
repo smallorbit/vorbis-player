@@ -59,7 +59,7 @@ const DoneIcon = styled.span`
   align-items: center;
   justify-content: center;
   font-size: 0.7rem;
-  color: ${theme.colors.primary};
+  color: ${theme.colors.cta};
 `;
 
 const MessageText = styled.span`
@@ -72,7 +72,7 @@ const ActionButton = styled.button`
   padding: 0;
   border: none;
   background: none;
-  color: ${theme.colors.primary};
+  color: ${theme.colors.cta};
   font: inherit;
   font-weight: 600;
   text-decoration: underline;

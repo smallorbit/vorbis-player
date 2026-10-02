@@ -45,6 +45,8 @@ Future redesigns should be promoted the same way: build the v2 component, wire i
 | `Command` | `command.tsx` | Powers the desktop Cmd-K palette (`CmdKPalette/index.tsx`). |
 | `Sheet` | `sheet.tsx` | Side panel used by `FilterSheet` (`LibraryRoute/search/`). |
 | `Input` | `input.tsx` | Text input primitive; used by `SearchBar` (`LibraryRoute/search/`). |
+| `Card` | `card.tsx` | Queue list chrome, idle connect card (`PlayerStateRenderer`). |
+| `Alert` | `alert.tsx` | Idle error surface (`PlayerStateRenderer`). |
 
 **Shipped follow-on work**: #1265 (FilterSidebar — shipped as `FilterSheet`, `src/components/LibraryRoute/search/FilterSheet.tsx`, uses `sheet.tsx`), #1262 (Settings v2 — `src/components/Settings/`), #1263 (Cmd-K palette — `src/components/CmdKPalette/`, uses `command.tsx`). These epics are closed.
 
@@ -64,6 +66,7 @@ shadcn defaults to `z-50` (Tailwind), which is below the player's `BottomBar` (u
 
 | Primitive | z-index | Source |
 |---|---|---|
-| `dialog.tsx` | `1405` | `DIALOG_Z_INDEX` constant |
-| `popover.tsx` | `1500` | `POPOVER_Z_INDEX` constant (matches `theme.zIndex.popover`) |
-| `sonner.tsx` (Toast) | `1410` | inline `--z-index` CSS custom property on `<Toaster />` |
+| `dialog.tsx` | `1405` | `DIALOG_Z_INDEX` from `src/styles/zIndexLayers.ts` |
+| `popover.tsx` | `1500` | `POPOVER_Z_INDEX` from `src/styles/zIndexLayers.ts` |
+| `sheet.tsx` | `1410` | `SHEET_Z_INDEX` from `src/styles/zIndexLayers.ts` |
+| `sonner.tsx` (Toast) | `1410` | `TOAST_Z_INDEX` via `--z-index` on `<Toaster />` |
