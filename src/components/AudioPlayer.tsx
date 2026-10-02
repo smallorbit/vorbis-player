@@ -30,17 +30,19 @@ import {
 } from '@/constants/events';
 import { NOTIFICATION_DISMISS_MS } from '@/constants/timing';
 import { useSessionPersistence } from '@/hooks/useSessionPersistence';
+import { useAudioPlayerLibraryIntegration } from '@/hooks/useAudioPlayerLibraryIntegration';
 import { decodeLegacySelection } from '@/services/sessionPersistence';
 import { playbackStore } from '@/stores/playbackStore';
 import { usePlaybackState } from '@/hooks/usePlaybackState';
 import QuickAccessPanel from './QuickAccessPanel';
 import { CmdKPalette } from './CmdKPalette';
-import type { CollectionSelection, MediaCollection, MediaTrack } from '@/types/domain';
+import type { CollectionSelection, MediaCollection } from '@/types/domain';
 import { collectionToRef, keyToCollectionRef } from '@/types/domain';
 import type { SearchArtist } from '@/services/cache/librarySearch';
 
+import { LibraryRouteMount } from './AudioPlayer/LibraryRouteMount';
+
 const Settings = lazy(() => import('./Settings'));
-const LibraryRoute = lazy(() => import('./LibraryRoute'));
 
 const RESUME_TOAST_ID = 'resume-toast';
 const FALLTHROUGH_TOAST_ID = 'fallthrough-toast';
@@ -130,61 +132,6 @@ const AudioPlayerComponent = () => {
     [handlers]
   );
 
-  const handleCmdKSelectTrack = useCallback(
-    (track: MediaTrack) => {
-      const result = handlers.insertTracksNext([track], track.name);
-      if (result && result.added > 0) {
-        toast(`Added "${track.name}" to play next.`, {
-          id: 'cmdk-add-track',
-          action: {
-            label: 'View',
-            onClick: () => {
-              handlers.handleCloseLibrary();
-              setShowQueue(true);
-            },
-          },
-        });
-      }
-    },
-    [handlers, setShowQueue],
-  );
-
-  const handleCmdKInsertCollectionNext = useCallback(
-    async (collectionSelection: CollectionSelection) => {
-      const name = collectionSelection.name ?? '';
-      const result = await handlers.insertCollectionNext(collectionSelection);
-      if (result && result.added > 0) {
-        const trackWord = result.added === 1 ? 'track' : 'tracks';
-        toast(`Added ${result.added} ${trackWord} from "${name}" to play next.`, {
-          id: 'cmdk-add-collection',
-          action: {
-            label: 'View',
-            onClick: () => {
-              handlers.handleCloseLibrary();
-              setShowQueue(true);
-            },
-          },
-        });
-      }
-      return result;
-    },
-    [handlers, setShowQueue],
-  );
-
-  const handleCmdKSelectAlbum = useCallback(
-    (album: MediaCollection) => {
-      void handleCmdKInsertCollectionNext({ type: 'collection', ref: collectionToRef(album), name: album.name });
-    },
-    [handleCmdKInsertCollectionNext],
-  );
-
-  const handleCmdKSelectPlaylist = useCallback(
-    (playlist: MediaCollection) => {
-      void handleCmdKInsertCollectionNext({ type: 'collection', ref: collectionToRef(playlist), name: playlist.name });
-    },
-    [handleCmdKInsertCollectionNext],
-  );
-
   const handleCmdKSelectArtist = useCallback((_artist: SearchArtist) => {
     // #1408 deferral: there is no programmatic "filter Library by artist"
     // mechanism today. Falling back to opening Library without a filter so the
@@ -228,49 +175,6 @@ const AudioPlayerComponent = () => {
   useEffect(() => {
     if (showQueue) toast.dismiss(RESUME_TOAST_ID);
   }, [showQueue]);
-  const handleLibraryPlayNext = useCallback(
-    async (collectionSelection: CollectionSelection) => {
-      const name = collectionSelection.name ?? '';
-      const result = await handlers.insertCollectionNext(collectionSelection);
-      if (result && result.added > 0) {
-        const trackWord = result.added === 1 ? 'track' : 'tracks';
-        toast(`Added ${result.added} ${trackWord} from "${name}" to play next.`, {
-          id: 'lib-play-next',
-          action: {
-            label: 'View',
-            onClick: () => {
-              handlers.handleCloseLibrary();
-              setShowQueue(true);
-            },
-          },
-        });
-      }
-    },
-    [handlers, setShowQueue],
-  );
-
-  const handleAddToQueueFromPanel = useCallback(
-    async (collectionSelection: CollectionSelection) => {
-      const result = await handlers.handleAddToQueue(collectionSelection);
-      if (result && result.added > 0) {
-        const title = result.collectionName?.trim();
-        const label = title ? `"${title}"` : 'this collection';
-        const trackWord = result.added === 1 ? 'track' : 'tracks';
-        toast(`Added ${result.added} ${trackWord} from ${label} to your queue.`, {
-          id: 'qap-add-queue',
-          action: {
-            label: 'View',
-            onClick: () => {
-              handlers.handleCloseLibrary();
-              setShowQueue(true);
-            },
-          },
-        });
-      }
-      return result;
-    },
-    [handlers, setShowQueue],
-  );
 
   const handlePlayLikedTracks = useCallback(
     async (likedTracks: import('@/types/domain').MediaTrack[], collectionSelection: CollectionSelection) => {
@@ -280,26 +184,49 @@ const AudioPlayerComponent = () => {
     [handlers],
   );
 
-  const handleQueueLikedTracks = useCallback(
-    (likedTracks: import('@/types/domain').MediaTrack[], collectionName?: string) => {
-      const result = handlers.queueTracksDirectly(likedTracks, collectionName);
-      if (result && result.added > 0) {
-        const title = result.collectionName?.trim();
-        const label = title ? `"${title}"` : 'this collection';
-        const trackWord = result.added === 1 ? 'track' : 'tracks';
-        toast(`Added ${result.added} liked ${trackWord} from ${label} to your queue.`, {
-          id: 'qap-queue-liked',
-          action: {
-            label: 'View',
-            onClick: () => {
-              handlers.handleCloseLibrary();
-              setShowQueue(true);
-            },
-          },
-        });
-      }
+  const handleResume = useCallback(async () => {
+    if (!lastSession?.queueTracks?.length) return;
+    const result = await handlers.restoreSession(lastSession, { autoplay: true });
+    if (result.totalFailure) {
+      resetLastSession();
+      toast(`Couldn't resume your last session.`, { id: RESUME_TOAST_ID, duration: Infinity });
+      return;
+    }
+    if (result.skipped && result.track) {
+      toast(`Couldn't resume previous track — playing '${result.track.name}' instead.`, { id: RESUME_TOAST_ID });
+    }
+  }, [lastSession, handlers, resetLastSession]);
+
+  const {
+    handleCmdKSelectTrack,
+    handleCmdKInsertCollectionNext,
+    handleAddToQueueFromPanel,
+    handleQueueLikedTracks,
+    libraryPlaybackActions,
+    libraryRouteCore,
+  } = useAudioPlayerLibraryIntegration({
+    handlers,
+    radio,
+    isPlaying: state.isPlaying,
+    setShowQueue,
+    withResumeDismiss,
+    handleSelectCollection,
+    handlePlayLikedTracks,
+    handleResume,
+  });
+
+  const handleCmdKSelectAlbum = useCallback(
+    (album: MediaCollection) => {
+      void handleCmdKInsertCollectionNext({ type: 'collection', ref: collectionToRef(album), name: album.name });
     },
-    [handlers, setShowQueue],
+    [handleCmdKInsertCollectionNext],
+  );
+
+  const handleCmdKSelectPlaylist = useCallback(
+    (playlist: MediaCollection) => {
+      void handleCmdKInsertCollectionNext({ type: 'collection', ref: collectionToRef(playlist), name: playlist.name });
+    },
+    [handleCmdKInsertCollectionNext],
   );
 
   const playbackHandlers = useMemo(() => {
@@ -401,19 +328,6 @@ const AudioPlayerComponent = () => {
     setIsSettingsOpen(false);
   }, [setIsSettingsOpen]);
 
-  const handleResume = useCallback(async () => {
-    if (!lastSession?.queueTracks?.length) return;
-    const result = await handlers.restoreSession(lastSession, { autoplay: true });
-    if (result.totalFailure) {
-      resetLastSession();
-      toast(`Couldn't resume your last session.`, { id: RESUME_TOAST_ID, duration: Infinity });
-      return;
-    }
-    if (result.skipped && result.track) {
-      toast(`Couldn't resume previous track — playing '${result.track.name}' instead.`, { id: RESUME_TOAST_ID });
-    }
-  }, [lastSession, handlers, resetLastSession]);
-
   const handleHydrateSession = useCallback(
     (session: import('@/services/sessionPersistence').SessionSnapshot) =>
       handlers.restoreSession(session, { autoplay: false }),
@@ -459,32 +373,14 @@ const AudioPlayerComponent = () => {
       const initialSearchQuery = pendingLibraryQueryRef.current;
       pendingLibraryQueryRef.current = undefined;
       return (
-        <Suspense fallback={null}>
-          <LibraryRoute
-            onSelectCollection={(collectionSelection) => {
-              handlers.handleCloseLibrary();
-              handleSelectCollection(collectionSelection);
-            }}
-            onAddToQueue={handleAddToQueueFromPanel}
-            onPlayLikedTracks={handlePlayLikedTracks}
-            onQueueLikedTracks={handleQueueLikedTracks}
-            onResume={handleResume}
-            lastSession={null}
-            initialSearchQuery={initialSearchQuery}
-            isPlaying={state.isPlaying}
-            isRadioAvailable={radio.isRadioAvailable}
-            isRadioGenerating={radio.radioState?.isGenerating}
-            onMiniPlay={playbackHandlers.onPlay}
-            onMiniPause={playbackHandlers.onPause}
-            onMiniNext={playbackHandlers.onNext}
-            onMiniPrevious={playbackHandlers.onPrevious}
-            onMiniExpand={handlers.handleCloseLibrary}
-            onMiniStartRadio={radio.isRadioAvailable ? handlers.handleStartRadio : undefined}
-            onPlayNext={handleLibraryPlayNext}
-            onStartRadioForCollection={undefined}
-            onClose={handlers.handleCloseLibrary}
-          />
-        </Suspense>
+        <LibraryRouteMount
+          playbackActions={libraryPlaybackActions}
+          routeProps={{
+            ...libraryRouteCore,
+            lastSession: null,
+            initialSearchQuery,
+          }}
+        />
       );
     }
 
@@ -581,31 +477,13 @@ const AudioPlayerComponent = () => {
           </Suspense>
         )}
         {needsSetup && state.currentView === 'library' && (
-          <Suspense fallback={null}>
-            <LibraryRoute
-              onSelectCollection={(collectionSelection) => {
-                handlers.handleCloseLibrary();
-                handleSelectCollection(collectionSelection);
-              }}
-              onAddToQueue={handleAddToQueueFromPanel}
-              onPlayLikedTracks={handlePlayLikedTracks}
-              onQueueLikedTracks={handleQueueLikedTracks}
-              onResume={handleResume}
-              lastSession={lastSession}
-              isPlaying={state.isPlaying}
-              isRadioAvailable={radio.isRadioAvailable}
-              isRadioGenerating={radio.radioState?.isGenerating}
-              onMiniPlay={playbackHandlers.onPlay}
-              onMiniPause={playbackHandlers.onPause}
-              onMiniNext={playbackHandlers.onNext}
-              onMiniPrevious={playbackHandlers.onPrevious}
-              onMiniExpand={handlers.handleCloseLibrary}
-              onMiniStartRadio={radio.isRadioAvailable ? handlers.handleStartRadio : undefined}
-              onPlayNext={handleLibraryPlayNext}
-              onStartRadioForCollection={undefined}
-              onClose={handlers.handleCloseLibrary}
-            />
-          </Suspense>
+          <LibraryRouteMount
+            playbackActions={libraryPlaybackActions}
+            routeProps={{
+              ...libraryRouteCore,
+              lastSession,
+            }}
+          />
         )}
       </Container>
     </ProfilingProvider>

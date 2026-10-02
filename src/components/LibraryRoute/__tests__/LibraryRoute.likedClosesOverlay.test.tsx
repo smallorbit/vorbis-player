@@ -95,16 +95,12 @@ vi.mock('../views/HomeView', () => ({
 }));
 
 import LibraryRoute from '../index';
+import { withPlaybackActions } from '@/test/playbackActions';
 
 const baseProps = {
   onAddToQueue: vi.fn(async () => null),
   lastSession: null,
   isPlaying: false,
-  onMiniPlay: vi.fn(),
-  onMiniPause: vi.fn(),
-  onMiniNext: vi.fn(),
-  onMiniPrevious: vi.fn(),
-  onMiniExpand: vi.fn(),
 };
 
 describe('LibraryRoute — Liked Songs activation closes the library overlay (#1347)', () => {
@@ -117,7 +113,9 @@ describe('LibraryRoute — Liked Songs activation closes the library overlay (#1
     const onClose = vi.fn();
     const onSelectCollection = vi.fn().mockImplementation(() => onClose());
     render(
-      <LibraryRoute {...baseProps} onSelectCollection={onSelectCollection} onClose={onClose} />,
+      withPlaybackActions(
+        <LibraryRoute {...baseProps} onSelectCollection={onSelectCollection} onClose={onClose} />,
+      ),
     );
 
     // #when
@@ -133,7 +131,9 @@ describe('LibraryRoute — Liked Songs activation closes the library overlay (#1
     const onClose = vi.fn();
     const onSelectCollection = vi.fn().mockImplementation(() => onClose());
     render(
-      <LibraryRoute {...baseProps} onSelectCollection={onSelectCollection} onClose={onClose} />,
+      withPlaybackActions(
+        <LibraryRoute {...baseProps} onSelectCollection={onSelectCollection} onClose={onClose} />,
+      ),
     );
 
     // #when

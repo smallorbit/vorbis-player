@@ -126,7 +126,6 @@ function renderMenu(props: Partial<LibraryContextMenuProps> & { request: Context
     onPlayCollection: vi.fn(),
     onAddToQueue: vi.fn(),
     onPlayNext: vi.fn(),
-    onStartRadioForCollection: vi.fn(),
     onPlayLikedTracks: vi.fn(),
     onQueueLikedTracks: vi.fn(),
   };

@@ -156,12 +156,11 @@ describe('LibraryContextMenu', () => {
     expect(screen.getByTestId('menu-start-radio')).toBeInTheDocument();
   });
 
-  it('disables Play Next and Start Radio when handlers are undefined', () => {
+  it('disables Play Next when handler is undefined; Start Radio stays disabled until collection radio ships', () => {
     // #when
     renderMenu({
       request: makeRequest({ kind: 'playlist' }),
       onPlayNext: undefined,
-      onStartRadioForCollection: undefined,
     });
 
     // #then
@@ -169,21 +168,18 @@ describe('LibraryContextMenu', () => {
     expect((screen.getByTestId('menu-start-radio') as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it('enables Play Next and Start Radio when handlers are provided', () => {
+  it('enables Play Next when handler is provided', () => {
     // #given
     const onPlayNext = vi.fn();
-    const onStartRadio = vi.fn();
     const onReturnFocusClose = vi.fn();
 
     // #when
     renderMenu({
       request: makeRequest({ kind: 'playlist' }),
       onPlayNext,
-      onStartRadioForCollection: onStartRadio,
       onReturnFocusClose,
     });
     fireEvent.click(screen.getByTestId('menu-play-next'));
-    fireEvent.click(screen.getByTestId('menu-start-radio'));
 
     // #then
     expect(onPlayNext).toHaveBeenCalledWith({
@@ -191,8 +187,8 @@ describe('LibraryContextMenu', () => {
       ref: { provider: 'spotify', kind: 'playlist', id: 'p1' },
       name: 'My Playlist',
     });
-    expect(onStartRadio).toHaveBeenCalledWith({ provider: 'spotify', kind: 'playlist', id: 'p1' });
-    expect(onReturnFocusClose).toHaveBeenCalledTimes(2);
+    expect(onReturnFocusClose).toHaveBeenCalledTimes(1);
+    expect((screen.getByTestId('menu-start-radio') as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('shows Pin label when not pinned, Unpin when pinned', () => {

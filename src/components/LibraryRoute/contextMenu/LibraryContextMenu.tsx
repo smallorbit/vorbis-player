@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useRef } from 'react';
 import { toast } from 'sonner';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 import type { ContextMenuRequest } from '../types';
-import type { CollectionRef, CollectionSelection, MediaTrack } from '@/types/domain';
+import type { CollectionSelection, MediaTrack } from '@/types/domain';
 import { isMenuActionError } from './menuItemsForKind';
 import { useMenuItems, type UseMenuItemsCallbacks } from './useMenuItems';
 import { MenuItemButton, MenuRoot, VirtualAnchor } from './LibraryContextMenu.styled';
@@ -14,7 +14,6 @@ export interface LibraryContextMenuProps {
   onPlayCollection: (selection: CollectionSelection) => void;
   onAddToQueue?: ((selection: CollectionSelection) => void | Promise<unknown>) | undefined;
   onPlayNext?: ((selection: CollectionSelection) => void) | undefined;
-  onStartRadioForCollection?: ((ref: CollectionRef) => void) | undefined;
   onPlayLikedTracks: (
     tracks: MediaTrack[],
     selection: CollectionSelection,
@@ -29,7 +28,6 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
   onPlayCollection,
   onAddToQueue,
   onPlayNext,
-  onStartRadioForCollection,
   onPlayLikedTracks,
   onQueueLikedTracks,
 }) => {
@@ -85,7 +83,6 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
       onPlayCollection,
       onAddToQueue,
       onPlayNext,
-      onStartRadioForCollection,
       onPlayLikedTracks,
       onQueueLikedTracks,
     }),
@@ -94,7 +91,6 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
       onPlayCollection,
       onAddToQueue,
       onPlayNext,
-      onStartRadioForCollection,
       onPlayLikedTracks,
       onQueueLikedTracks,
     ],

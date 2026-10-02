@@ -110,6 +110,7 @@ vi.mock('../views/SeeAllView', () => ({
 
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import LibraryRoute from '../index';
+import { withPlaybackActions } from '@/test/playbackActions';
 
 const mockUsePlayerSizingContext = vi.mocked(usePlayerSizingContext);
 
@@ -118,11 +119,6 @@ const baseProps = {
   onAddToQueue: vi.fn(async () => null),
   lastSession: null,
   isPlaying: false,
-  onMiniPlay: vi.fn(),
-  onMiniPause: vi.fn(),
-  onMiniNext: vi.fn(),
-  onMiniPrevious: vi.fn(),
-  onMiniExpand: vi.fn(),
 };
 
 describe('LibraryRoute — navigation', () => {
@@ -133,7 +129,7 @@ describe('LibraryRoute — navigation', () => {
 
   it('starts at HomeView by default', () => {
     // #given + #when
-    render(<LibraryRoute {...baseProps} />);
+    render(withPlaybackActions(<LibraryRoute {...baseProps} />));
 
     // #then
     expect(screen.getByTestId('home-view')).toBeInTheDocument();
@@ -142,7 +138,7 @@ describe('LibraryRoute — navigation', () => {
 
   it('navigates to SeeAllView when onNavigate("playlists") fires', () => {
     // #given
-    render(<LibraryRoute {...baseProps} />);
+    render(withPlaybackActions(<LibraryRoute {...baseProps} />));
 
     // #when
     fireEvent.click(screen.getByRole('button', { name: 'go-playlists' }));
@@ -154,7 +150,7 @@ describe('LibraryRoute — navigation', () => {
 
   it('navigates to SeeAllView for albums', () => {
     // #given
-    render(<LibraryRoute {...baseProps} />);
+    render(withPlaybackActions(<LibraryRoute {...baseProps} />));
 
     // #when
     fireEvent.click(screen.getByRole('button', { name: 'go-albums' }));
@@ -165,7 +161,7 @@ describe('LibraryRoute — navigation', () => {
 
   it('navigates back to HomeView from SeeAllView when onBack fires', () => {
     // #given
-    render(<LibraryRoute {...baseProps} />);
+    render(withPlaybackActions(<LibraryRoute {...baseProps} />));
     fireEvent.click(screen.getByRole('button', { name: 'go-playlists' }));
     expect(screen.getByTestId('see-all-view-playlists')).toBeInTheDocument();
 
@@ -180,7 +176,7 @@ describe('LibraryRoute — navigation', () => {
   it('calls onSelectCollection with the typed album selection (bare id, no album: prefix)', () => {
     // #given
     const onSelectCollection = vi.fn();
-    render(<LibraryRoute {...baseProps} onSelectCollection={onSelectCollection} />);
+    render(withPlaybackActions(<LibraryRoute {...baseProps} onSelectCollection={onSelectCollection} />));
 
     // #when — select an album
     fireEvent.click(screen.getByRole('button', { name: 'select-album' }));
@@ -197,7 +193,7 @@ describe('LibraryRoute — navigation', () => {
   it('calls onSelectCollection with the typed playlist selection', () => {
     // #given
     const onSelectCollection = vi.fn();
-    render(<LibraryRoute {...baseProps} onSelectCollection={onSelectCollection} />);
+    render(withPlaybackActions(<LibraryRoute {...baseProps} onSelectCollection={onSelectCollection} />));
 
     // #when
     fireEvent.click(screen.getByRole('button', { name: 'select-playlist' }));

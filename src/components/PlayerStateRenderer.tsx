@@ -14,6 +14,7 @@ import { useWelcomeSeen } from '@/hooks/useWelcomeSeen';
 import QuickAccessPanel from './QuickAccessPanel';
 import SettingsGearButton from './SettingsGearButton';
 import WelcomeScreen from './WelcomeScreen';
+import { PlaybackActionsProvider, noopPlaybackActions } from '@/contexts/PlaybackActionsContext';
 
 const LibraryRouteLazy = React.lazy(() => import('./LibraryRoute'));
 
@@ -335,20 +336,17 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
             </LoadingContainer>
           </LoadingCard>
         }>
-          <LibraryRouteLazy
-            onSelectCollection={handleSelectCollectionWrapped}
-            onAddToQueue={onAddToQueue}
-            onPlayLikedTracks={onPlayLikedTracks}
-            onQueueLikedTracks={onQueueLikedTracks}
-            onResume={onResume}
-            lastSession={lastSession}
-            isPlaying={false}
-            onMiniPlay={() => {}}
-            onMiniPause={() => {}}
-            onMiniNext={() => {}}
-            onMiniPrevious={() => {}}
-            onMiniExpand={() => {}}
-          />
+          <PlaybackActionsProvider value={noopPlaybackActions}>
+            <LibraryRouteLazy
+              onSelectCollection={handleSelectCollectionWrapped}
+              onAddToQueue={onAddToQueue}
+              onPlayLikedTracks={onPlayLikedTracks}
+              onQueueLikedTracks={onQueueLikedTracks}
+              onResume={onResume}
+              lastSession={lastSession}
+              isPlaying={false}
+            />
+          </PlaybackActionsProvider>
         </Suspense>
       </>
     );

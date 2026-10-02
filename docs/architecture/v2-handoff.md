@@ -2,7 +2,7 @@
 
 **Initiative label:** [`project:vorbis-player-architecture-v2`](https://github.com/smallorbit/vorbis-player/labels/project%3Avorbis-player-architecture-v2) (RFC 0001)  
 **Working mode:** **one workstream (epic) at a time**; within an epic, **one child issue at a time**.  
-**Updated:** 2026-09-28 (after #1737 — WS10 complete)
+**Updated:** 2026-10-02 (WS7 #1739 in progress)
 
 Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tier-codebase.md`, which is **not yet on `main`** — landing that RFC is part of **[WS11](https://github.com/smallorbit/vorbis-player/issues/1757)**.
 
@@ -16,7 +16,8 @@ Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tie
 | WS2 | [#1692](https://github.com/smallorbit/vorbis-player/issues/1692) PlaybackStore + QueueStore | **Done** |
 | WS3 | [#1699](https://github.com/smallorbit/vorbis-player/issues/1699) State, persistence & events | **Done** |
 | WS10 | [#1729](https://github.com/smallorbit/vorbis-player/issues/1729) Close the toolchain blind spots | **Done** (8/8) |
-| WS4–WS9, WS11–WS12 | Reliability → DevBug | Open (WS10 closed — pick one epic at a time) |
+| WS7 | [#1738](https://github.com/smallorbit/vorbis-player/issues/1738) Component & styling coherence | **In progress** (0/4 → #1739) |
+| WS4–WS6, WS8–WS9, WS11–WS12 | Reliability → DevBug | Open (one epic at a time) |
 
 Pre-initiative foundations already on `main`: async-race harness, honest e2e, full CI gate (coverage + knip + audit ≥ high).
 
@@ -24,29 +25,20 @@ Pre-initiative foundations already on `main`: async-race harness, honest e2e, fu
 
 ## Do this next
 
-### WS10 closed — start the next epic
+### Immediate: continue WS7 at #1739
 
-**[#1729 — Close the toolchain blind spots](https://github.com/smallorbit/vorbis-player/issues/1729)** is complete (all eight children closed). Policy + RFC for majors: [`docs/dependency-upgrades.md`](../dependency-upgrades.md), [`docs/rfcs/0002-coordinated-toolchain-upgrade.md`](../rfcs/0002-coordinated-toolchain-upgrade.md) ([#1737](https://github.com/smallorbit/vorbis-player/issues/1737)).
+Epic: **[#1738 — Component & styling coherence](https://github.com/smallorbit/vorbis-player/issues/1738)**
 
 | # | Issue | State | Notes |
 |---|--------|--------|--------|
-| 1730 | Bring tests, e2e, and scripts under typechecking | **Closed** | PR [#1782](https://github.com/smallorbit/vorbis-player/pull/1782) |
-| 1731 | Wire coverage ratchet, knip, and npm audit into CI | **Closed** | PR [#1783](https://github.com/smallorbit/vorbis-player/pull/1783) |
-| 1732 | Turn on type-aware lint and finish the strictness epic | **Closed** | PR [#1785](https://github.com/smallorbit/vorbis-player/pull/1785) |
-| 1733 | Declare and enforce the layering order | **Closed** | PR [#1787](https://github.com/smallorbit/vorbis-player/pull/1787) — F76, F93 |
-| 1734 | Make e2e run against the prod build with a real Dropbox snapshot | **Closed** | F74, F71, F83 |
-| 1735 | Add boundary tests for the Spotify SDK/API layer | **Closed** | F53 |
-| 1736 | Clean up test infrastructure and scripts | **Closed** | F92, F80, F100, F78 |
-| 1737 | Set the dependency-upgrade policy | **Closed** | F94 — policy doc + RFC 0002 (implementation deferred) |
+| **1739** | **Put AudioPlayer on a diet and add a PlaybackActions context** | **← active** | F25, F26 |
+| 1740 | Consolidate the queue feature into `src/components/Queue/` | Open | |
+| 1741 | Delete the fourth styling system and unify tokens | Open | |
+| 1742 | Sweep: icons, ResumeHero, useIsTouchDevice | Open | |
 
-### Pick the next workstream epic
+### WS10 closed (reference)
 
-Still **one epic at a time**. Suggested order (adjust if the human says otherwise):
-
-1. **[WS6](https://github.com/smallorbit/vorbis-player/issues/1721)** — a11y (start [#1722](https://github.com/smallorbit/vorbis-player/issues/1722) LibraryCard keyboard)  
-2. Then WS4 / WS5 / WS7–WS9 / WS11 / WS12 as capacity allows  
-
-Optional WS2 leftovers if they surface: [#1770](https://github.com/smallorbit/vorbis-player/issues/1770) (`restoreSession` staleness after `playTrack`); [#1752](https://github.com/smallorbit/vorbis-player/issues/1752) (position ticks → PlaybackStore) lives under WS9.
+**[#1729](https://github.com/smallorbit/vorbis-player/issues/1729)** — policy: [`docs/dependency-upgrades.md`](../dependency-upgrades.md), RFC 0002.
 
 ---
 
@@ -155,7 +147,8 @@ Set the dependency-upgrade policy (F94).
 - WS10 epic: https://github.com/smallorbit/vorbis-player/issues/1729  
 - Dependency policy: [`docs/dependency-upgrades.md`](../dependency-upgrades.md)  
 - Toolchain RFC: [`docs/rfcs/0002-coordinated-toolchain-upgrade.md`](../rfcs/0002-coordinated-toolchain-upgrade.md)  
-- Suggested next epic: [WS6 a11y #1721](https://github.com/smallorbit/vorbis-player/issues/1721)  
+- Suggested next epic (if not WS7): [WS6 a11y #1721](https://github.com/smallorbit/vorbis-player/issues/1721)  
+- WS7 epic: [#1738](https://github.com/smallorbit/vorbis-player/issues/1738)  
 - Coverage config: `vite.config.ts` (`test.coverage`, report-only)  
 - knip config: `knip.json`  
 - Test tsconfig: `tsconfig.test.json`  
