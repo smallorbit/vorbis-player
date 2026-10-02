@@ -2,7 +2,7 @@
 
 **Initiative label:** [`project:vorbis-player-architecture-v2`](https://github.com/smallorbit/vorbis-player/labels/project%3Avorbis-player-architecture-v2) (RFC 0001)  
 **Working mode:** **one workstream (epic) at a time**; within an epic, **one child issue at a time**.  
-**Updated:** 2026-10-02 (WS7 #1739 in progress)
+**Updated:** 2026-10-02 (after #1740 merged — WS7 2/4)
 
 Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tier-codebase.md`, which is **not yet on `main`** — landing that RFC is part of **[WS11](https://github.com/smallorbit/vorbis-player/issues/1757)**.
 
@@ -16,7 +16,7 @@ Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tie
 | WS2 | [#1692](https://github.com/smallorbit/vorbis-player/issues/1692) PlaybackStore + QueueStore | **Done** |
 | WS3 | [#1699](https://github.com/smallorbit/vorbis-player/issues/1699) State, persistence & events | **Done** |
 | WS10 | [#1729](https://github.com/smallorbit/vorbis-player/issues/1729) Close the toolchain blind spots | **Done** (8/8) |
-| WS7 | [#1738](https://github.com/smallorbit/vorbis-player/issues/1738) Component & styling coherence | **In progress** (#1740 active) |
+| WS7 | [#1738](https://github.com/smallorbit/vorbis-player/issues/1738) Component & styling coherence | **In progress** (2/4) |
 | WS4–WS6, WS8–WS9, WS11–WS12 | Reliability → DevBug | Open (one epic at a time) |
 
 Pre-initiative foundations already on `main`: async-race harness, honest e2e, full CI gate (coverage + knip + audit ≥ high).
@@ -25,16 +25,21 @@ Pre-initiative foundations already on `main`: async-race harness, honest e2e, fu
 
 ## Do this next
 
-### Immediate: continue WS7 at #1740 (stacked on #1739 / PR #1792)
+### Immediate: continue WS7 at #1741
 
-Epic: **[#1738 — Component & styling coherence](https://github.com/smallorbit/vorbis-player/issues/1738)**
+Epic: **[#1738 — Component & styling coherence](https://github.com/smallorbit/vorbis-player/issues/1738)**  
+Principle: P2 — one canonical implementation per concern.
 
 | # | Issue | State | Notes |
 |---|--------|--------|--------|
-| 1739 | Put AudioPlayer on a diet and add a PlaybackActions context | **Closed** (PR [#1792](https://github.com/smallorbit/vorbis-player/pull/1792)) | F25, F26 |
-| **1740** | **Consolidate the queue feature into `src/components/Queue/`** | **← active** | F12, F43 — stack on #1792 |
-| 1741 | Delete the fourth styling system and unify tokens | Open | |
+| 1739 | Put AudioPlayer on a diet and add a PlaybackActions context | **Closed** | PR [#1792](https://github.com/smallorbit/vorbis-player/pull/1792) — F25, F26 |
+| 1740 | Consolidate the queue feature into `src/components/Queue/` | **Closed** | PR [#1793](https://github.com/smallorbit/vorbis-player/pull/1793) — F12, F43 |
+| **1741** | **Delete the fourth styling system and unify tokens** | **← NEXT** | F33, F81, F36, F37, F38, F79 |
 | 1742 | Sweep: icons, ResumeHero, useIsTouchDevice | Open | |
+
+**WS7 exit criteria** (epic): every component file under 500 lines (machine-checked); [`docs/architecture/shadcn.md`](shadcn.md) two-system claim true; one grep for `#646cff` returns nothing.
+
+Branch from latest **`main`** (stack #1792→#1793 already squash-merged).
 
 ### WS10 closed (reference)
 
@@ -129,6 +134,25 @@ Set the dependency-upgrade policy (F94).
 - **RFC:** [`docs/rfcs/0002-coordinated-toolchain-upgrade.md`](../rfcs/0002-coordinated-toolchain-upgrade.md) — Proposed; React 19 + Vite 8 + Vitest 4+ (+ Tailwind 4 in same window)
 - **Moderate Vitest advisories** remain until RFC implementation
 
+## Context for #1739 (merged)
+
+Slim `AudioPlayer` + library mini-player wiring (F25, F26). On `main` via [#1792](https://github.com/smallorbit/vorbis-player/pull/1792).
+
+- **`useQueueAddedToast`**, **`useAudioPlayerLibraryIntegration`**, **`LibraryRouteMount`**
+- **`PlaybackActionsContext`** — library mini-player actions (mirrors `BottomBarActionsContext`)
+- **`contexts/libraryRouteHost.ts`** — shared `LibraryRoute` mount props
+- Removed dead **`onStartRadioForCollection`** prop chain (menu item still disabled)
+- **`AudioPlayer.tsx`** ~494 lines
+
+## Context for #1740 (merged)
+
+Queue consolidation (F12, F43). On `main` via [#1793](https://github.com/smallorbit/vorbis-player/pull/1793).
+
+- **`src/components/Queue/`** — drawer, bottom sheet, list, row body, skeleton, tests
+- **`queueSurfaceProps.ts`**, **`QueueShellHeader`**, **`QueueDismissOverlay`**, **`QueueListChrome`**, **`QueueTrackRowBody`**
+- **`ui/context-menu.styled.ts`** + **`useRovingMenuKeyDown`** — shared with library context menu (no queue → LibraryRoute styled import)
+- Root **`QueueDrawer.tsx`** etc. remain thin re-exports for lazy imports
+
 ---
 
 ## Agent operating notes
@@ -149,6 +173,10 @@ Set the dependency-upgrade policy (F94).
 - Toolchain RFC: [`docs/rfcs/0002-coordinated-toolchain-upgrade.md`](../rfcs/0002-coordinated-toolchain-upgrade.md)  
 - Suggested next epic (if not WS7): [WS6 a11y #1721](https://github.com/smallorbit/vorbis-player/issues/1721)  
 - WS7 epic: [#1738](https://github.com/smallorbit/vorbis-player/issues/1738)  
+- Next issue: [#1741](https://github.com/smallorbit/vorbis-player/issues/1741)  
+- Queue feature: `src/components/Queue/`  
+- Context menu styled primitives: `src/components/ui/context-menu.styled.ts`  
+- shadcn / two-system doc: [`docs/architecture/shadcn.md`](shadcn.md)  
 - Coverage config: `vite.config.ts` (`test.coverage`, report-only)  
 - knip config: `knip.json`  
 - Test tsconfig: `tsconfig.test.json`  
