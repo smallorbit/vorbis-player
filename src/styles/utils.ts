@@ -31,13 +31,13 @@ export const buttonBase = css`
   }
 `;
 
-export const buttonPrimary = css`
+export const buttonCta = css`
   ${buttonBase}
-  background-color: ${theme.colors.primary};
-  color: ${theme.colors.white};
+  background-color: ${theme.colors.cta};
+  color: ${theme.colors.foregroundDark};
   
   &:hover:not(:disabled) {
-    background-color: ${theme.colors.primaryHover};
+    background-color: ${theme.colors.ctaHover};
   }
 `;
 

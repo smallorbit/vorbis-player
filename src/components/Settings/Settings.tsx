@@ -139,7 +139,7 @@ export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
           </DialogPrimitive.Content>
         ) : (
           <>
-            <DialogOverlay asChild style={{ zIndex: 1404 }}>
+            <DialogOverlay asChild>
               <Overlay aria-hidden="true" />
             </DialogOverlay>
             <DialogPrimitive.Content

@@ -4,13 +4,13 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { SHEET_Z_INDEX } from "@/styles/zIndexLayers"
 
 /**
  * Sheet is a Radix Dialog rendered as a side panel.
- * Z-index forced to 1410 (above BottomBar 1350 and base Dialog 1405) so a
- * filter sheet opened from inside a Dialog still wins.
+ * Z-index via SHEET_Z_INDEX (above dialog chrome) so a filter sheet opened
+ * from inside a Dialog still wins.
  */
-const SHEET_Z_INDEX = 1410
 
 const Sheet = DialogPrimitive.Root
 const SheetTrigger = DialogPrimitive.Trigger

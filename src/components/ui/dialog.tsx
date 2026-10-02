@@ -3,11 +3,12 @@ import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { DIALOG_Z_INDEX } from "@/styles/zIndexLayers"
 
 /**
  * Dialog primitive overrides for vorbis-player:
  *
- * - z-index is forced to 1405 (= theme.zIndex.modal + 5 in src/styles/theme.ts).
+ * - z-index is forced to DIALOG_Z_INDEX (see src/styles/zIndexLayers.ts).
  *   The shadcn default `z-50` (Tailwind = 50) sits far below the BottomBar
  *   (max z-index 1350 in src/components/BottomBar/styled.ts). Without this
  *   override every dialog renders behind the BottomBar.
@@ -16,8 +17,6 @@ import { cn } from "@/lib/utils"
  *   DialogPortal, so DOM-walk patterns (`dialogBox.parentElement`) do not
  *   reach it.
  */
-const DIALOG_Z_INDEX = 1405
-
 const Dialog = DialogPrimitive.Root
 
 const DialogTrigger = DialogPrimitive.Trigger

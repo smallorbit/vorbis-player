@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useState, useCallback, useEffect, useMemo } from 'react';
-import { useTheme } from 'styled-components';
+import { theme } from '@/styles/theme';
 import { toast } from 'sonner';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
 import { RadioProgressContent } from '@/components/RadioProgressToast';
@@ -18,7 +18,6 @@ const QueueDrawer = lazy(() => import('@/components/QueueDrawer'));
 const QueueBottomSheet = lazy(() => import('@/components/QueueBottomSheet'));
 
 function QueueLoadingFallback({ isMobile }: { isMobile: boolean }): React.ReactElement {
-  const theme = useTheme();
   const sharedStyle: React.CSSProperties = {
     position: 'fixed',
     background: theme.colors.overlay.panel,

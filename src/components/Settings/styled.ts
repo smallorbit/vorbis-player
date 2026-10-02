@@ -1,4 +1,6 @@
 import styled from 'styled-components';
+import { DIALOG_OVERLAY_Z_INDEX, DIALOG_Z_INDEX } from '@/styles/zIndexLayers';
+import { BREAKPOINTS_PX } from '@/styles/theme';
 
 /**
  * Settings chrome — neutral shadcn palette only.
@@ -12,9 +14,8 @@ import styled from 'styled-components';
  * mobile-takeover fork itself runs off `usePlayerSizingContext().isMobile`
  * (mirrors `PlayerContent/DrawerOrchestrator.tsx:164-188`).
  *
- * Z-index parity: 1405 matches `DIALOG_Z_INDEX` in `src/components/ui/dialog.tsx`
- * (above `theme.zIndex.modal = 1400` / `BottomBar` max 1350). The overlay
- * sits one level below at 1404. These values are coupled to `dialog.tsx` —
+ * Z-index parity: uses `DIALOG_Z_INDEX` / `DIALOG_OVERLAY_Z_INDEX` from
+ * `src/styles/zIndexLayers.ts` (above `theme.zIndex.modal` / BottomBar) —
  * the wrappers in `Settings.tsx` are now rendered via Radix Dialog primitives
  * (`asChild`), so visibility/pointer-events/transitions are driven by Radix
  * `data-state` rather than the previous `$isOpen` prop wiring.
@@ -24,7 +25,7 @@ export const Overlay = styled.div`
   position: fixed;
   inset: 0;
   background: ${({ theme }) => theme.colors.overlay.light};
-  z-index: 1404;
+  z-index: ${DIALOG_OVERLAY_Z_INDEX};
   opacity: 0;
   transition: opacity ${({ theme }) => theme.drawer.transitionDuration}ms ${({ theme }) => theme.drawer.transitionEasing};
 
@@ -49,7 +50,7 @@ export const DesktopShell = styled.div`
   border: 1px solid hsl(var(--border));
   border-radius: ${({ theme }) => theme.borderRadius.lg};
   box-shadow: ${({ theme }) => theme.shadows.xl};
-  z-index: 1405;
+  z-index: ${DIALOG_Z_INDEX};
   opacity: 0;
   display: grid;
   grid-template-columns: 240px 1fr;
@@ -74,7 +75,7 @@ export const DesktopShell = styled.div`
     outline: none;
   }
 
-  @container settings-v2 (max-width: 700px) {
+  @container settings-v2 (max-width: ${BREAKPOINTS_PX.lg}px) {
     grid-template-columns: 200px 1fr;
   }
 `;
@@ -84,7 +85,7 @@ export const MobileTakeover = styled.div`
   inset: 0;
   background: hsl(var(--background));
   color: hsl(var(--foreground));
-  z-index: 1405;
+  z-index: ${DIALOG_Z_INDEX};
   transform: translateX(100%);
   transition: transform ${({ theme }) => theme.drawer.transitionDuration}ms ${({ theme }) => theme.drawer.transitionEasing};
   display: flex;

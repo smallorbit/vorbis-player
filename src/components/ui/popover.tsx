@@ -2,13 +2,10 @@ import * as React from "react"
 import * as PopoverPrimitive from "@radix-ui/react-popover"
 
 import { cn } from "@/lib/utils"
+import { POPOVER_Z_INDEX } from "@/styles/zIndexLayers"
 
 // Popover primitives — neutral shadcn palette (bg-popover, text-popover-foreground).
-//
-// z-index 1500 (inline, not Tailwind z-*): theme.zIndex.popover = 1500. Tailwind z-50 = 50,
-// below BottomBar (1350) and dialogs (1405). Same override pattern as dialog.tsx.
-// Popover sits above dialogs per theme ordering.
-const POPOVER_Z_INDEX = 1500
+// z-index via POPOVER_Z_INDEX — same override pattern as dialog.tsx.
 
 const Popover = PopoverPrimitive.Root
 const PopoverTrigger = PopoverPrimitive.Trigger

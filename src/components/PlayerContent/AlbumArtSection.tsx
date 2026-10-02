@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import styled from 'styled-components';
-import { CardContent } from '@/components/styled';
+import { CardContent } from '@/components/ui/card';
 import AlbumArt from '@/components/AlbumArt';
 import AlbumArtQuickSwapBack from '@/components/AlbumArtQuickSwapBack';
 import { ProfiledComponent } from '@/components/ProfiledComponent';

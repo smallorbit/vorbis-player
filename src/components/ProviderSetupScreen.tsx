@@ -255,7 +255,7 @@ export default function ProviderSetupScreen({ onOpenSettings, onOpenLibrary }: P
           </Subtitle>
           <ProviderGrid>
             {providers.map((descriptor) => {
-              const meta = PROVIDER_META[descriptor.id] ?? { icon: '\u266A', accentColor: theme.colors.primary, note: '' };
+              const meta = PROVIDER_META[descriptor.id] ?? { icon: '\u266A', accentColor: theme.colors.cta, note: '' };
               const isAuthenticated = descriptor.auth.isAuthenticated();
               const isEnabled = enabledProviderIds.includes(descriptor.id);
 
@@ -346,7 +346,7 @@ export default function ProviderSetupScreen({ onOpenSettings, onOpenLibrary }: P
         </Subtitle>
         <ProviderGrid>
           {expiredProviders.map((descriptor) => {
-            const meta = PROVIDER_META[descriptor.id] ?? { icon: '\u266A', accentColor: theme.colors.primary, note: '' };
+            const meta = PROVIDER_META[descriptor.id] ?? { icon: '\u266A', accentColor: theme.colors.cta, note: '' };
             const isAuthenticated = descriptor.auth.isAuthenticated();
             return (
               <ProviderCardContainer

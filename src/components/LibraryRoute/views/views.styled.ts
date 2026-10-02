@@ -55,7 +55,7 @@ export const BackButton = styled.button`
   }
 
   &:focus-visible {
-    outline: 2px solid ${theme.colors.primary};
+    outline: 2px solid ${theme.colors.focusRing};
     outline-offset: 2px;
   }
 `;
