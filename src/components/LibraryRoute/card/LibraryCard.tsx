@@ -70,10 +70,20 @@ const LibraryCard: React.FC<LibraryCardProps> = ({
     enabled: longPressEnabled,
   });
 
-  const handleClick = useCallback(() => {
-    if (longPressEnabled) return;
-    onSelect();
-  }, [longPressEnabled, onSelect]);
+  const handleClick = useCallback(
+    (e: React.MouseEvent<HTMLElement>) => {
+      if (longPressEnabled) {
+        // Pointer/touch taps go through useLongPress onTap; keyboard activation
+        // synthesizes a click with detail === 0 and must still select.
+        if (e.detail === 0) {
+          onSelect();
+        }
+        return;
+      }
+      onSelect();
+    },
+    [longPressEnabled, onSelect],
+  );
 
   const handleContextMenu = useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
