@@ -87,6 +87,13 @@ export const QueueListItem = styled.div<{ $isSelected: boolean }>`
   cursor: pointer;
   transition: background 0.2s ease, border-color 0.2s ease;
   border: 1px solid transparent;
+  outline: none;
+
+  &:focus-visible {
+    box-shadow:
+      0 0 0 2px rgba(0, 0, 0, 0.9),
+      0 0 0 4px rgba(255, 255, 255, 0.9);
+  }
 
   ${({ theme, $isSelected }) => $isSelected ? `
     background: color-mix(in srgb, var(--accent-color) 20%, transparent);
@@ -172,6 +179,14 @@ export const DragHandle = styled.div`
   }
 `;
 
+const queueRowChromeButtonVisibility = `
+  ${QueueListItem}:hover &,
+  ${QueueListItem}:focus-within &,
+  &:focus-visible {
+    opacity: 1;
+  }
+`;
+
 export const RemoveButton = styled.button`
   flex-shrink: 0;
   background: none;
@@ -186,13 +201,33 @@ export const RemoveButton = styled.button`
   opacity: 0;
   transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
 
-  ${QueueListItem}:hover & {
-    opacity: 1;
-  }
+  ${queueRowChromeButtonVisibility}
 
   &:hover {
     color: ${({ theme }) => theme.colors.error};
     background: ${({ theme }) => `color-mix(in srgb, ${theme.colors.error} 15%, transparent)`};
+  }
+`;
+
+export const QueueRowMenuButton = styled.button`
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.colors.gray[500]};
+  cursor: pointer;
+  padding: 4px;
+  border-radius: ${({ theme }) => theme.borderRadius.sm};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+
+  ${queueRowChromeButtonVisibility}
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.white};
+    background: ${({ theme }) => theme.colors.control.backgroundHover};
   }
 `;
 

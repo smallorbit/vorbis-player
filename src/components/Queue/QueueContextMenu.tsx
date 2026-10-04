@@ -18,6 +18,7 @@ interface QueueContextMenuProps {
   y: number;
   options: ContextMenuOption[];
   onClose: () => void;
+  returnFocusRef?: React.MutableRefObject<HTMLElement | null> | undefined;
 }
 
 const QueueMenuItemButton = styled(MenuItemButton)`
@@ -37,12 +38,17 @@ const QueueMenuItemButton = styled(MenuItemButton)`
   }
 `;
 
-export function QueueContextMenu({ x, y, options, onClose }: QueueContextMenuProps) {
+export function QueueContextMenu({ x, y, options, onClose, returnFocusRef }: QueueContextMenuProps) {
   const anchorStyle: React.CSSProperties = { left: x, top: y };
   const handleMenuKeyDown = useRovingMenuKeyDown();
 
+  const returnFocusAndClose = () => {
+    returnFocusRef?.current?.focus({ preventScroll: true });
+    onClose();
+  };
+
   return createPortal(
-    <Popover open onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Popover open onOpenChange={(open) => { if (!open) returnFocusAndClose(); }}>
       <PopoverAnchor asChild>
         <VirtualAnchor aria-hidden style={anchorStyle} />
       </PopoverAnchor>
@@ -69,7 +75,7 @@ export function QueueContextMenu({ x, y, options, onClose }: QueueContextMenuPro
               $variant={option.destructive ? 'destructive' : 'default'}
               onClick={() => {
                 option.onClick();
-                onClose();
+                returnFocusAndClose();
               }}
             >
               {option.icon}

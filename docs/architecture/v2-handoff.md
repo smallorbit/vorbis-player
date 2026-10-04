@@ -2,7 +2,7 @@
 
 **Initiative label:** [`project:vorbis-player-architecture-v2`](https://github.com/smallorbit/vorbis-player/labels/project%3Avorbis-player-architecture-v2) (RFC 0001)  
 **Working mode:** **one workstream (epic) at a time**; within an epic, **one child issue at a time**.  
-**Updated:** 2026-10-04 (after #1723 merged — WS6 2/7; next #1724)
+**Updated:** 2026-10-04 (after #1724 — WS6 3/7; next #1725)
 
 Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tier-codebase.md`, which is **not yet on `main`** — landing that RFC is part of **[WS11](https://github.com/smallorbit/vorbis-player/issues/1757)**.
 
@@ -26,7 +26,7 @@ Pre-initiative foundations already on `main`: async-race harness, honest e2e, fu
 
 ## Do this next
 
-### Immediate: continue WS6 at #1724
+### Immediate: continue WS6 at #1725
 
 Epic: **[#1721 — Accessibility as a first-class dimension](https://github.com/smallorbit/vorbis-player/issues/1721)**  
 Principle: P7 — the platform is part of elegance.
@@ -35,8 +35,8 @@ Principle: P7 — the platform is part of elegance.
 |---|--------|--------|--------|
 | 1722 | Fix LibraryCard keyboard activation | **Done** | PR [#1799](https://github.com/smallorbit/vorbis-player/pull/1799) |
 | 1723 | Honor prefers-reduced-motion at the visualizer choke point | **Done** | PR [#1800](https://github.com/smallorbit/vorbis-player/pull/1800) — F10; `audit-ci.jsonc` braces allowlist |
-| **1724** | Make the queue fully keyboard-operable | **← NEXT** | |
-| 1725 | Give drawers dialog semantics and focus management | Open | |
+| 1724 | Make the queue fully keyboard-operable | **Done** | F9 — focusable rows, KeyboardSensor, menu trigger |
+| **1725** | Give drawers dialog semantics and focus management | **← NEXT** | |
 | 1726 | Stop global shortcuts hijacking keys from focused controls | Open | |
 | 1727 | Compute real WCAG contrast ratios for the accent foreground | Open | |
 | 1728 | Institutionalize a11y with axe gates and a keyboard-journey spec | Open | |
@@ -224,7 +224,7 @@ Reduced-motion choke point (F10). On `main` via [#1800](https://github.com/small
 - Toolchain RFC: [`docs/rfcs/0002-coordinated-toolchain-upgrade.md`](../rfcs/0002-coordinated-toolchain-upgrade.md)  
 - WS7 epic: [#1738](https://github.com/smallorbit/vorbis-player/issues/1738) (done)
 - Next epic: [WS6 a11y #1721](https://github.com/smallorbit/vorbis-player/issues/1721)
-- Next issue: [#1724](https://github.com/smallorbit/vorbis-player/issues/1724) (queue keyboard)
+- Next issue: [#1725](https://github.com/smallorbit/vorbis-player/issues/1725) (drawer dialog semantics)
 - Reduced motion / visualizer: `src/components/BackgroundVisualizer.tsx`, `src/hooks/useReducedMotion.ts`
 - Audit allowlist: `audit-ci.jsonc`
 - Non-blocking leftover: [#1798](https://github.com/smallorbit/vorbis-player/issues/1798) (panel color tokens; not WS6)

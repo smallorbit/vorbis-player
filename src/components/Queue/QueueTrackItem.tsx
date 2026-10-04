@@ -7,13 +7,15 @@ import { useLongPress } from '@/hooks/useLongPress';
 import { useLikeTrack } from '@/hooks/useLikeTrack';
 import { QueueContextMenu } from './QueueContextMenu';
 import { QueueTrackRowBody } from './QueueTrackRowBody';
-import { CloseIcon, GripIcon, TrashIcon } from '@/components/icons/ActionIcons';
+import { CloseIcon, GripIcon, MoreVerticalIcon, TrashIcon } from '@/components/icons/ActionIcons';
+import { formatQueueRowAriaLabel, isQueueRowActivationKey } from './queueRowA11y';
 import { StrokeHeartIcon } from '@/components/icons/HeartIcons';
 import { PlayIcon } from '@/components/icons/PlaybackIcons';
 import {
   QueueListItem,
   DragHandle,
   RemoveButton,
+  QueueRowMenuButton,
   SwipeableWrapper,
   SwipeableContent,
   SwipeRemoveBackdrop,
@@ -47,10 +49,18 @@ function useQueueItemContextMenu(
   onPlayNext?: (index: number) => void,
 ) {
   const [menu, setMenu] = useState<ContextMenuState | null>(null);
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const { isLiked, handleLikeToggle, canSaveTrack } = useLikeTrack(track.id, track.provider);
   const pointerPosRef = useRef({ x: 0, y: 0 });
 
   const closeMenu = useCallback(() => setMenu(null), []);
+
+  const openMenuFromTrigger = useCallback(() => {
+    const el = menuTriggerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setMenu({ x: rect.right, y: rect.bottom });
+  }, []);
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -88,14 +98,97 @@ function useQueueItemContextMenu(
       : []),
   ];
 
-  return { menu, closeMenu, handleContextMenu, longPressHandlers, options };
+  return {
+    menu,
+    closeMenu,
+    handleContextMenu,
+    longPressHandlers,
+    options,
+    menuTriggerRef,
+    openMenuFromTrigger,
+  };
 }
 
-function QueueRowMenu(props: { menu: ContextMenuState; options: ReturnType<typeof useQueueItemContextMenu>['options']; closeMenu: () => void }) {
-  const { menu, options, closeMenu } = props;
+function QueueRowMenu(props: {
+  menu: ContextMenuState;
+  options: ReturnType<typeof useQueueItemContextMenu>['options'];
+  closeMenu: () => void;
+  menuTriggerRef: React.MutableRefObject<HTMLButtonElement | null>;
+}) {
+  const { menu, options, closeMenu, menuTriggerRef } = props;
   return (
-    <QueueContextMenu x={menu.x} y={menu.y} options={options} onClose={closeMenu} />
+    <QueueContextMenu
+      x={menu.x}
+      y={menu.y}
+      options={options}
+      onClose={closeMenu}
+      returnFocusRef={menuTriggerRef}
+    />
   );
+}
+
+function QueueRowMoreButton({
+  track,
+  menuTriggerRef,
+  onOpenMenu,
+}: {
+  track: MediaTrack;
+  menuTriggerRef: React.MutableRefObject<HTMLButtonElement | null>;
+  onOpenMenu: () => void;
+}) {
+  return (
+    <QueueRowMenuButton
+      ref={menuTriggerRef}
+      type="button"
+      aria-label={`Actions for ${track.name}`}
+      aria-haspopup="menu"
+      onClick={(e) => {
+        e.stopPropagation();
+        onOpenMenu();
+      }}
+    >
+      <MoreVerticalIcon />
+    </QueueRowMenuButton>
+  );
+}
+
+function useNavigableQueueRowProps(
+  track: MediaTrack,
+  index: number,
+  isSelected: boolean,
+  onSelect: (index: number) => void,
+  isEditMode: boolean,
+  isDragActive: boolean,
+  sortableEditActive: boolean,
+) {
+  const rowLabel = formatQueueRowAriaLabel(track, isSelected);
+
+  const handleRowKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (sortableEditActive || isDragActive) return;
+      if (!isQueueRowActivationKey(e.key)) return;
+      e.preventDefault();
+      if (!isEditMode) {
+        onSelect(index);
+      }
+    },
+    [sortableEditActive, isDragActive, isEditMode, onSelect, index],
+  );
+
+  if (sortableEditActive) {
+    return { rowLabel, navigableProps: {} };
+  }
+
+  return {
+    rowLabel,
+    navigableProps: {
+      role: 'button' as const,
+      tabIndex: 0,
+      'aria-label': rowLabel,
+      'aria-current': isSelected ? ('true' as const) : undefined,
+      onKeyDown: handleRowKeyDown,
+    },
+  };
 }
 
 function QueueItemRowChrome({
@@ -162,12 +255,25 @@ export const SortableQueueItem = memo<QueueItemProps>(({
     [onRemove, index],
   );
 
-  const { menu, closeMenu, handleContextMenu, longPressHandlers, options } = useQueueItemContextMenu(
+  const {
+    menu,
+    closeMenu,
+    handleContextMenu,
+    longPressHandlers,
+    options,
+    menuTriggerRef,
+    openMenuFromTrigger,
+  } = useQueueItemContextMenu(track, index, isSelected, onRemove, onPlayNext);
+
+  const sortableEditActive = !!(isEditMode && onRemove);
+  const { navigableProps } = useNavigableQueueRowProps(
     track,
     index,
     isSelected,
-    onRemove,
-    onPlayNext,
+    onSelect,
+    !!isEditMode,
+    !!isDragActive,
+    sortableEditActive,
   );
 
   return (
@@ -179,26 +285,39 @@ export const SortableQueueItem = memo<QueueItemProps>(({
         data-testid="queue-track-row"
         $isSelected={isSelected}
         {...longPressHandlers}
-        {...(isEditMode && onRemove ? { ...attributes, ...listeners } : {})}
+        {...navigableProps}
+        {...(sortableEditActive ? { ...attributes, ...listeners } : {})}
         style={
-          isEditMode && onRemove
+          sortableEditActive
             ? { cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none' }
             : undefined
         }
       >
-        {isEditMode && onRemove && (
+        {sortableEditActive && (
           <DragHandle>
             <GripIcon />
           </DragHandle>
         )}
         <QueueItemRowChrome track={track} isSelected={isSelected} showProviderIcon={showProviderIcon} />
-        {isEditMode && onRemove && !isSelected && (
+        <QueueRowMoreButton
+          track={track}
+          menuTriggerRef={menuTriggerRef}
+          onOpenMenu={openMenuFromTrigger}
+        />
+        {sortableEditActive && !isSelected && (
           <RemoveButton onClick={handleRemoveClick} aria-label={`Remove ${track.name}`}>
             <CloseIcon />
           </RemoveButton>
         )}
       </QueueListItem>
-      {menu && <QueueRowMenu menu={menu} options={options} closeMenu={closeMenu} />}
+      {menu && (
+        <QueueRowMenu
+          menu={menu}
+          options={options}
+          closeMenu={closeMenu}
+          menuTriggerRef={menuTriggerRef}
+        />
+      )}
     </div>
   );
 });
@@ -230,12 +349,24 @@ export const SwipeableQueueItem = memo<QueueItemProps>(({
     onRemove?.(index);
   }, [onRemove, index, reset]);
 
-  const { menu, closeMenu, handleContextMenu, longPressHandlers, options } = useQueueItemContextMenu(
+  const {
+    menu,
+    closeMenu,
+    handleContextMenu,
+    longPressHandlers,
+    options,
+    menuTriggerRef,
+    openMenuFromTrigger,
+  } = useQueueItemContextMenu(track, index, isSelected, onRemove, onPlayNext);
+
+  const { navigableProps } = useNavigableQueueRowProps(
     track,
     index,
     isSelected,
-    onRemove,
-    onPlayNext,
+    onSelect,
+    !!isEditMode,
+    false,
+    false,
   );
 
   const rowProps = {
@@ -244,6 +375,7 @@ export const SwipeableQueueItem = memo<QueueItemProps>(({
     'data-testid': 'queue-track-row',
     $isSelected: isSelected,
     ...longPressHandlers,
+    ...navigableProps,
   } as const;
 
   if (!canRemove) {
@@ -256,8 +388,20 @@ export const SwipeableQueueItem = memo<QueueItemProps>(({
           }}
         >
           <QueueItemRowChrome track={track} isSelected={isSelected} showProviderIcon={showProviderIcon} />
+          <QueueRowMoreButton
+            track={track}
+            menuTriggerRef={menuTriggerRef}
+            onOpenMenu={openMenuFromTrigger}
+          />
         </QueueListItem>
-        {menu && <QueueRowMenu menu={menu} options={options} closeMenu={closeMenu} />}
+        {menu && (
+          <QueueRowMenu
+            menu={menu}
+            options={options}
+            closeMenu={closeMenu}
+            menuTriggerRef={menuTriggerRef}
+          />
+        )}
       </>
     );
   }
@@ -295,10 +439,22 @@ export const SwipeableQueueItem = memo<QueueItemProps>(({
               showProviderIcon={showProviderIcon}
               showPlayingIndicator={!isRevealed}
             />
+            <QueueRowMoreButton
+              track={track}
+              menuTriggerRef={menuTriggerRef}
+              onOpenMenu={openMenuFromTrigger}
+            />
           </QueueListItem>
         </SwipeableContent>
       </SwipeableWrapper>
-      {menu && <QueueRowMenu menu={menu} options={options} closeMenu={closeMenu} />}
+      {menu && (
+        <QueueRowMenu
+          menu={menu}
+          options={options}
+          closeMenu={closeMenu}
+          menuTriggerRef={menuTriggerRef}
+        />
+      )}
     </>
   );
 });

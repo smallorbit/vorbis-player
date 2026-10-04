@@ -16,6 +16,16 @@ export function CloseIcon({ size = 16, ...props }: IconProps = {}) {
   );
 }
 
+export function MoreVerticalIcon({ size = 16, ...props }: IconProps = {}) {
+  return (
+    <IconSvg size={size} viewBox="0 0 16 16" fill="currentColor" {...props}>
+      <circle cx="8" cy="3.5" r="1.5" />
+      <circle cx="8" cy="8" r="1.5" />
+      <circle cx="8" cy="12.5" r="1.5" />
+    </IconSvg>
+  );
+}
+
 export function GripIcon({ size = 16, ...props }: IconProps = {}) {
   return (
     <IconSvg size={size} viewBox="0 0 16 16" fill="currentColor" {...props}>

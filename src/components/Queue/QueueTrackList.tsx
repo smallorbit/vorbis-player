@@ -4,6 +4,7 @@ import type { MediaTrack } from '@/types/domain';
 import {
   DndContext,
   closestCenter,
+  KeyboardSensor,
   PointerSensor,
   TouchSensor,
   useSensor,
@@ -12,6 +13,7 @@ import {
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import {
   SortableContext,
+  sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 
@@ -20,6 +22,7 @@ import { QueueListItem } from './QueueTrackList.styled';
 import { EditButton } from './QueueTrackList.styled';
 import { QueueListChrome } from './QueueListChrome';
 import { QueueTrackRowBody } from './QueueTrackRowBody';
+import { formatQueueRowAriaLabel, isQueueRowActivationKey } from './queueRowA11y';
 
 interface QueueTrackListProps {
   tracks: MediaTrack[];
@@ -71,6 +74,9 @@ const QueueTrackList = memo<QueueTrackListProps>(({
     }),
     useSensor(TouchSensor, {
       activationConstraint: { delay: 250, tolerance: 5 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
     }),
   );
 
@@ -174,7 +180,17 @@ const QueueTrackList = memo<QueueTrackListProps>(({
         <QueueListItem
           key={track.id}
           ref={index === currentTrackIndex ? currentTrackRef : undefined}
+          data-testid="queue-track-row"
+          role="button"
+          tabIndex={0}
+          aria-label={formatQueueRowAriaLabel(track, index === currentTrackIndex)}
+          aria-current={index === currentTrackIndex ? 'true' : undefined}
           onClick={() => onTrackSelect(index)}
+          onKeyDown={(e) => {
+            if (!isQueueRowActivationKey(e.key)) return;
+            e.preventDefault();
+            onTrackSelect(index);
+          }}
           $isSelected={index === currentTrackIndex}
         >
           <QueueTrackRowBody
