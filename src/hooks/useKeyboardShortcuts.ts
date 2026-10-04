@@ -1,5 +1,30 @@
 import { useEffect } from 'react';
 
+const CONTROL_OWNED_KEYS = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
+
+const INTERACTIVE_CONTROL_SELECTOR = [
+  'button',
+  'a[href]',
+  'select',
+  'summary',
+  '[role="button"]',
+  '[role="link"]',
+  '[role="slider"]',
+  '[role="spinbutton"]',
+  '[role="checkbox"]',
+  '[role="radio"]',
+  '[role="switch"]',
+  '[role="tab"]',
+  '[role="menuitem"]',
+  '[role="option"]',
+  '[role="combobox"]',
+  '[role="listbox"]',
+].join(', ');
+
+function isKeyOwnedByFocusedControl(code: string, target: HTMLElement): boolean {
+  return CONTROL_OWNED_KEYS.has(code) && target.closest(INTERACTIVE_CONTROL_SELECTOR) !== null;
+}
+
 interface KeyboardShortcutOptions {
   /** When true, ArrowUp/ArrowDown open drawers (set when user has pointer input, not touch-only) */
   prefersPointerInput?: boolean;
@@ -63,12 +88,17 @@ export const useKeyboardShortcuts = (
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) return;
+
       // Don't fire shortcuts when user is typing in an input field.
       // Use composedPath() to detect inputs inside Shadow DOM boundaries (e.g., DevBug panel).
       const target = (event.composedPath?.()?.[0] || event.target) as HTMLElement | null;
       if (target instanceof HTMLElement) {
         const tag = target.tagName;
         if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) {
+          return;
+        }
+        if (isKeyOwnedByFocusedControl(event.code, target)) {
           return;
         }
       }

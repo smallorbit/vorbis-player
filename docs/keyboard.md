@@ -17,6 +17,8 @@ Centralized in `useKeyboardShortcuts.ts`. Uses `pointer: fine` / `hover: hover` 
 
 `Q` and `L` are device-independent alternatives for drawer toggles. `↑`/`↓` have cross-dismiss behavior.
 
+`Space` and the arrow keys belong to whatever interactive control has focus (buttons, links, sliders, menu items, `role="button"` rows, …): the global handler stands down so Space activates the focused button and arrows move a focused slider. Letter shortcuts and `Escape` still fire from a focused control. Any `keydown` a component already handled (`event.defaultPrevented`) is ignored.
+
 `Escape` also leaves zen mode. It previously did not: revealing the faded controls made it
 look like it had, and the e2e test asserted only that the track info was visible, so it
 passed while zen stayed on. `Z` remains the direct toggle.
