@@ -229,6 +229,7 @@ export const TrailVisualizer: React.FC<TrailVisualizerProps> = ({
   return (
     <canvas
       ref={canvasRef}
+      aria-hidden
       style={{
         width: '100%',
         height: '100%',

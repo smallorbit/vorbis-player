@@ -128,6 +128,7 @@ export const WaveVisualizer: React.FC<WaveVisualizerProps> = ({
   return (
     <canvas
       ref={canvasRef}
+      aria-hidden
       style={{
         width: '100%',
         height: '100%',

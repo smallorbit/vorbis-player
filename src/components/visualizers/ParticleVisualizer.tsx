@@ -128,6 +128,7 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
   return (
     <canvas
       ref={canvasRef}
+      aria-hidden
       style={{
         width: '100%',
         height: '100%',

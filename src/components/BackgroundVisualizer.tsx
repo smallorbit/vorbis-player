@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import styled from 'styled-components';
 import type { VisualizerStyle, AlbumArtBounds } from '../types/visualizer';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { ParticleVisualizer } from './visualizers/ParticleVisualizer';
 import { TrailVisualizer } from './visualizers/TrailVisualizer';
 import { WaveVisualizer } from './visualizers/WaveVisualizer';
@@ -57,6 +58,8 @@ const BackgroundVisualizer: React.FC<BackgroundVisualizerProps> = React.memo(({
   dimmed = false,
   albumArtBounds,
 }) => {
+  const reducedMotion = useReducedMotion();
+
   const VisualizerComponent = useMemo(() => {
     if (!enabled) return null;
 
@@ -74,7 +77,7 @@ const BackgroundVisualizer: React.FC<BackgroundVisualizerProps> = React.memo(({
     }
   }, [enabled, style]);
 
-  if (!enabled || !VisualizerComponent) {
+  if (!enabled || !VisualizerComponent || reducedMotion) {
     return null;
   }
 
