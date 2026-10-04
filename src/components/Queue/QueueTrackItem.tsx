@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useRef, useState } from 'react';
+import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
 import type { MediaTrack } from '@/types/domain';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -165,6 +165,7 @@ function useNavigableQueueRowProps(
 
   const handleRowKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      if (e.target !== e.currentTarget) return;
       if (sortableEditActive || isDragActive) return;
       if (!isQueueRowActivationKey(e.key)) return;
       e.preventDefault();
@@ -233,6 +234,17 @@ export const SortableQueueItem = memo<QueueItemProps>(({
     id: track.id,
   });
 
+  const rowFocusedDragListeners = useMemo(() => {
+    if (!listeners) return undefined;
+    const { onKeyDown, ...pointerListeners } = listeners;
+    return {
+      ...pointerListeners,
+      onKeyDown: (e: React.KeyboardEvent) => {
+        if (e.target === e.currentTarget) onKeyDown?.(e);
+      },
+    };
+  }, [listeners]);
+
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -286,7 +298,7 @@ export const SortableQueueItem = memo<QueueItemProps>(({
         $isSelected={isSelected}
         {...longPressHandlers}
         {...navigableProps}
-        {...(sortableEditActive ? { ...attributes, ...listeners } : {})}
+        {...(sortableEditActive ? { ...attributes, ...rowFocusedDragListeners } : {})}
         style={
           sortableEditActive
             ? { cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none' }

@@ -6,14 +6,16 @@ import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
 import { makeTrack } from '@/test/fixtures';
 
+const sortableKeyDown = vi.hoisted(() => vi.fn());
+
 vi.mock('@dnd-kit/sortable', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@dnd-kit/sortable')>();
   return {
     ...actual,
     SortableContext: ({ children }: { children: React.ReactNode }) => <>{children}</>,
     useSortable: () => ({
-      attributes: {},
-      listeners: {},
+      attributes: { role: 'button', tabIndex: 0 },
+      listeners: { onKeyDown: sortableKeyDown },
       setNodeRef: vi.fn(),
       transform: null,
       transition: undefined,
@@ -73,7 +75,9 @@ vi.mock('@/components/styled', async (importOriginal) => {
 
 import QueueTrackList from '../QueueTrackList';
 
-function renderManageableList(onTrackSelect = vi.fn()) {
+function renderManageableList(
+  { onTrackSelect = vi.fn(), onRemoveTrack = vi.fn(), canEdit = false } = {},
+) {
   const tracks = [
     makeTrack({ id: 'track-1', name: 'Song A', artists: 'Artist A' }),
     makeTrack({ id: 'track-2', name: 'Song B', artists: 'Artist B' }),
@@ -84,13 +88,14 @@ function renderManageableList(onTrackSelect = vi.fn()) {
         tracks={tracks}
         currentTrackIndex={0}
         onTrackSelect={onTrackSelect}
-        onRemoveTrack={vi.fn()}
+        onRemoveTrack={onRemoveTrack}
         onReorderTracks={vi.fn()}
+        canEdit={canEdit}
         isOpen
       />
     </ThemeProvider>,
   );
-  return { onTrackSelect };
+  return { onTrackSelect, onRemoveTrack };
 }
 
 describe('QueueTrackList — keyboard (#1724)', () => {
@@ -119,7 +124,7 @@ describe('QueueTrackList — keyboard (#1724)', () => {
     // #given
     const user = userEvent.setup();
     const onTrackSelect = vi.fn();
-    renderManageableList(onTrackSelect);
+    renderManageableList({ onTrackSelect });
     const secondRow = screen.getAllByTestId('queue-track-row')[1];
     if (!secondRow) throw new Error('expected second row');
 
@@ -144,5 +149,52 @@ describe('QueueTrackList — keyboard (#1724)', () => {
     // #then
     expect(screen.getByTestId('queue-context-menu')).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: /Play next/ })).toBeInTheDocument();
+  });
+
+  it('opens the actions menu on Enter without selecting the row', async () => {
+    // #given
+    const user = userEvent.setup();
+    const { onTrackSelect } = renderManageableList();
+    const trigger = screen.getByRole('button', { name: 'Actions for Song B' });
+
+    // #when
+    trigger.focus();
+    await user.keyboard('{Enter}');
+
+    // #then
+    expect(screen.getByTestId('queue-context-menu')).toBeInTheDocument();
+    expect(onTrackSelect).not.toHaveBeenCalled();
+  });
+
+  it('removes a track via keyboard in edit mode without starting a drag', async () => {
+    // #given
+    const user = userEvent.setup();
+    const { onRemoveTrack } = renderManageableList({ canEdit: true });
+    await user.click(screen.getByRole('button', { name: 'Edit' }));
+    const removeButton = screen.getByRole('button', { name: 'Remove Song B' });
+
+    // #when
+    removeButton.focus();
+    await user.keyboard('{Enter}');
+
+    // #then
+    expect(onRemoveTrack).toHaveBeenCalledWith(1);
+    expect(sortableKeyDown).not.toHaveBeenCalled();
+  });
+
+  it('starts keyboard drag only when the row itself is focused in edit mode', async () => {
+    // #given
+    const user = userEvent.setup();
+    renderManageableList({ canEdit: true });
+    await user.click(screen.getByRole('button', { name: 'Edit' }));
+    const secondRow = screen.getAllByTestId('queue-track-row')[1];
+    if (!secondRow) throw new Error('expected second row');
+
+    // #when
+    secondRow.focus();
+    await user.keyboard(' ');
+
+    // #then
+    expect(sortableKeyDown).toHaveBeenCalledTimes(1);
   });
 });
