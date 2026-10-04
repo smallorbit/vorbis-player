@@ -12,6 +12,7 @@ import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import { useRadio } from '@/hooks/useRadio';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
+import { resolveOriginalQueueTracks } from '@/services/sessionPersistence';
 import type { TrackOperations } from '@/types/trackOperations';
 import { providerRegistry } from '@/providers/registry';
 import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
@@ -340,7 +341,8 @@ export function usePlayerLogic() {
     const matchedIdx = trackId ? queueTracks.findIndex(t => t.id === trackId) : -1;
     const startIdx = matchedIdx >= 0 ? matchedIdx : fallbackIdx;
 
-    queueStore.replaceQueue(queueTracks);
+    const originalTracks = resolveOriginalQueueTracks(session);
+    queueStore.replaceQueue(queueTracks, originalTracks ? { originalTracks } : undefined);
     setSelection(savedSelection);
 
     const savedPositionIsValid = savedPositionMs !== undefined && savedPositionMs > 0;

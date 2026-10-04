@@ -11,6 +11,7 @@ export function useSessionPersistence(
   selection: PlaybackSelection | null,
   collectionName: string,
   tracks: MediaTrack[],
+  originalTracks: MediaTrack[],
   currentTrackIndex: number,
   trackId: string | undefined,
   trackTitle: string | undefined,
@@ -46,13 +47,14 @@ export function useSessionPersistence(
       collectionName,
       trackIndex: currentTrackIndex,
       queueTracks: tracks,
+      originalQueueTrackIds: originalTracks.map((t) => t.id),
       playbackPosition,
       ...(trackId !== undefined && { trackId }),
       ...(trackTitle !== undefined && { trackTitle }),
       ...(trackArtist !== undefined && { trackArtist }),
       ...(trackImage !== undefined && { trackImage }),
     };
-  }, [selection, collectionName, tracks, currentTrackIndex, trackId, trackTitle, trackArtist, trackImage, playbackPosition]);
+  }, [selection, collectionName, tracks, originalTracks, currentTrackIndex, trackId, trackTitle, trackArtist, trackImage, playbackPosition]);
 
   // Keep snapshotRef in sync so event-driven saves (beforeunload, interval) are always fresh.
   useEffect(() => {
@@ -85,7 +87,7 @@ export function useSessionPersistence(
     return () => {
       if (debounceTimerRef.current !== null) clearTimeout(debounceTimerRef.current);
     };
-  }, [selection, collectionName, tracks, currentTrackIndex, trackId, trackTitle, trackArtist, trackImage, playbackPosition]);
+  }, [selection, collectionName, tracks, originalTracks, currentTrackIndex, trackId, trackTitle, trackArtist, trackImage, playbackPosition]);
 
   const getLivePositionRef = useRef(getLivePosition);
   getLivePositionRef.current = getLivePosition;

@@ -4,11 +4,13 @@ import {
   loadSession,
   clearSession,
   isSessionStale,
+  resolveOriginalQueueTracks,
   STALE_SESSION_MS,
 } from '../sessionPersistence';
 import type { SessionSnapshot } from '../sessionPersistence';
 import type { PlaybackSelection } from '@/types/domain';
 import { createStorageMock } from '@/test/storageMock';
+import { makeTrack } from '@/test/fixtures';
 
 const localStorageMock = createStorageMock();
 
@@ -365,6 +367,39 @@ describe('sessionPersistence', () => {
 
       // #when / #then
       expect(isSessionStale(session)).toBe(false);
+    });
+  });
+
+  describe('resolveOriginalQueueTracks', () => {
+    const t1 = makeTrack({ id: 't1' });
+    const t2 = makeTrack({ id: 't2' });
+    const t3 = makeTrack({ id: 't3' });
+
+    it('round-trips the unshuffled order alongside a shuffled play order', () => {
+      // #given
+      saveSession({ ...baseSnapshot, queueTracks: [t3, t1, t2], originalQueueTrackIds: ['t1', 't2', 't3'] });
+
+      // #when
+      const loaded = loadSession();
+
+      // #then
+      expect(loaded && resolveOriginalQueueTracks(loaded)?.map((t) => t.id)).toEqual(['t1', 't2', 't3']);
+    });
+
+    it('returns undefined for a session saved before the original order was persisted', () => {
+      // #given
+      const session: SessionSnapshot = { ...baseSnapshot, queueTracks: [t3, t1, t2] };
+
+      // #when / #then
+      expect(resolveOriginalQueueTracks(session)).toBeUndefined();
+    });
+
+    it('drops ids that are not in the persisted queue', () => {
+      // #given
+      const session: SessionSnapshot = { ...baseSnapshot, queueTracks: [t2, t1], originalQueueTrackIds: ['t1', 'gone', 't2'] };
+
+      // #when / #then
+      expect(resolveOriginalQueueTracks(session)?.map((t) => t.id)).toEqual(['t1', 't2']);
     });
   });
 

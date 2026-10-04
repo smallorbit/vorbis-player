@@ -13,6 +13,7 @@ import { ProviderProvider } from '@/contexts/ProviderContext';
 import { makeTrack } from '@/test/fixtures';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
 import { defined } from '@/test/defined';
+import { queueStore } from '@/stores/queueStore';
 
 const playTrackSpy = vi.fn();
 const mockPrepareTrack = vi.fn();
@@ -327,5 +328,38 @@ describe('usePlayerLogic — restoreSession (hydrate)', () => {
     expect(nextCall?.[0]).toBe(1); // advanced from index 0 -> 1 in a 2-track queue
     expect(playTrackSpy).not.toHaveBeenCalled();
     expect(mockDescriptor.playback.resume).toHaveBeenCalled();
+  });
+  it('restores the collection order when shuffle is turned off after a shuffled session is restored', async () => {
+    // #given — an album was being played with shuffle ON when the page reloaded.
+    // The shuffle flag survives the reload (localStorage); the session persists
+    // the queue in its shuffled play order plus the album's original order.
+    const albumOrder = ['a1', 'a2', 'a3', 'a4', 'a5', 'a6'];
+    const byId = new Map(albumOrder.map((id) => [id, makeTrack({ id, name: id })]));
+    const shuffledPlayOrder = ['a4', 'a1', 'a6', 'a2', 'a5', 'a3'].map((id) => defined(byId.get(id)));
+    const session = makeSession({
+      queueTracks: shuffledPlayOrder,
+      originalQueueTrackIds: albumOrder,
+      trackIndex: 1,
+      trackId: 'a1',
+      playbackPosition: 10_000,
+    });
+    queueStore.__setShuffleForTests(true);
+    const { result } = renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
+
+    await act(async () => {
+      await result.current.handlers.restoreSession(session, { autoplay: false });
+    });
+    expect(queueStore.getSnapshot().shuffle).toBe(true);
+
+    // #when — the user turns shuffle off
+    act(() => {
+      queueStore.toggleShuffle();
+    });
+
+    // #then — the queue returns to the album's order, still on the playing track
+    const snap = queueStore.getSnapshot();
+    expect(snap.shuffle).toBe(false);
+    expect(snap.tracks.map((t) => t.id)).toEqual(albumOrder);
+    expect(queueStore.getCurrentTrack()?.id).toBe('a1');
   });
 });
