@@ -30,7 +30,8 @@ Tailwind 4, ESLint 10, and TypeScript 7 are also multiple majors behind (F94). T
 
 ### Security advisories
 
-- **High / critical:** CI fails (`npm run audit:ci`). Fix with routine `npm update` when the fix stays on the same major. If the advisory requires a **breaking** major (common for Vitest today), track it in RFC 0002 — do not `npm audit fix --force` on `main`.
+- **High / critical:** CI fails (`npm run audit:ci` via [`audit-ci.jsonc`](../audit-ci.jsonc)). Fix with routine `npm update` when the fix stays on the same major. If the advisory requires a **breaking** major (common for Vitest today), track it in RFC 0002 — do not `npm audit fix --force` on `main`.
+- **Temporary allowlist:** When a high advisory affects **dev-only** transitive deps and no same-major fix is published yet, allowlist the GHSA in `audit-ci.jsonc` with a removal note (see GHSA-vfj7-8cjw-p6xm / braces pending 3.0.4).
 - **Moderate / low:** Document in the RFC or issue; acceptable until the coordinated upgrade lands unless exploitability is proven in our usage.
 
 As of WS10 close, remaining audit noise is **moderate** Vitest/`@vitest/mocker` ([GHSA-82fw-gwwq-j7x9](https://github.com/advisories/GHSA-82fw-gwwq-j7x9)); dev/test only, not production runtime.
