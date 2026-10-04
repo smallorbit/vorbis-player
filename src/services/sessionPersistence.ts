@@ -19,6 +19,11 @@ export interface SessionSnapshot {
   trackId?: string;
   /** Full ordered queue. Dropbox image URLs are stripped (presigned, large); playbackRef kept (permanent path). */
   queueTracks?: MediaTrack[];
+  /**
+   * Unshuffled queue order as track ids — `queueTracks` is the play order, so
+   * without this a restored shuffled queue cannot be unshuffled.
+   */
+  originalQueueTrackIds?: string[];
   // Display-only fields for the Resume card
   trackTitle?: string;
   trackArtist?: string;
@@ -123,12 +128,27 @@ function upgradeLegacySnapshot(value: LegacySessionFields & Record<string, unkno
     trackIndex: value.trackIndex,
     ...(opt.trackId !== undefined && { trackId: opt.trackId }),
     ...(opt.queueTracks !== undefined && { queueTracks: opt.queueTracks }),
+    ...(opt.originalQueueTrackIds !== undefined && { originalQueueTrackIds: opt.originalQueueTrackIds }),
     ...(opt.trackTitle !== undefined && { trackTitle: opt.trackTitle }),
     ...(opt.trackArtist !== undefined && { trackArtist: opt.trackArtist }),
     ...(opt.trackImage !== undefined && { trackImage: opt.trackImage }),
     ...(opt.savedAt !== undefined && { savedAt: opt.savedAt }),
     ...(opt.playbackPosition !== undefined && { playbackPosition: opt.playbackPosition }),
   };
+}
+
+/**
+ * The restored queue's unshuffled order, resolved against `queueTracks`.
+ * Undefined when the session predates `originalQueueTrackIds`.
+ */
+export function resolveOriginalQueueTracks(session: SessionSnapshot): MediaTrack[] | undefined {
+  const { queueTracks, originalQueueTrackIds } = session;
+  if (!queueTracks || !originalQueueTrackIds) return undefined;
+  const byId = new Map(queueTracks.map((t) => [t.id, t]));
+  return originalQueueTrackIds.flatMap((id) => {
+    const track = byId.get(id);
+    return track ? [track] : [];
+  });
 }
 
 export function loadSession(): SessionSnapshot | null {

@@ -20,22 +20,22 @@ export const useAutoAdvance = ({
   enabled = true,
 }: UseAutoAdvanceProps) => {
   const playTrackRef = useRef(playTrack);
-  /** ID for cancelling pending advance timeouts (e.g. when shuffle is toggled). */
+  /** ID for cancelling pending advance timeouts (e.g. when the user skips during the delay). */
   const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { playTrackRef.current = playTrack; }, [playTrack]);
 
-  // Cancel a pending advance when the queue changes under it (reorder,
-  // shuffle toggle, manual track change) so a stale-index timeout cannot
-  // play the wrong track.
+  // Cancel a pending advance only when the track that ended is no longer the
+  // current one (manual skip, provider index sync, queue replaced). Other
+  // queue changes — enrichment, appends, reorder, shuffle toggle — keep it:
+  // the timeout reads the live queue at fire time, and the ended event will
+  // not fire again for the same track, so dropping it would stall playback.
   useEffect(() => {
-    let prevTracks = queueStore.getSnapshot().tracks;
-    let prevIndex = queueStore.getCurrentIndex();
+    let prevTrackId = queueStore.getCurrentTrack()?.id;
     return queueStore.subscribe(() => {
-      const snap = queueStore.getSnapshot();
-      if (snap.tracks === prevTracks && snap.currentIndex === prevIndex) return;
-      prevTracks = snap.tracks;
-      prevIndex = snap.currentIndex;
+      const trackId = queueStore.getCurrentTrack()?.id;
+      if (trackId === prevTrackId) return;
+      prevTrackId = trackId;
       if (advanceTimerRef.current !== null) {
         clearTimeout(advanceTimerRef.current);
         advanceTimerRef.current = null;

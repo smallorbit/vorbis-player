@@ -84,7 +84,7 @@ const AudioPlayerComponent = () => {
   } = useVisualizer();
   const { accentColorBackgroundEnabled } = useAccentColorBackground();
   const { isSettingsOpen, setIsSettingsOpen } = useVisualEffectsToggle();
-  const { tracks, selection } = useTrackListContext();
+  const { tracks, originalTracks, selection } = useTrackListContext();
   const { currentTrack, currentTrackIndex, showQueue, setShowQueue } = useCurrentTrackContext();
 
   // Provider badge shown in the player — the track's own provider, falling
@@ -105,6 +105,7 @@ const AudioPlayerComponent = () => {
     selection,
     collectionNameRef.current,
     tracks,
+    originalTracks,
     currentTrackIndex,
     currentTrack?.id,
     currentTrack?.name,

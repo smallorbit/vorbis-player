@@ -98,7 +98,7 @@ describe('useAutoAdvance', () => {
     expect(playTrack).toHaveBeenCalledWith(2, true);
   });
 
-  it('cancels a pending advance when the queue changes under it (e.g. shuffle toggle)', () => {
+  it('cancels a pending advance when the queue is replaced under it', () => {
     // #given — an advance is pending
     queueStore.replaceQueue(tracks, { currentIndex: 0 });
     renderHook(() => useAutoAdvance({ playTrack }));
@@ -110,6 +110,49 @@ describe('useAutoAdvance', () => {
 
     // #then — the stale-index advance never fires
     expect(playTrack).not.toHaveBeenCalled();
+  });
+
+  it('still advances when a pending advance sees only per-track enrichment', () => {
+    // #given — an advance is pending
+    queueStore.replaceQueue(tracks, { currentIndex: 0 });
+    renderHook(() => useAutoAdvance({ playTrack }));
+    emitTrackEnded?.();
+
+    // #when — a background loader fills in a duration before the delay
+    // elapses (same tracks, same order, same index — only data changed)
+    queueStore.mapTracks((t) => (t.id === 't3' ? { ...t, durationMs: 180_000 } : t));
+    vi.advanceTimersByTime(AUTO_ADVANCE_DELAY_MS);
+
+    // #then — playback still moves on; the ended event will not fire again
+    expect(playTrack).toHaveBeenCalledWith(1, true);
+  });
+
+  it('still advances when tracks are appended to the queue during the delay', () => {
+    // #given — an advance is pending
+    queueStore.replaceQueue(tracks, { currentIndex: 0 });
+    renderHook(() => useAutoAdvance({ playTrack }));
+    emitTrackEnded?.();
+
+    // #when — the user adds a track to the end of the queue
+    queueStore.addTracks([makeTrack({ id: 't4' })], { position: 'end' });
+    vi.advanceTimersByTime(AUTO_ADVANCE_DELAY_MS);
+
+    // #then — the playing track is unchanged, so the advance from it still fires
+    expect(playTrack).toHaveBeenCalledWith(1, true);
+  });
+
+  it('advances within the live queue when shuffle is toggled during the delay', () => {
+    // #given — an advance is pending from the middle of the queue
+    queueStore.replaceQueue(tracks, { currentIndex: 1 });
+    renderHook(() => useAutoAdvance({ playTrack }));
+    emitTrackEnded?.();
+
+    // #when — shuffle turns on, moving the playing track to index 0
+    queueStore.toggleShuffle();
+    vi.advanceTimersByTime(AUTO_ADVANCE_DELAY_MS);
+
+    // #then — advances to the track after the playing one in the new order
+    expect(playTrack).toHaveBeenCalledWith(1, true);
   });
 
   it('cancels a pending advance when the current index changes (manual skip)', () => {
