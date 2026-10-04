@@ -2,7 +2,7 @@
 
 **Initiative label:** [`project:vorbis-player-architecture-v2`](https://github.com/smallorbit/vorbis-player/labels/project%3Avorbis-player-architecture-v2) (RFC 0001)  
 **Working mode:** **one workstream (epic) at a time**; within an epic, **one child issue at a time**.  
-**Updated:** 2026-10-02 (after #1741 — WS7 3/4)
+**Updated:** 2026-10-04 (after #1741 merged — WS7 3/4; next #1742)
 
 Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tier-codebase.md`, which is **not yet on `main`** — landing that RFC is part of **[WS11](https://github.com/smallorbit/vorbis-player/issues/1757)**.
 
@@ -34,8 +34,8 @@ Principle: P2 — one canonical implementation per concern.
 |---|--------|--------|--------|
 | 1739 | Put AudioPlayer on a diet and add a PlaybackActions context | **Closed** | PR [#1792](https://github.com/smallorbit/vorbis-player/pull/1792) — F25, F26 |
 | 1740 | Consolidate the queue feature into `src/components/Queue/` | **Closed** | PR [#1793](https://github.com/smallorbit/vorbis-player/pull/1793) — F12, F43 |
-| 1741 | Delete the fourth styling system and unify tokens | **Closed** | F33, F81, F36, F37, F38, F79 — `ui/card` + `ui/alert`; `src/styles/zIndexLayers.ts`; `breakpointPixels` → Tailwind screens; removed vestigial `styled/{Button,Card,Alert}` |
-| **1742** | **Sweep: icons, ResumeHero, useIsTouchDevice** | **← NEXT** | |
+| 1741 | Delete the fourth styling system and unify tokens | **Closed** | PR [#1796](https://github.com/smallorbit/vorbis-player/pull/1796) — F33, F81, F36, F37, F38, F79 |
+| **1742** | **Sweep: icons, ResumeHero, useIsTouchDevice** | **← NEXT** | F82 — `components/icons/`, single ResumeHero, `hooks/useIsTouchDevice` |
 
 **WS7 exit criteria** (epic): every component file under 500 lines (machine-checked); [`docs/architecture/shadcn.md`](shadcn.md) two-system claim true; one grep for `#646cff` returns nothing.
 
@@ -151,7 +151,20 @@ Queue consolidation (F12, F43). On `main` via [#1793](https://github.com/smallor
 - **`src/components/Queue/`** — drawer, bottom sheet, list, row body, skeleton, tests
 - **`queueSurfaceProps.ts`**, **`QueueShellHeader`**, **`QueueDismissOverlay`**, **`QueueListChrome`**, **`QueueTrackRowBody`**
 - **`ui/context-menu.styled.ts`** + **`useRovingMenuKeyDown`** — shared with library context menu (no queue → LibraryRoute styled import)
-- Root **`QueueDrawer.tsx`** etc. remain thin re-exports for lazy imports
+- Root **`QueueDrawer.tsx`** / **`QueueBottomSheet.tsx`** remain thin re-exports for lazy imports (`DrawerOrchestrator`)
+
+## Context for #1741 (merged)
+
+Styling/token consolidation (F33, F81, F36, F37, F38, F79). On `main` via [#1796](https://github.com/smallorbit/vorbis-player/pull/1796).
+
+- **`ui/card.tsx`**, **`ui/alert.tsx`** — queue chrome + `PlayerStateRenderer` connect/error surfaces; deleted **`styled/{Button,Card,Alert}`**
+- **`components/styled/`** — drawer grips, scroll area, avatar, filter chips only
+- **`PlayerStateIdleLoadingCard`** + **`PlayerStateIdleCardShell`** — shared idle loading/connect chrome
+- **`src/styles/zIndexLayers.ts`** — dialog overlay/content, sheet, toast, popover; **`DialogOverlay`** defaults to overlay layer (1404)
+- **`theme` tokens:** `focusRing` / `cta` (+ hover) replace Vite purple `primary`; grep **`#646cff`** must stay empty
+- **`breakpointPixels`** → `theme.breakpoints`, drawer mobile breakpoint, Settings `@container`, Tailwind **`screens`**
+- **Theme access:** prefer `import { theme } from '@/styles/theme'` over `useTheme()` in non-styled fallbacks
+- **`buttonCta`** in `styles/utils.ts` (replaces `buttonPrimary` + unused button mixins)
 
 ---
 
