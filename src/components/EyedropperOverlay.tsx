@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { useTheme } from 'styled-components';
+import { theme } from '@/styles/theme';
 
 interface EyedropperOverlayProps {
   image: string;
@@ -8,7 +8,6 @@ interface EyedropperOverlayProps {
 }
 
 const EyedropperOverlay: React.FC<EyedropperOverlayProps> = ({ image, onPick, onClose }) => {
-  const theme = useTheme();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hoverColor, setHoverColor] = useState<string | null>(null);
 

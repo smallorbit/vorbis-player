@@ -74,10 +74,6 @@ vi.mock('@/components/styled', async (importOriginal) => {
   return {
     ...actual,
     Avatar: ({ alt }: { alt?: string | undefined }) => <img alt={alt ?? ''} />,
-    Card: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    CardHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    CardContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    CardDescription: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     ScrollArea: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   };
 });

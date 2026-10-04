@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useState, useCallback, useMemo, useRef } from 'react';
-import { useTheme } from 'styled-components';
-import { CardContent } from '@/components/styled';
+import { CardContent } from '@/components/ui/card';
+import { theme } from '@/styles/theme';
 import PlayerControls from '@/components/PlayerControls';
 import BottomBar from '@/components/BottomBar';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
@@ -39,7 +39,6 @@ const Settings = lazy(() => import('@/components/Settings'));
 const KeyboardShortcutsHelp = lazy(() => import('@/components/KeyboardShortcutsHelp'));
 
 function ControlsLoadingFallback(): React.ReactElement {
-  const theme = useTheme();
   return (
     <div style={{
       height: '80px',
@@ -54,7 +53,6 @@ function ControlsLoadingFallback(): React.ReactElement {
 }
 
 function SettingsLoadingFallback(): React.ReactElement {
-  const theme = useTheme();
   return (
     <div style={{
       position: 'fixed',

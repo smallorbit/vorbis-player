@@ -12,7 +12,7 @@ export const flexColumn = css`
   flex-direction: column;
 `;
 
-export const buttonBase = css`
+export const buttonCta = css`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -24,52 +24,16 @@ export const buttonBase = css`
   cursor: pointer;
   border: none;
   outline: none;
-  
+  background-color: ${theme.colors.cta};
+  color: ${theme.colors.foregroundDark};
+
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
-`;
 
-export const buttonPrimary = css`
-  ${buttonBase}
-  background-color: ${theme.colors.primary};
-  color: ${theme.colors.white};
-  
   &:hover:not(:disabled) {
-    background-color: ${theme.colors.primaryHover};
-  }
-`;
-
-export const buttonSecondary = css`
-  ${buttonBase}
-  background-color: ${theme.colors.secondary};
-  color: ${theme.colors.white};
-  
-  &:hover:not(:disabled) {
-    background-color: ${theme.colors.secondaryHover};
-  }
-`;
-
-export const buttonOutline = css`
-  ${buttonBase}
-  background-color: transparent;
-  color: ${theme.colors.foreground};
-  border: 1px solid ${theme.colors.border};
-  
-  &:hover:not(:disabled) {
-    background-color: ${theme.colors.muted.background};
-    border-color: ${theme.colors.borderHover};
-  }
-`;
-
-export const buttonGhost = css`
-  ${buttonBase}
-  background-color: transparent;
-  color: ${theme.colors.foreground};
-  
-  &:hover:not(:disabled) {
-    background-color: ${theme.colors.muted.background};
+    background-color: ${theme.colors.ctaHover};
   }
 `;
 

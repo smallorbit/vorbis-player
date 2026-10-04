@@ -17,7 +17,7 @@ export interface QueueSurfaceProps {
 }
 
 /** Detect reorder / id changes when length and current index are unchanged (memo guard). */
-export function queueTrackOrderKey(tracks: { id: string }[]): string {
+function queueTrackOrderKey(tracks: { id: string }[]): string {
   return tracks.map((t) => t.id).join('|');
 }
 

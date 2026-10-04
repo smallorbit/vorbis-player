@@ -89,7 +89,7 @@ export const FilterButton = styled.button<{ $hasActive?: boolean | undefined }>`
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: ${theme.colors.primary};
+    background: ${theme.colors.cta};
     display: ${({ $hasActive }) => ($hasActive ? 'block' : 'none')};
   }
 `;

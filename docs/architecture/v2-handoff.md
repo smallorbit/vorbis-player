@@ -2,7 +2,7 @@
 
 **Initiative label:** [`project:vorbis-player-architecture-v2`](https://github.com/smallorbit/vorbis-player/labels/project%3Avorbis-player-architecture-v2) (RFC 0001)  
 **Working mode:** **one workstream (epic) at a time**; within an epic, **one child issue at a time**.  
-**Updated:** 2026-10-02 (after #1740 merged — WS7 2/4)
+**Updated:** 2026-10-04 (after #1741 merged — WS7 3/4; next #1742)
 
 Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tier-codebase.md`, which is **not yet on `main`** — landing that RFC is part of **[WS11](https://github.com/smallorbit/vorbis-player/issues/1757)**.
 
@@ -16,7 +16,7 @@ Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tie
 | WS2 | [#1692](https://github.com/smallorbit/vorbis-player/issues/1692) PlaybackStore + QueueStore | **Done** |
 | WS3 | [#1699](https://github.com/smallorbit/vorbis-player/issues/1699) State, persistence & events | **Done** |
 | WS10 | [#1729](https://github.com/smallorbit/vorbis-player/issues/1729) Close the toolchain blind spots | **Done** (8/8) |
-| WS7 | [#1738](https://github.com/smallorbit/vorbis-player/issues/1738) Component & styling coherence | **In progress** (2/4) |
+| WS7 | [#1738](https://github.com/smallorbit/vorbis-player/issues/1738) Component & styling coherence | **In progress** (3/4) |
 | WS4–WS6, WS8–WS9, WS11–WS12 | Reliability → DevBug | Open (one epic at a time) |
 
 Pre-initiative foundations already on `main`: async-race harness, honest e2e, full CI gate (coverage + knip + audit ≥ high).
@@ -25,7 +25,7 @@ Pre-initiative foundations already on `main`: async-race harness, honest e2e, fu
 
 ## Do this next
 
-### Immediate: continue WS7 at #1741
+### Immediate: continue WS7 at #1742
 
 Epic: **[#1738 — Component & styling coherence](https://github.com/smallorbit/vorbis-player/issues/1738)**  
 Principle: P2 — one canonical implementation per concern.
@@ -34,12 +34,12 @@ Principle: P2 — one canonical implementation per concern.
 |---|--------|--------|--------|
 | 1739 | Put AudioPlayer on a diet and add a PlaybackActions context | **Closed** | PR [#1792](https://github.com/smallorbit/vorbis-player/pull/1792) — F25, F26 |
 | 1740 | Consolidate the queue feature into `src/components/Queue/` | **Closed** | PR [#1793](https://github.com/smallorbit/vorbis-player/pull/1793) — F12, F43 |
-| **1741** | **Delete the fourth styling system and unify tokens** | **← NEXT** | F33, F81, F36, F37, F38, F79 |
-| 1742 | Sweep: icons, ResumeHero, useIsTouchDevice | Open | |
+| 1741 | Delete the fourth styling system and unify tokens | **Closed** | PR [#1796](https://github.com/smallorbit/vorbis-player/pull/1796) — F33, F81, F36, F37, F38, F79 |
+| **1742** | **Sweep: icons, ResumeHero, useIsTouchDevice** | **← NEXT** | F82 — `components/icons/`, single ResumeHero, `hooks/useIsTouchDevice` |
 
 **WS7 exit criteria** (epic): every component file under 500 lines (machine-checked); [`docs/architecture/shadcn.md`](shadcn.md) two-system claim true; one grep for `#646cff` returns nothing.
 
-Branch from latest **`main`** (stack #1792→#1793 already squash-merged).
+Branch from latest **`main`**.
 
 ### WS10 closed (reference)
 
@@ -151,7 +151,20 @@ Queue consolidation (F12, F43). On `main` via [#1793](https://github.com/smallor
 - **`src/components/Queue/`** — drawer, bottom sheet, list, row body, skeleton, tests
 - **`queueSurfaceProps.ts`**, **`QueueShellHeader`**, **`QueueDismissOverlay`**, **`QueueListChrome`**, **`QueueTrackRowBody`**
 - **`ui/context-menu.styled.ts`** + **`useRovingMenuKeyDown`** — shared with library context menu (no queue → LibraryRoute styled import)
-- Root **`QueueDrawer.tsx`** etc. remain thin re-exports for lazy imports
+- Root **`QueueDrawer.tsx`** / **`QueueBottomSheet.tsx`** remain thin re-exports for lazy imports (`DrawerOrchestrator`)
+
+## Context for #1741 (merged)
+
+Styling/token consolidation (F33, F81, F36, F37, F38, F79). On `main` via [#1796](https://github.com/smallorbit/vorbis-player/pull/1796).
+
+- **`ui/card.tsx`**, **`ui/alert.tsx`** — queue chrome + `PlayerStateRenderer` connect/error surfaces; deleted **`styled/{Button,Card,Alert}`**
+- **`components/styled/`** — drawer grips, scroll area, avatar, filter chips only
+- **`PlayerStateIdleLoadingCard`** + **`PlayerStateIdleCardShell`** — shared idle loading/connect chrome
+- **`src/styles/zIndexLayers.ts`** — dialog overlay/content, sheet, toast, popover; **`DialogOverlay`** defaults to overlay layer (1404)
+- **`theme` tokens:** `focusRing` / `cta` (+ hover) replace Vite purple `primary`; grep **`#646cff`** must stay empty
+- **`breakpointPixels`** → `theme.breakpoints`, drawer mobile breakpoint, Settings `@container`, Tailwind **`screens`**
+- **Theme access:** prefer `import { theme } from '@/styles/theme'` over `useTheme()` in non-styled fallbacks
+- **`buttonCta`** in `styles/utils.ts` (replaces `buttonPrimary` + unused button mixins)
 
 ---
 
@@ -173,7 +186,8 @@ Queue consolidation (F12, F43). On `main` via [#1793](https://github.com/smallor
 - Toolchain RFC: [`docs/rfcs/0002-coordinated-toolchain-upgrade.md`](../rfcs/0002-coordinated-toolchain-upgrade.md)  
 - Suggested next epic (if not WS7): [WS6 a11y #1721](https://github.com/smallorbit/vorbis-player/issues/1721)  
 - WS7 epic: [#1738](https://github.com/smallorbit/vorbis-player/issues/1738)  
-- Next issue: [#1741](https://github.com/smallorbit/vorbis-player/issues/1741)  
+- Next issue: [#1742](https://github.com/smallorbit/vorbis-player/issues/1742)  
+- Z-index layers: `src/styles/zIndexLayers.ts`  
 - Queue feature: `src/components/Queue/`  
 - Context menu styled primitives: `src/components/ui/context-menu.styled.ts`  
 - shadcn / two-system doc: [`docs/architecture/shadcn.md`](shadcn.md)  

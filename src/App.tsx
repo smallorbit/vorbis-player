@@ -3,7 +3,7 @@ import styled, { keyframes } from 'styled-components';
 import AudioPlayerComponent from './components/AudioPlayer';
 import { spotifyAuth } from './services/spotify';
 import { ThemeProvider } from './styles/ThemeProvider';
-import { flexCenter, buttonPrimary } from './styles/utils';
+import { flexCenter, buttonCta } from './styles/utils';
 import { AuthCallbackPage } from './components/AuthCallbackPage';
 import { TrackProvider } from './contexts/TrackContext';
 import { VisualEffectsProvider } from './contexts/visualEffects';
@@ -66,7 +66,7 @@ const ErrorText = styled.p`
 `;
 
 const RetryButton = styled.button`
-  ${buttonPrimary}
+  ${buttonCta}
 `;
 
 function App() {
