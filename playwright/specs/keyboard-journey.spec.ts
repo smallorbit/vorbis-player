@@ -14,6 +14,10 @@ import { trackName } from '../fixtures/player';
 const playlist = requirePlaylist(spotifySnapshot, 'spotify');
 const MAX_TAB_STOPS = 200;
 
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 async function isFocused(locator: Locator): Promise<boolean> {
   return locator.evaluate((el) => el === document.activeElement).catch(() => false);
 }
@@ -90,7 +94,7 @@ test.describe('Keyboard-only journey', () => {
     const initial = await queueTrackNames(page);
     expect(initial.length).toBeGreaterThan(3);
     const second = initial[1] ?? '';
-    await tabTo(page, dialog.locator(`[role="button"][aria-label^="${second}, "]`));
+    await tabTo(page, dialog.getByRole('button', { name: new RegExp(`^${escapeRegExp(second)}, `) }));
     await page.keyboard.press('Enter');
 
     // #then - it plays, the queue closes, and focus returns to the opener
