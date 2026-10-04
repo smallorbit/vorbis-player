@@ -11,7 +11,7 @@ import { DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { useLibrarySearch } from '@/hooks/useLibrarySearch';
 import type { MediaCollection, MediaTrack } from '@/types/domain';
 import type { SearchArtist } from '@/services/cache/librarySearch';
-import { useIsTouchDevice } from './useIsTouchDevice';
+import { useIsTouchDevice } from '@/hooks/useIsTouchDevice';
 
 const PLACEHOLDER = 'Start typing to search your library';
 

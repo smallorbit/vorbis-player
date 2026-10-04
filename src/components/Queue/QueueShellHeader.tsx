@@ -1,7 +1,8 @@
 import { memo } from 'react';
 import styled from 'styled-components';
 import { theme } from '@/styles/theme';
-import { SaveQueueButton, SaveQueueIcon } from './QueueSaveControl';
+import { SaveIcon } from '@/components/icons/ActionIcons';
+import { SaveQueueButton } from './QueueSaveControl';
 
 const HeaderRoot = styled.div<{ $variant: 'drawer' | 'sheet' }>`
   display: flex;
@@ -92,7 +93,7 @@ export const QueueShellHeader = memo(function QueueShellHeader({
           </Title>
           {canSaveQueue && (
             <SaveQueueButton onClick={onSaveQueue} title="Save as playlist" aria-label="Save as playlist">
-              <SaveQueueIcon />
+              <SaveIcon />
             </SaveQueueButton>
           )}
         </HeaderActions>
@@ -114,7 +115,7 @@ export const QueueShellHeader = memo(function QueueShellHeader({
       <HeaderActions $variant="drawer">
         {canSaveQueue && (
           <SaveQueueButton onClick={onSaveQueue} title="Save as playlist" aria-label="Save as playlist">
-            <SaveQueueIcon />
+            <SaveIcon />
           </SaveQueueButton>
         )}
         {onClose && (

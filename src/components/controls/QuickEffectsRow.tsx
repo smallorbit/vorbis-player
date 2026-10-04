@@ -9,6 +9,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import EyedropperOverlay from '@/components/EyedropperOverlay';
 import { Switch } from '@/components/ui/switch';
 import { theme } from '@/styles/theme';
+import { EyedropperIcon } from '@/components/icons/ActionIcons';
 
 interface QuickEffectsRowProps {
   currentTrack: MediaTrack | null;
@@ -253,12 +254,7 @@ function QuickEffectsRow({
               title="Pick color from album art"
               aria-label="Pick color from album art"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m2 22 1-1h3l9-9" />
-                <path d="M3 21v-3l9-9" />
-                <path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9" />
-                <path d="m15 6 3 3" />
-              </svg>
+              <EyedropperIcon />
             </IconButton>
           )}
           <ResetBtn onClick={handleResetColor} title="Reset to default color">

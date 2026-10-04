@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import { NextIcon, PauseIcon, PlayIcon, PreviousIcon } from '@/components/icons/PlaybackIcons';
 
 const ZEN_CLICK_ZONE_Z = 5;
 
@@ -52,11 +53,7 @@ const CenterIconButton = styled(IconButton)`
   transform: translateX(-50%);
 `;
 
-const Icon: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <svg viewBox="0 0 24 24" fill="white" style={{ width: '60%', height: '60%' }}>
-    {children}
-  </svg>
-);
+const zenIconStyle = { width: '60%', height: '60%' };
 
 export const ZenClickZoneOverlay: React.FC<ZenClickZoneOverlayProps> = React.memo(({
   isPlaying,
@@ -74,30 +71,24 @@ export const ZenClickZoneOverlay: React.FC<ZenClickZoneOverlayProps> = React.mem
         aria-label="Previous track"
         data-testid="zen-prev-zone"
       >
-        <Icon>
-          <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
-        </Icon>
+        <PreviousIcon fill="white" style={zenIconStyle} />
       </IconButton>
       <CenterIconButton
         onClick={(e) => { e.stopPropagation(); onPlayPause(); }}
         aria-label={isPlaying ? 'Pause' : 'Play'}
         data-testid="zen-playpause-zone"
       >
-        <Icon>
-          {isPlaying
-            ? <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-            : <path d="M8 5v14l11-7z" />
-          }
-        </Icon>
+        {isPlaying
+          ? <PauseIcon fill="white" style={zenIconStyle} />
+          : <PlayIcon fill="white" style={zenIconStyle} />
+        }
       </CenterIconButton>
       <IconButton
         onClick={(e) => { e.stopPropagation(); onNext(); }}
         aria-label="Next track"
         data-testid="zen-next-zone"
       >
-        <Icon>
-          <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
-        </Icon>
+        <NextIcon fill="white" style={zenIconStyle} />
       </IconButton>
     </Overlay>
   );

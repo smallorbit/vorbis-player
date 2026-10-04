@@ -7,6 +7,9 @@ import { useLongPress } from '@/hooks/useLongPress';
 import { useLikeTrack } from '@/hooks/useLikeTrack';
 import { QueueContextMenu } from './QueueContextMenu';
 import { QueueTrackRowBody } from './QueueTrackRowBody';
+import { CloseIcon, GripIcon, TrashIcon } from '@/components/icons/ActionIcons';
+import { StrokeHeartIcon } from '@/components/icons/HeartIcons';
+import { PlayIcon } from '@/components/icons/PlaybackIcons';
 import {
   QueueListItem,
   DragHandle,
@@ -17,59 +20,6 @@ import {
 } from './QueueTrackList.styled';
 
 const DRAG_ACTIVE_Z = 10;
-
-const GripIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-    <circle cx="5" cy="3" r="1.5" />
-    <circle cx="11" cy="3" r="1.5" />
-    <circle cx="5" cy="8" r="1.5" />
-    <circle cx="11" cy="8" r="1.5" />
-    <circle cx="5" cy="13" r="1.5" />
-    <circle cx="11" cy="13" r="1.5" />
-  </svg>
-);
-
-const RemoveIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-    <path d="M18 6L6 18M6 6l12 12" />
-  </svg>
-);
-
-const ContextPlayIcon = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-    <path d="M8 5v14l11-7z" />
-  </svg>
-);
-
-const ContextHeartIcon = ({ filled }: { filled: boolean }) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill={filled ? 'currentColor' : 'none'}
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    width="16"
-    height="16"
-  >
-    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-  </svg>
-);
-
-const ContextTrashIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    width="16"
-    height="16"
-  >
-    <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-  </svg>
-);
 
 interface ContextMenuState {
   x: number;
@@ -127,14 +77,14 @@ function useQueueItemContextMenu(
   const options = [
     {
       label: 'Play next',
-      icon: <ContextPlayIcon />,
+      icon: <PlayIcon size={16} />,
       onClick: () => onPlayNext?.(index),
     },
     ...(canSaveTrack
-      ? [{ label: isLiked ? 'Unlike' : 'Like', icon: <ContextHeartIcon filled={isLiked} />, onClick: handleLikeToggle }]
+      ? [{ label: isLiked ? 'Unlike' : 'Like', icon: <StrokeHeartIcon filled={isLiked} size={16} />, onClick: handleLikeToggle }]
       : []),
     ...(!isSelected && onRemove
-      ? [{ label: 'Remove from queue', icon: <ContextTrashIcon />, onClick: () => onRemove(index), destructive: true }]
+      ? [{ label: 'Remove from queue', icon: <TrashIcon />, onClick: () => onRemove(index), destructive: true }]
       : []),
   ];
 
@@ -244,7 +194,7 @@ export const SortableQueueItem = memo<QueueItemProps>(({
         <QueueItemRowChrome track={track} isSelected={isSelected} showProviderIcon={showProviderIcon} />
         {isEditMode && onRemove && !isSelected && (
           <RemoveButton onClick={handleRemoveClick} aria-label={`Remove ${track.name}`}>
-            <RemoveIcon />
+            <CloseIcon />
           </RemoveButton>
         )}
       </QueueListItem>
