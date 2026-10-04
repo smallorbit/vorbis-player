@@ -2,6 +2,7 @@ import React, { Suspense, memo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import { useVerticalSwipeGesture } from '@/hooks/useVerticalSwipeGesture';
+import { useModalOverlay } from '@/hooks/useModalOverlay';
 import { theme } from '@/styles/theme';
 import { GripPill, SwipeHandle, DRAWER_TRANSITION_DURATION, DRAWER_TRANSITION_EASING } from '@/components/styled';
 import QueueSkeleton from './QueueSkeleton';
@@ -95,6 +96,8 @@ const QueueBottomSheet = memo<QueueSurfaceProps>(function QueueBottomSheet({
     enabled: isOpen,
   });
 
+  const { containerRef, dialogProps } = useModalOverlay<HTMLDivElement>(isOpen);
+
   const effectiveDragOffset = isOpen && isDragging ? dragOffset : 0;
 
   if (!hasBeenOpenedRef.current) return null;
@@ -106,8 +109,8 @@ const QueueBottomSheet = memo<QueueSurfaceProps>(function QueueBottomSheet({
         $isOpen={isOpen}
         $isDragging={isDragging}
         $dragOffset={effectiveDragOffset}
-        role="dialog"
-        aria-modal="true"
+        ref={containerRef}
+        {...dialogProps}
         aria-label={radioActive ? 'Radio' : 'Up Next'}
       >
         <SheetHeader>
