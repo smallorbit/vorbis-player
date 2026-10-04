@@ -2,7 +2,7 @@
 
 **Initiative label:** [`project:vorbis-player-architecture-v2`](https://github.com/smallorbit/vorbis-player/labels/project%3Avorbis-player-architecture-v2) (RFC 0001)  
 **Working mode:** **one workstream (epic) at a time**; within an epic, **one child issue at a time**.  
-**Updated:** 2026-10-04 (after #1722 merged — WS6 1/7; next #1724)
+**Updated:** 2026-10-04 (after #1723 merged — WS6 2/7; next #1724)
 
 Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tier-codebase.md`, which is **not yet on `main`** — landing that RFC is part of **[WS11](https://github.com/smallorbit/vorbis-player/issues/1757)**.
 
@@ -34,7 +34,7 @@ Principle: P7 — the platform is part of elegance.
 | # | Issue | State | Notes |
 |---|--------|--------|--------|
 | 1722 | Fix LibraryCard keyboard activation | **Done** | PR [#1799](https://github.com/smallorbit/vorbis-player/pull/1799) |
-| **1723** | Honor prefers-reduced-motion at the visualizer choke point | **In PR** | F10 — `BackgroundVisualizer` + `aria-hidden` canvas |
+| 1723 | Honor prefers-reduced-motion at the visualizer choke point | **Done** | PR [#1800](https://github.com/smallorbit/vorbis-player/pull/1800) — F10; `audit-ci.jsonc` braces allowlist |
 | **1724** | Make the queue fully keyboard-operable | **← NEXT** | |
 | 1725 | Give drawers dialog semantics and focus management | Open | |
 | 1726 | Stop global shortcuts hijacking keys from focused controls | Open | |
@@ -195,13 +195,14 @@ Icon, resume-hero, and touch-hook sweep (F82).
 - Inline `<svg>` remains in `components/icons/`, provider icon components, and test fixtures
 - Review on [#1797](https://github.com/smallorbit/vorbis-player/pull/1797): decorative `♪` fallback is shared and `aria-hidden` on both variants. Panel color literals (including `rgba(100, 108, 255, …)`) are [#1798](https://github.com/smallorbit/vorbis-player/issues/1798) — **do not** fold into WS6 children. `ExternalLink.icon` is still `string`, so `ICON_MAP` stays a string record. A third ResumeHero variant does not exist; do not split the component ahead of one.
 
-## Context for #1723
+## Context for #1723 (merged)
 
-Reduced-motion choke point (F10).
+Reduced-motion choke point (F10). On `main` via [#1800](https://github.com/smallorbit/vorbis-player/pull/1800).
 
 - **`BackgroundVisualizer`** — `useReducedMotion()`; returns `null` when `prefers-reduced-motion: reduce` (unmounts all rAF canvas loops)
 - **`components/visualizers/*`** — decorative canvases marked `aria-hidden`
 - Tests: `src/components/__tests__/BackgroundVisualizer.test.tsx`
+- CI: **`audit-ci.jsonc`** — temporary allowlist for GHSA-vfj7-8cjw-p6xm until `braces@3.0.4` publishes (see [`dependency-upgrades.md`](../dependency-upgrades.md))
 
 ---
 
@@ -223,7 +224,9 @@ Reduced-motion choke point (F10).
 - Toolchain RFC: [`docs/rfcs/0002-coordinated-toolchain-upgrade.md`](../rfcs/0002-coordinated-toolchain-upgrade.md)  
 - WS7 epic: [#1738](https://github.com/smallorbit/vorbis-player/issues/1738) (done)
 - Next epic: [WS6 a11y #1721](https://github.com/smallorbit/vorbis-player/issues/1721)
-- Next issue: [#1724](https://github.com/smallorbit/vorbis-player/issues/1724)
+- Next issue: [#1724](https://github.com/smallorbit/vorbis-player/issues/1724) (queue keyboard)
+- Reduced motion / visualizer: `src/components/BackgroundVisualizer.tsx`, `src/hooks/useReducedMotion.ts`
+- Audit allowlist: `audit-ci.jsonc`
 - Non-blocking leftover: [#1798](https://github.com/smallorbit/vorbis-player/issues/1798) (panel color tokens; not WS6)
 - Shared icons: `src/components/icons/`
 - Resume hero: `src/components/ResumeHero/`
