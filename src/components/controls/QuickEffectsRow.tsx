@@ -79,7 +79,7 @@ const SwatchButton = styled.button<{ $color: string; $isActive: boolean }>`
   border-radius: 50%;
   background: ${({ $color }) => $color};
   border: 1px solid ${({ theme }) => theme.colors.control.border};
-  outline: ${({ $isActive }) => ($isActive ? '2px solid var(--accent-contrast-color)' : 'none')};
+  outline: ${({ $isActive, theme }) => ($isActive ? `2px solid ${theme.colors.white}` : 'none')};
   cursor: pointer;
   padding: 0;
   flex-shrink: 0;

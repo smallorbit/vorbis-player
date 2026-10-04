@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { 
   hexToRgb, 
   getRelativeLuminance, 
-  isLightColor, 
+  getContrastRatio,
   getContrastColor 
 } from '../colorUtils';
 
@@ -48,24 +48,20 @@ describe('colorUtils', () => {
     });
   });
 
-  describe('isLightColor', () => {
-    it('should identify white as light', () => {
-      expect(isLightColor('#ffffff')).toBe(true);
-      expect(isLightColor('#f5f5f0')).toBe(true); // soft off-white
+  describe('getContrastRatio', () => {
+    it('should be 21 for black on white', () => {
+      // #when / #then
+      expect(getContrastRatio('#000000', '#ffffff')).toBeCloseTo(21, 5);
     });
 
-    it('should identify black as dark', () => {
-      expect(isLightColor('#000000')).toBe(false);
+    it('should be 1 for identical colors', () => {
+      // #when / #then
+      expect(getContrastRatio('#fb923c', '#fb923c')).toBeCloseTo(1, 5);
     });
 
-    it('should identify bright colors correctly', () => {
-      expect(isLightColor('#ffff00')).toBe(true); // yellow is light
-      expect(isLightColor('#00ffff')).toBe(true); // cyan is light
-    });
-
-    it('should identify dark colors correctly', () => {
-      expect(isLightColor('#000080')).toBe(false); // navy is dark
-      expect(isLightColor('#800000')).toBe(false); // maroon is dark
+    it('should be symmetric', () => {
+      // #when / #then
+      expect(getContrastRatio('#1a1a1a', '#fb923c')).toBeCloseTo(getContrastRatio('#fb923c', '#1a1a1a'), 10);
     });
   });
 
@@ -75,13 +71,35 @@ describe('colorUtils', () => {
       expect(getContrastColor('#ffffff')).toBe('#1a1a1a');
       expect(getContrastColor('#f5f5f0')).toBe('#1a1a1a');
       expect(getContrastColor('#ffff00')).toBe('#1a1a1a');
+      expect(getContrastColor('#fb923c')).toBe('#1a1a1a');
     });
 
     it('should return light color for dark backgrounds', () => {
       // #when / #then
       expect(getContrastColor('#000000')).toBe('#ffffff');
       expect(getContrastColor('#1a1a1a')).toBe('#ffffff');
-      expect(getContrastColor('#fb923c')).toBe('#ffffff');
+      expect(getContrastColor('#000080')).toBe('#ffffff');
+    });
+
+    it('should pick a foreground meeting WCAG AA (4.5:1) for mid-luminance accents', () => {
+      // #given — saturated mid-tones the extractor commonly produces
+      const accents = ['#fb923c', '#22c55e', '#3b82f6', '#ef4444', '#a855f7', '#14b8a6', '#808080'];
+
+      // #when
+      const ratios = accents.map((accent) => getContrastRatio(accent, getContrastColor(accent)));
+
+      // #then
+      ratios.forEach((ratio) => expect(ratio).toBeGreaterThanOrEqual(4.5));
+    });
+
+    it('should fall back to pure black when neither candidate reaches AA', () => {
+      // #given — #a855f7 gives 4.40:1 against #1a1a1a and 3.96:1 against white
+
+      // #when
+      const foreground = getContrastColor('#a855f7');
+
+      // #then
+      expect(foreground).toBe('#000000');
     });
 
     it('should support custom contrast colors', () => {

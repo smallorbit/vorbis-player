@@ -27,18 +27,27 @@ export const getRelativeLuminance = (hex: string): number => {
 };
 
 /**
- * Determine if a color is light or dark based on its luminance
- * Returns true if the color is light (needs dark text)
+ * WCAG 2.x contrast ratio between two colors, from 1 (identical) to 21 (black on white)
+ * https://www.w3.org/TR/WCAG21/#dfn-contrast-ratio
  */
-export const isLightColor = (hex: string): boolean => {
-  const luminance = getRelativeLuminance(hex);
-  return luminance > 0.5; // Threshold for determining light vs dark
+export const getContrastRatio = (a: string, b: string): number => {
+  const la = getRelativeLuminance(a);
+  const lb = getRelativeLuminance(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
 };
 
+const WCAG_AA_NORMAL_TEXT = 4.5;
+
+const pickHigherContrast = (backgroundColor: string, a: string, b: string): string =>
+  getContrastRatio(backgroundColor, a) >= getContrastRatio(backgroundColor, b) ? a : b;
+
 /**
- * Get the appropriate text/icon color for a given background color
- * Returns dark color for light backgrounds, light color for dark backgrounds
+ * Pick whichever foreground candidate has the higher WCAG contrast ratio against the background.
+ * If neither candidate reaches AA (4.5:1), fall back to pure black or white — one of the two
+ * always clears 4.5:1 for any background.
  */
 export const getContrastColor = (backgroundColor: string, darkColor = '#1a1a1a', lightColor = '#ffffff'): string => {
-  return isLightColor(backgroundColor) ? darkColor : lightColor;
+  const preferred = pickHigherContrast(backgroundColor, darkColor, lightColor);
+  if (getContrastRatio(backgroundColor, preferred) >= WCAG_AA_NORMAL_TEXT) return preferred;
+  return pickHigherContrast(backgroundColor, '#000000', '#ffffff');
 };
