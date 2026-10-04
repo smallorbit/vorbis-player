@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useState, useCallback, useMemo, useRef } from 'react';
+import React, { Suspense, lazy, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { CardContent } from '@/components/ui/card';
 import { theme } from '@/styles/theme';
 import PlayerControls from '@/components/PlayerControls';
@@ -156,6 +156,10 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
     'grid-template-rows, opacity, transform',
     ZEN_CONTROLS_WILL_CHANGE_FALLBACK_MS,
   );
+
+  useEffect(() => {
+    zenControlsWrapperRef.current?.toggleAttribute('inert', zenModeEnabled);
+  }, [zenModeEnabled]);
 
   const [showHelp, setShowHelp] = useState(false);
   const toggleHelp = useCallback(() => setShowHelp(prev => !prev), []);

@@ -33,6 +33,10 @@ const TriggerButton = styled.button.withConfig({
   color: ${({ theme }) => theme.colors.white};
   opacity: ${({ $isVisible }) => ($isVisible ? 1 : 0)};
   transition: opacity 150ms ease;
+
+  &:focus-visible {
+    opacity: 1;
+  }
 `;
 
 const PickCanvas = styled.canvas`
