@@ -26,15 +26,15 @@ Pre-initiative foundations already on `main`: async-race harness, honest e2e, fu
 
 ## Do this next
 
-### Immediate: start WS6 at #1722
+### Immediate: continue WS6 at #1723
 
 Epic: **[#1721 — Accessibility as a first-class dimension](https://github.com/smallorbit/vorbis-player/issues/1721)**  
 Principle: P7 — the platform is part of elegance.
 
 | # | Issue | State | Notes |
 |---|--------|--------|--------|
-| **1722** | **Fix LibraryCard keyboard activation** | **← NEXT** | Highest reach, smallest fix |
-| 1723 | Honor prefers-reduced-motion at the visualizer choke point | Open | |
+| **1722** | **Fix LibraryCard keyboard activation** | **In PR** | Highest reach, smallest fix |
+| **1723** | Honor prefers-reduced-motion at the visualizer choke point | **← NEXT** | |
 | 1724 | Make the queue fully keyboard-operable | Open | |
 | 1725 | Give drawers dialog semantics and focus management | Open | |
 | 1726 | Stop global shortcuts hijacking keys from focused controls | Open | |
@@ -215,7 +215,7 @@ Icon, resume-hero, and touch-hook sweep (F82).
 - Toolchain RFC: [`docs/rfcs/0002-coordinated-toolchain-upgrade.md`](../rfcs/0002-coordinated-toolchain-upgrade.md)  
 - WS7 epic: [#1738](https://github.com/smallorbit/vorbis-player/issues/1738) (done)
 - Next epic: [WS6 a11y #1721](https://github.com/smallorbit/vorbis-player/issues/1721)
-- Next issue: [#1722](https://github.com/smallorbit/vorbis-player/issues/1722)
+- Next issue: [#1723](https://github.com/smallorbit/vorbis-player/issues/1723)
 - Non-blocking leftover: [#1798](https://github.com/smallorbit/vorbis-player/issues/1798) (panel color tokens; not WS6)
 - Shared icons: `src/components/icons/`
 - Resume hero: `src/components/ResumeHero/`

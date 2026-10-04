@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import { defined } from '@/test/defined';
 import LibraryCard from '../LibraryCard';
@@ -47,6 +48,28 @@ describe('LibraryCard', () => {
 
     // #then
     expect(screen.getByTestId('provider-icon-spotify')).toBeInTheDocument();
+  });
+
+  it('fires onSelect on keyboard activation when onContextMenuRequest is wired', async () => {
+    // #given
+    const onSelect = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <LibraryCard
+        {...baseProps}
+        onSelect={onSelect}
+        onContextMenuRequest={vi.fn()}
+      />,
+    );
+    const card = screen.getByTestId('library-card-playlist-p1');
+
+    // #when
+    await user.tab();
+    expect(card).toHaveFocus();
+    await user.keyboard('{Enter}');
+
+    // #then
+    expect(onSelect).toHaveBeenCalledTimes(1);
   });
 
   it('fires onSelect on click when no onContextMenuRequest', () => {
