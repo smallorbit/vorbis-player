@@ -285,4 +285,136 @@ describe('useKeyboardShortcuts', () => {
     expect(() => handler(event)).not.toThrow();
     addEventListenerSpy.mockRestore();
   });
+
+  describe('focused interactive controls (#1726)', () => {
+    function dispatchKeyFrom(element: HTMLElement, code: string) {
+      document.body.appendChild(element);
+      element.dispatchEvent(new KeyboardEvent('keydown', { code, bubbles: true, cancelable: true }));
+      element.remove();
+    }
+
+    it('does not toggle playback when Space is pressed on a focused button', () => {
+      // #given
+      const onPlayPause = vi.fn();
+      renderHook(() => useKeyboardShortcuts({ onPlayPause }));
+
+      // #when
+      dispatchKeyFrom(document.createElement('button'), 'Space');
+
+      // #then
+      expect(onPlayPause).not.toHaveBeenCalled();
+    });
+
+    it('does not skip tracks when arrows are pressed on a focused slider', () => {
+      // #given
+      const onNext = vi.fn();
+      const onPrevious = vi.fn();
+      renderHook(() => useKeyboardShortcuts({ onNext, onPrevious }));
+      const slider = document.createElement('div');
+      slider.setAttribute('role', 'slider');
+
+      // #when
+      dispatchKeyFrom(slider, 'ArrowRight');
+      dispatchKeyFrom(slider, 'ArrowLeft');
+
+      // #then
+      expect(onNext).not.toHaveBeenCalled();
+      expect(onPrevious).not.toHaveBeenCalled();
+    });
+
+    it('still skips tracks on arrows when a plain button kept focus after a click', () => {
+      // #given
+      const onNext = vi.fn();
+      renderHook(() => useKeyboardShortcuts({ onNext }));
+
+      // #when
+      dispatchKeyFrom(document.createElement('button'), 'ArrowRight');
+
+      // #then
+      expect(onNext).toHaveBeenCalledTimes(1);
+    });
+
+    it('leaves arrows to a focused sortable row during keyboard reorder', () => {
+      // #given
+      const onNext = vi.fn();
+      renderHook(() => useKeyboardShortcuts({ onNext }));
+      const row = document.createElement('div');
+      row.setAttribute('role', 'button');
+      row.setAttribute('aria-roledescription', 'sortable');
+
+      // #when
+      dispatchKeyFrom(row, 'ArrowRight');
+
+      // #then
+      expect(onNext).not.toHaveBeenCalled();
+    });
+
+    it('exempts keys pressed on content nested inside a role=button element', () => {
+      // #given
+      const onPlayPause = vi.fn();
+      renderHook(() => useKeyboardShortcuts({ onPlayPause }));
+      const row = document.createElement('div');
+      row.setAttribute('role', 'button');
+      const label = document.createElement('span');
+      row.appendChild(label);
+      document.body.appendChild(row);
+
+      // #when
+      label.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', bubbles: true }));
+      row.remove();
+
+      // #then
+      expect(onPlayPause).not.toHaveBeenCalled();
+    });
+
+    it('still fires letter shortcuts from a focused button', () => {
+      // #given
+      const onMute = vi.fn();
+      renderHook(() => useKeyboardShortcuts({ onMute }));
+
+      // #when
+      dispatchKeyFrom(document.createElement('button'), 'KeyM');
+
+      // #then
+      expect(onMute).toHaveBeenCalledTimes(1);
+    });
+
+    it('still closes overlays on Escape from a focused button', () => {
+      // #given
+      const onCloseQueue = vi.fn();
+      renderHook(() => useKeyboardShortcuts({ onCloseQueue }));
+
+      // #when
+      dispatchKeyFrom(document.createElement('button'), 'Escape');
+
+      // #then
+      expect(onCloseQueue).toHaveBeenCalledTimes(1);
+    });
+
+    it('ignores events a focused control already handled', () => {
+      // #given
+      const onPlayPause = vi.fn();
+      renderHook(() => useKeyboardShortcuts({ onPlayPause }));
+      const event = new KeyboardEvent('keydown', { code: 'Space', bubbles: true, cancelable: true });
+      event.preventDefault();
+
+      // #when
+      document.body.dispatchEvent(event);
+
+      // #then
+      expect(onPlayPause).not.toHaveBeenCalled();
+    });
+
+    it('still toggles playback on Space when nothing interactive is focused', () => {
+      // #given
+      const onPlayPause = vi.fn();
+      renderHook(() => useKeyboardShortcuts({ onPlayPause }));
+
+      // #when
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', bubbles: true, cancelable: true }));
+
+      // #then
+      expect(onPlayPause).toHaveBeenCalledTimes(1);
+    });
+  });
 });
