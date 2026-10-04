@@ -2,7 +2,7 @@
 
 **Initiative label:** [`project:vorbis-player-architecture-v2`](https://github.com/smallorbit/vorbis-player/labels/project%3Avorbis-player-architecture-v2) (RFC 0001)  
 **Working mode:** **one workstream (epic) at a time**; within an epic, **one child issue at a time**.  
-**Updated:** 2026-10-04 (after #1741 merged — WS7 3/4; next #1742)
+**Updated:** 2026-10-04 (after #1742 — WS7 4/4 complete)
 
 Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tier-codebase.md`, which is **not yet on `main`** — landing that RFC is part of **[WS11](https://github.com/smallorbit/vorbis-player/issues/1757)**.
 
@@ -16,8 +16,9 @@ Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tie
 | WS2 | [#1692](https://github.com/smallorbit/vorbis-player/issues/1692) PlaybackStore + QueueStore | **Done** |
 | WS3 | [#1699](https://github.com/smallorbit/vorbis-player/issues/1699) State, persistence & events | **Done** |
 | WS10 | [#1729](https://github.com/smallorbit/vorbis-player/issues/1729) Close the toolchain blind spots | **Done** (8/8) |
-| WS7 | [#1738](https://github.com/smallorbit/vorbis-player/issues/1738) Component & styling coherence | **In progress** (3/4) |
-| WS4–WS6, WS8–WS9, WS11–WS12 | Reliability → DevBug | Open (one epic at a time) |
+| WS7 | [#1738](https://github.com/smallorbit/vorbis-player/issues/1738) Component & styling coherence | **Done** (4/4) |
+| WS6 | [#1721](https://github.com/smallorbit/vorbis-player/issues/1721) Accessibility as a first-class dimension | **Next** |
+| WS4–WS5, WS8–WS9, WS11–WS12 | Reliability → DevBug | Open (one epic at a time) |
 
 Pre-initiative foundations already on `main`: async-race harness, honest e2e, full CI gate (coverage + knip + audit ≥ high).
 
@@ -25,21 +26,39 @@ Pre-initiative foundations already on `main`: async-race harness, honest e2e, fu
 
 ## Do this next
 
-### Immediate: continue WS7 at #1742
+### Immediate: start WS6 at #1722
 
-Epic: **[#1738 — Component & styling coherence](https://github.com/smallorbit/vorbis-player/issues/1738)**  
-Principle: P2 — one canonical implementation per concern.
+Epic: **[#1721 — Accessibility as a first-class dimension](https://github.com/smallorbit/vorbis-player/issues/1721)**  
+Principle: P7 — the platform is part of elegance.
+
+| # | Issue | State | Notes |
+|---|--------|--------|--------|
+| **1722** | **Fix LibraryCard keyboard activation** | **← NEXT** | Highest reach, smallest fix |
+| 1723 | Honor prefers-reduced-motion at the visualizer choke point | Open | |
+| 1724 | Make the queue fully keyboard-operable | Open | |
+| 1725 | Give drawers dialog semantics and focus management | Open | |
+| 1726 | Stop global shortcuts hijacking keys from focused controls | Open | |
+| 1727 | Compute real WCAG contrast ratios for the accent foreground | Open | |
+| 1728 | Institutionalize a11y with axe gates and a keyboard-journey spec | Open | |
+
+**WS6 exit criteria** (epic): keyboard-journey spec passes; axe scans gate CI; a keyboard-only user can browse, play, queue, reorder, and remove.
+
+Branch from latest **`main`**.
+
+Non-blocking leftover from #1742: [#1798](https://github.com/smallorbit/vorbis-player/issues/1798) (ResumeHero panel color literals). Do not start it ahead of #1722.
+
+### WS7 closed (reference)
+
+**[#1738](https://github.com/smallorbit/vorbis-player/issues/1738)** — component & styling coherence. P2.
 
 | # | Issue | State | Notes |
 |---|--------|--------|--------|
 | 1739 | Put AudioPlayer on a diet and add a PlaybackActions context | **Closed** | PR [#1792](https://github.com/smallorbit/vorbis-player/pull/1792) — F25, F26 |
 | 1740 | Consolidate the queue feature into `src/components/Queue/` | **Closed** | PR [#1793](https://github.com/smallorbit/vorbis-player/pull/1793) — F12, F43 |
 | 1741 | Delete the fourth styling system and unify tokens | **Closed** | PR [#1796](https://github.com/smallorbit/vorbis-player/pull/1796) — F33, F81, F36, F37, F38, F79 |
-| **1742** | **Sweep: icons, ResumeHero, useIsTouchDevice** | **← NEXT** | F82 — `components/icons/`, single ResumeHero, `hooks/useIsTouchDevice` |
+| 1742 | Sweep: icons, ResumeHero, useIsTouchDevice | **Closed** | F82 — `components/icons/`, single `ResumeHero`, `hooks/useIsTouchDevice` |
 
 **WS7 exit criteria** (epic): every component file under 500 lines (machine-checked); [`docs/architecture/shadcn.md`](shadcn.md) two-system claim true; one grep for `#646cff` returns nothing.
-
-Branch from latest **`main`**.
 
 ### WS10 closed (reference)
 
@@ -166,6 +185,16 @@ Styling/token consolidation (F33, F81, F36, F37, F38, F79). On `main` via [#1796
 - **Theme access:** prefer `import { theme } from '@/styles/theme'` over `useTheme()` in non-styled fallbacks
 - **`buttonCta`** in `styles/utils.ts` (replaces `buttonPrimary` + unused button mixins)
 
+## Context for #1742
+
+Icon, resume-hero, and touch-hook sweep (F82).
+
+- **`hooks/useIsTouchDevice`** — single `(pointer: coarse)` hook; Cmd+K palette and `QueueTrackList` both use it
+- **`components/ResumeHero/`** — one component, `variant="library" | "panel"`; library test ids unchanged
+- **`components/icons/`** — playback, heart, action, and brand marks. Provider logos stay in `providers/` (layering). Volume and quick-action icons were already there
+- Inline `<svg>` remains in `components/icons/`, provider icon components, and test fixtures
+- Review on [#1797](https://github.com/smallorbit/vorbis-player/pull/1797): decorative `♪` fallback is shared and `aria-hidden` on both variants. Panel color literals (including `rgba(100, 108, 255, …)`) are [#1798](https://github.com/smallorbit/vorbis-player/issues/1798) — **do not** fold into #1722. `ExternalLink.icon` is still `string`, so `ICON_MAP` stays a string record. A third ResumeHero variant does not exist; do not split the component ahead of one.
+
 ---
 
 ## Agent operating notes
@@ -184,9 +213,13 @@ Styling/token consolidation (F33, F81, F36, F37, F38, F79). On `main` via [#1796
 - WS10 epic: https://github.com/smallorbit/vorbis-player/issues/1729  
 - Dependency policy: [`docs/dependency-upgrades.md`](../dependency-upgrades.md)  
 - Toolchain RFC: [`docs/rfcs/0002-coordinated-toolchain-upgrade.md`](../rfcs/0002-coordinated-toolchain-upgrade.md)  
-- Suggested next epic (if not WS7): [WS6 a11y #1721](https://github.com/smallorbit/vorbis-player/issues/1721)  
-- WS7 epic: [#1738](https://github.com/smallorbit/vorbis-player/issues/1738)  
-- Next issue: [#1742](https://github.com/smallorbit/vorbis-player/issues/1742)  
+- WS7 epic: [#1738](https://github.com/smallorbit/vorbis-player/issues/1738) (done)
+- Next epic: [WS6 a11y #1721](https://github.com/smallorbit/vorbis-player/issues/1721)
+- Next issue: [#1722](https://github.com/smallorbit/vorbis-player/issues/1722)
+- Non-blocking leftover: [#1798](https://github.com/smallorbit/vorbis-player/issues/1798) (panel color tokens; not WS6)
+- Shared icons: `src/components/icons/`
+- Resume hero: `src/components/ResumeHero/`
+- Touch hook: `src/hooks/useIsTouchDevice.ts`  
 - Z-index layers: `src/styles/zIndexLayers.ts`  
 - Queue feature: `src/components/Queue/`  
 - Context menu styled primitives: `src/components/ui/context-menu.styled.ts`  

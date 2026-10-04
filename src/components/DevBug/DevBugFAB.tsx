@@ -9,6 +9,7 @@ import { AreaSelectOverlay } from './AreaSelectOverlay';
 import { AnnotationOverlay } from './AnnotationOverlay';
 import { FeedbackPanel } from './FeedbackPanel';
 import { useFeedbackPanel } from './useFeedbackPanel';
+import { BugIcon } from '@/components/icons/ActionIcons';
 
 type ActiveMode = 'inspect' | 'area' | 'annotate';
 
@@ -132,18 +133,6 @@ const Tooltip = styled.span`
     opacity: 1;
   }
 `;
-
-const BugIcon = () => (
-  <svg
-    width="22"
-    height="22"
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    aria-hidden="true"
-  >
-    <path d="M20 8h-2.81A5.985 5.985 0 0 0 13 5.07V5a1 1 0 0 0-2 0v.07A5.985 5.985 0 0 0 6.81 8H4a1 1 0 0 0 0 2h2.09A6.011 6.011 0 0 0 6 11v1H4a1 1 0 0 0 0 2h2v1a6.011 6.011 0 0 0 .09 1H4a1 1 0 0 0 0 2h2.81A6 6 0 0 0 18 17v-1h2a1 1 0 0 0 0-2h-2v-1h2a1 1 0 0 0 0-2h-2v-1a6.011 6.011 0 0 0-.09-1H20a1 1 0 0 0 0-2zm-8 9a4 4 0 1 1 4-4 4 4 0 0 1-4 4z" />
-  </svg>
-);
 
 function modeIcon(mode: ActiveMode): string {
   return MODES.find((m) => m.id === mode)?.icon ?? '🐛';

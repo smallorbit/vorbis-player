@@ -1,4 +1,5 @@
 import { memo, useRef, useEffect, useCallback, useState } from 'react';
+import { useIsTouchDevice } from '@/hooks/useIsTouchDevice';
 import type { MediaTrack } from '@/types/domain';
 import {
   DndContext,
@@ -30,18 +31,6 @@ interface QueueTrackListProps {
   showProviderIcons?: boolean | undefined;
   canEdit?: boolean | undefined;
 }
-
-const useIsTouchDevice = () => {
-  const [isTouch, setIsTouch] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia('(pointer: coarse)');
-    setIsTouch(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setIsTouch(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
-  return isTouch;
-};
 
 const QueueTrackList = memo<QueueTrackListProps>(({
   tracks,

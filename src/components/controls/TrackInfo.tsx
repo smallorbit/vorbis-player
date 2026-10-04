@@ -4,7 +4,11 @@ import type { ArtistRef, ProviderId } from '@/types/domain';
 import { useProviderContext } from '../../contexts/ProviderContext';
 import { spotifyLibrarySyncEngine } from '../../services/cache/librarySyncEngine';
 import { PlayerTrackName, PlayerTrackAlbum, AlbumLink, PlayerTrackArtist, TrackInfoOnlyRow, ArtistLink } from './styled';
-import TrackInfoPopover, { LibraryIcon, SpotifyIcon, PlayIcon, DiscogsIcon, AddToLibraryIcon, RemoveFromLibraryIcon, ICON_MAP } from './TrackInfoPopover';
+import { AddToLibraryIcon, LibraryIcon, RemoveFromLibraryIcon } from '@/components/icons/ActionIcons';
+import { DiscogsIcon, SpotifyLogoIcon } from '@/components/icons/BrandIcons';
+import { ICON_MAP } from '@/components/icons/iconMap';
+import { PlayIcon } from '@/components/icons/PlaybackIcons';
+import TrackInfoPopover from './TrackInfoPopover';
 import { TrackRadioPopover } from './TrackRadioPopover';
 
 interface TrackInfoProps {
@@ -123,7 +127,7 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
     const providerName = capabilities?.externalLinkLabel?.replace('Open in ', '') ?? trackDescriptor?.name ?? 'External';
     const ExternalIcon = trackDescriptor?.getExternalUrl
         ? DiscogsIcon
-        : SpotifyIcon;
+        : SpotifyLogoIcon;
 
     const getAlbumExternalUrl = (albumId: string, albumName: string, artistName: string): string | undefined => {
         if (trackDescriptor?.getExternalUrls) {

@@ -5,6 +5,7 @@ import { theme } from '@/styles/theme';
 import { flexCenter, flexColumn } from '@/styles/utils';
 import { Switch } from '@/components/ui/switch';
 import type { ProviderId } from '@/types/domain';
+import { SettingsGearIcon } from '@/components/icons/ActionIcons';
 
 interface ProviderSetupScreenProps {
   onOpenSettings?: (() => void) | undefined;
@@ -202,25 +203,6 @@ const Wrapper = styled.div`
   min-height: 100dvh;
 `;
 
-const GearIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path
-      d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
 export default function ProviderSetupScreen({ onOpenSettings, onOpenLibrary }: ProviderSetupScreenProps) {
   const {
     chosenProviderId,
@@ -244,7 +226,7 @@ export default function ProviderSetupScreen({ onOpenSettings, onOpenLibrary }: P
             <Title>Welcome to Vorbis Player</Title>
             {onOpenSettings && (
               <SettingsButton onClick={onOpenSettings} aria-label="Open settings">
-                <GearIcon />
+                <SettingsGearIcon />
               </SettingsButton>
             )}
           </CardHeader>
@@ -335,7 +317,7 @@ export default function ProviderSetupScreen({ onOpenSettings, onOpenLibrary }: P
           <Title>Session Expired</Title>
           {onOpenSettings && (
             <SettingsButton onClick={onOpenSettings} aria-label="Open settings">
-              <GearIcon />
+              <SettingsGearIcon />
             </SettingsButton>
           )}
         </CardHeader>

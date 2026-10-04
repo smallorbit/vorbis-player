@@ -50,7 +50,7 @@ QAP is opt-in via the "Quick Access Panel" On/Off control in the Settings dialog
 
 **Stale session cutoff** — `isSessionStale(session, now?)` from `src/services/sessionPersistence.ts` returns true when the session is absent, missing `savedAt`, or older than `STALE_SESSION_MS` (30 days). Stale sessions are treated as no session for landing routing and resume affordances. `SessionSnapshot` persists a typed `selection: PlaybackSelection`; `loadSession()` upgrades legacy prefix-encoded snapshots (`collectionId` + `collectionProvider`) into the typed shape on load.
 
-**Resume hero** — `ResumeHero` (`src/components/QuickAccessPanel/ResumeHero.tsx`) renders at the top of `QuickAccessPanel` (above `PinRing`) when a valid `lastSession` is present; clicking the Resume CTA invokes `onResume` (autoplay). On the idle library route, `LibraryRoute` renders its own resume hero from `useResumeSection`.
+**Resume hero** — one `ResumeHero` (`src/components/ResumeHero/`) with a `library` or `panel` variant. The panel variant renders at the top of `QuickAccessPanel` (above `PinRing`) when a valid `lastSession` is present; clicking the Resume CTA invokes `onResume` (autoplay). On the idle library route, `LibraryRoute` renders the library variant from `useResumeSection`.
 
 **Settings gear on idle views** — `SettingsGearButton` (`src/components/SettingsGearButton/index.tsx`) is mounted top-right by `PlayerStateRenderer` on `WelcomeScreen`, idle `LibraryRoute`, and `QuickAccessPanel` via the `onOpenSettings` prop, opening the Settings dialog. Hidden during loading and error states. The active-player gear continues to live in `BottomBar` / `PlayerControlsSection`.
 

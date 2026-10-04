@@ -8,7 +8,7 @@ import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import { LIKED_SONGS_NAME } from '@/constants/playlist';
 import { Chip, ChipRow } from '@/components/styled/FilterChips';
 import ProviderIcon from '@/components/ProviderIcon';
-import ResumeHero from './ResumeHero';
+import ResumeHero from '@/components/ResumeHero';
 import PinRing from './PinRing';
 import {
   PanelRoot,
@@ -91,7 +91,7 @@ const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
   return (
     <PanelRoot>
       {hasValidSession && lastSession && (
-        <ResumeHero session={lastSession} onResume={onResume} />
+        <ResumeHero session={lastSession} onResume={onResume} variant="panel" />
       )}
 
       <PinRing

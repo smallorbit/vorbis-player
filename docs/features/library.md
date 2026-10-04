@@ -139,7 +139,7 @@ Sub-components: `MiniArt`, `MiniControls`. Wired via `onMini*` props on `Library
 
 ## Resume integration
 
-`LibraryRoute` accepts `lastSession?: SessionSnapshot | null` and `onResume?`. When present and fresh (`!isSessionStale(session)`), the Resume section renders `ResumeHero` at the top of `HomeView` with a Resume CTA. The footer `ResumeCard` from the legacy layout is gone — Resume lives only as the top-of-library hero now.
+`LibraryRoute` accepts `lastSession?: SessionSnapshot | null` and `onResume?`. When present and fresh (`!isSessionStale(session)`), the Resume section renders the shared `ResumeHero` (`variant="library"`) at the top of `HomeView` with a Resume CTA. The same component's `panel` variant is the Quick Access Panel hero. The footer `ResumeCard` from the legacy layout is gone — Resume lives only as the top-of-library hero now.
 
 ## Key files
 

@@ -2,6 +2,7 @@ import * as React from "react"
 import * as AccordionPrimitive from "@radix-ui/react-accordion"
 
 import { cn } from "@/lib/utils"
+import { ChevronDownIcon } from "@/components/icons/ActionIcons"
 
 // Accordion primitives — neutral shadcn palette.
 // Do NOT wire --primary or --accent to var(--accent-color).
@@ -43,14 +44,7 @@ const AccordionTrigger = React.forwardRef<
       {...props}
     >
       {children}
-      <svg
-        className="h-3.5 w-3.5 shrink-0"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        aria-hidden="true"
-      >
-        <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z" />
-      </svg>
+      <ChevronDownIcon className="h-3.5 w-3.5 shrink-0" />
     </AccordionPrimitive.Trigger>
   </AccordionPrimitive.Header>
 ))
