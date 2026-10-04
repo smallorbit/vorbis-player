@@ -101,6 +101,7 @@ function renderManageableList(
 describe('QueueTrackList — keyboard (#1724)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    HTMLElement.prototype.scrollIntoView = vi.fn();
   });
 
   it('exposes focusable rows with descriptive aria-labels', async () => {
