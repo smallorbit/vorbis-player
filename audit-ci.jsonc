@@ -1,0 +1,9 @@
+{
+  "$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
+  "high": true,
+  "allowlist": [
+    // GHSA-vfj7-8cjw-p6xm (CVE-2026-93687): transitive devDependency (tailwindcss → chokidar/micromatch → braces@3.0.3).
+    // No patched npm release yet (upstream micromatch/braces#70). Remove this allowlist once lockfile resolves to braces >= 3.0.4.
+    "GHSA-vfj7-8cjw-p6xm"
+  ]
+}

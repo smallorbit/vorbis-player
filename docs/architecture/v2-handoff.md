@@ -193,7 +193,15 @@ Icon, resume-hero, and touch-hook sweep (F82).
 - **`components/ResumeHero/`** — one component, `variant="library" | "panel"`; library test ids unchanged
 - **`components/icons/`** — playback, heart, action, and brand marks. Provider logos stay in `providers/` (layering). Volume and quick-action icons were already there
 - Inline `<svg>` remains in `components/icons/`, provider icon components, and test fixtures
-- Review on [#1797](https://github.com/smallorbit/vorbis-player/pull/1797): decorative `♪` fallback is shared and `aria-hidden` on both variants. Panel color literals (including `rgba(100, 108, 255, …)`) are [#1798](https://github.com/smallorbit/vorbis-player/issues/1798) — **do not** fold into #1722. `ExternalLink.icon` is still `string`, so `ICON_MAP` stays a string record. A third ResumeHero variant does not exist; do not split the component ahead of one.
+- Review on [#1797](https://github.com/smallorbit/vorbis-player/pull/1797): decorative `♪` fallback is shared and `aria-hidden` on both variants. Panel color literals (including `rgba(100, 108, 255, …)`) are [#1798](https://github.com/smallorbit/vorbis-player/issues/1798) — **do not** fold into WS6 children. `ExternalLink.icon` is still `string`, so `ICON_MAP` stays a string record. A third ResumeHero variant does not exist; do not split the component ahead of one.
+
+## Context for #1723
+
+Reduced-motion choke point (F10).
+
+- **`BackgroundVisualizer`** — `useReducedMotion()`; returns `null` when `prefers-reduced-motion: reduce` (unmounts all rAF canvas loops)
+- **`components/visualizers/*`** — decorative canvases marked `aria-hidden`
+- Tests: `src/components/__tests__/BackgroundVisualizer.test.tsx`
 
 ---
 
