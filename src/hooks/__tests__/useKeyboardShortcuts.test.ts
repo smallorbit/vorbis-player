@@ -322,6 +322,33 @@ describe('useKeyboardShortcuts', () => {
       expect(onPrevious).not.toHaveBeenCalled();
     });
 
+    it('still skips tracks on arrows when a plain button kept focus after a click', () => {
+      // #given
+      const onNext = vi.fn();
+      renderHook(() => useKeyboardShortcuts({ onNext }));
+
+      // #when
+      dispatchKeyFrom(document.createElement('button'), 'ArrowRight');
+
+      // #then
+      expect(onNext).toHaveBeenCalledTimes(1);
+    });
+
+    it('leaves arrows to a focused sortable row during keyboard reorder', () => {
+      // #given
+      const onNext = vi.fn();
+      renderHook(() => useKeyboardShortcuts({ onNext }));
+      const row = document.createElement('div');
+      row.setAttribute('role', 'button');
+      row.setAttribute('aria-roledescription', 'sortable');
+
+      // #when
+      dispatchKeyFrom(row, 'ArrowRight');
+
+      // #then
+      expect(onNext).not.toHaveBeenCalled();
+    });
+
     it('exempts keys pressed on content nested inside a role=button element', () => {
       // #given
       const onPlayPause = vi.fn();

@@ -1,28 +1,38 @@
 import { useEffect } from 'react';
 
-const CONTROL_OWNED_KEYS = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
+const ARROW_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
 
-const INTERACTIVE_CONTROL_SELECTOR = [
+const SPACE_ACTIVATED_CONTROLS = [
   'button',
-  'a[href]',
-  'select',
   'summary',
+  'select',
   '[role="button"]',
-  '[role="link"]',
-  '[role="slider"]',
-  '[role="spinbutton"]',
   '[role="checkbox"]',
-  '[role="radio"]',
   '[role="switch"]',
+  '[role="radio"]',
   '[role="tab"]',
   '[role="menuitem"]',
   '[role="option"]',
   '[role="combobox"]',
+].join(', ');
+
+const ARROW_NAVIGATED_CONTROLS = [
+  'select',
+  '[role="slider"]',
+  '[role="spinbutton"]',
+  '[role="radio"]',
+  '[role="tab"]',
+  '[role="menuitem"]',
+  '[role="option"]',
   '[role="listbox"]',
+  '[role="combobox"]',
+  '[aria-roledescription="sortable"]',
 ].join(', ');
 
 function isKeyOwnedByFocusedControl(code: string, target: HTMLElement): boolean {
-  return CONTROL_OWNED_KEYS.has(code) && target.closest(INTERACTIVE_CONTROL_SELECTOR) !== null;
+  if (code === 'Space') return target.closest(SPACE_ACTIVATED_CONTROLS) !== null;
+  if (ARROW_KEYS.has(code)) return target.closest(ARROW_NAVIGATED_CONTROLS) !== null;
+  return false;
 }
 
 interface KeyboardShortcutOptions {
