@@ -33,6 +33,10 @@ const LikeButton = styled.button.withConfig({
   padding: 0;
   opacity: ${({ $isVisible }) => ($isVisible ? 1 : 0)};
   transition: opacity 150ms ease;
+
+  &:focus-visible {
+    opacity: 1;
+  }
 `;
 
 export const ZenLikeOverlay: React.FC<ZenLikeOverlayProps> = React.memo(({

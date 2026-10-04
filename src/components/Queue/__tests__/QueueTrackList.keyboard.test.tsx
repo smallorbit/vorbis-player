@@ -74,6 +74,7 @@ vi.mock('@/components/styled', async (importOriginal) => {
 });
 
 import QueueTrackList from '../QueueTrackList';
+import { expectNoAxeViolations } from '@/test/axe';
 
 function renderManageableList(
   { onTrackSelect = vi.fn(), onRemoveTrack = vi.fn(), canEdit = false } = {},
@@ -104,33 +105,37 @@ describe('QueueTrackList — keyboard (#1724)', () => {
     HTMLElement.prototype.scrollIntoView = vi.fn();
   });
 
-  it('exposes focusable rows with descriptive aria-labels', async () => {
+  it('exposes each track body as a labelled button', async () => {
     // #given
     const user = userEvent.setup();
     renderManageableList();
-
-    const rows = screen.getAllByTestId('queue-track-row');
-    expect(rows[0]).toHaveAttribute('role', 'button');
-    expect(rows[0]).toHaveAttribute('aria-label', 'Song A, Artist A, now playing');
-    expect(rows[1]).toHaveAttribute('aria-label', 'Song B, Artist B');
+    const nowPlaying = screen.getByRole('button', { name: 'Song A, Artist A, now playing' });
 
     // #when
     await user.tab();
 
-    // #then — first row is in tab order before the actions menu button
-    expect(rows[0]).toHaveFocus();
+    // #then — the first track body is in tab order before its actions trigger
+    expect(nowPlaying).toHaveFocus();
+    expect(nowPlaying).toHaveAttribute('aria-current', 'true');
   });
 
-  it('selects a row on Enter and Space', async () => {
+  it('keeps row actions outside the track button so controls are not nested', () => {
+    // #given / #when
+    renderManageableList();
+    const body = screen.getByRole('button', { name: 'Song B, Artist B' });
+
+    // #then
+    expect(body.querySelector('button, [role="button"]')).toBeNull();
+  });
+
+  it('selects a track on Enter and Space', async () => {
     // #given
     const user = userEvent.setup();
     const onTrackSelect = vi.fn();
     renderManageableList({ onTrackSelect });
-    const secondRow = screen.getAllByTestId('queue-track-row')[1];
-    if (!secondRow) throw new Error('expected second row');
 
     // #when
-    secondRow.focus();
+    screen.getByRole('button', { name: 'Song B, Artist B' }).focus();
     await user.keyboard('{Enter}');
     await user.keyboard(' ');
 
@@ -183,19 +188,39 @@ describe('QueueTrackList — keyboard (#1724)', () => {
     expect(sortableKeyDown).not.toHaveBeenCalled();
   });
 
-  it('starts keyboard drag only when the row itself is focused in edit mode', async () => {
+  it('starts keyboard drag from the focused reorder handle in edit mode', async () => {
     // #given
     const user = userEvent.setup();
     renderManageableList({ canEdit: true });
     await user.click(screen.getByRole('button', { name: 'Edit' }));
-    const secondRow = screen.getAllByTestId('queue-track-row')[1];
-    if (!secondRow) throw new Error('expected second row');
 
     // #when
-    secondRow.focus();
+    screen.getByRole('button', { name: 'Reorder Song B' }).focus();
     await user.keyboard(' ');
 
     // #then
     expect(sortableKeyDown).toHaveBeenCalledTimes(1);
+  });
+
+  describe('axe', () => {
+    it('has no WCAG 2.1 AA violations, including nested controls, in normal mode', async () => {
+      // #given
+      renderManageableList();
+
+      // #then
+      await expectNoAxeViolations(document.body);
+    });
+
+    it('has no WCAG 2.1 AA violations in edit mode', async () => {
+      // #given
+      const user = userEvent.setup();
+      renderManageableList({ canEdit: true });
+
+      // #when
+      await user.click(screen.getByRole('button', { name: 'Edit' }));
+
+      // #then
+      await expectNoAxeViolations(document.body);
+    });
   });
 });

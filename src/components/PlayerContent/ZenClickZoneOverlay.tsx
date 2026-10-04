@@ -42,7 +42,8 @@ const IconButton = styled.button`
   transition: opacity 150ms ease;
   padding: 0;
 
-  &:hover {
+  &:hover,
+  &:focus-visible {
     opacity: 1;
   }
 `;

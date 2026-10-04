@@ -37,7 +37,7 @@ test.describe('Provider re-authentication — re-prime current track at saved po
     const seed = encodeSeed(seedTrack.id, SEED_POSITION_MS);
     await page.goto(`/?mock-session=${seed}`);
 
-    const sliderLocator = page.locator(`[aria-label="${SEEK_TIMELINE_LABEL}"] [role="slider"]`);
+    const sliderLocator = page.locator(`[role="slider"][aria-label="${SEEK_TIMELINE_LABEL}"]`);
     await sliderLocator.waitFor({ state: 'attached', timeout: 15_000 });
 
     // Wait for the hydrate path to settle so the slider reflects the seeded

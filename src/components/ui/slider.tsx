@@ -11,6 +11,9 @@ import { cn } from "@/lib/utils"
  *
  * Default Slider stays neutral (uses shadcn `--primary`); pass these props
  * only when you need accent tinting or custom dimensions.
+ *
+ * `aria-label` is applied to the thumb, which carries `role="slider"` — Radix
+ * does not forward the root's label, leaving the slider unnamed.
  */
 type SliderProps = React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root> & {
   trackStyle?: React.CSSProperties
@@ -21,7 +24,7 @@ type SliderProps = React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root> &
 const Slider = React.forwardRef<
   React.ElementRef<typeof SliderPrimitive.Root>,
   SliderProps
->(({ className, trackStyle, rangeStyle, thumbStyle, ...props }, ref) => (
+>(({ className, trackStyle, rangeStyle, thumbStyle, "aria-label": ariaLabel, ...props }, ref) => (
   <SliderPrimitive.Root
     ref={ref}
     className={cn(
@@ -42,6 +45,7 @@ const Slider = React.forwardRef<
     <SliderPrimitive.Thumb
       className="block h-4 w-4 rounded-full border border-primary/50 bg-background shadow transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
       style={thumbStyle}
+      aria-label={ariaLabel}
     />
   </SliderPrimitive.Root>
 ))

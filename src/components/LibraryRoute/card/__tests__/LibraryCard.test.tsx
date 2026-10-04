@@ -4,6 +4,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { defined } from '@/test/defined';
 import LibraryCard from '../LibraryCard';
 import { makeCollectionSelection } from '@/test/fixtures';
+import { expectNoAxeViolations } from '@/test/axe';
 
 vi.mock('@/components/ProviderIcon', () => ({
   default: ({ provider }: { provider: string }) => (
@@ -149,5 +150,20 @@ describe('LibraryCard', () => {
     // #then
     expect(onContextMenuRequest).toHaveBeenCalledTimes(1);
     expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  describe('axe (#1728)', () => {
+    it('has no WCAG 2.1 AA violations in row and grid variants with a context menu wired', async () => {
+      // #given
+      const { container } = render(
+        <>
+          <LibraryCard {...baseProps} onContextMenuRequest={vi.fn()} />
+          <LibraryCard {...baseProps} id="p2" variant="grid" onContextMenuRequest={vi.fn()} />
+        </>,
+      );
+
+      // #then
+      await expectNoAxeViolations(container);
+    });
   });
 });

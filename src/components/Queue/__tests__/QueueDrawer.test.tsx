@@ -37,6 +37,7 @@ vi.mock('../QueueTrackList', () => ({
 }));
 
 import QueueDrawer from '../QueueDrawer';
+import { expectNoAxeViolations } from '@/test/axe';
 
 const Wrapper = ({ children }: { children: React.ReactNode }) => (
   <ThemeProvider theme={theme}>
@@ -225,6 +226,16 @@ describe('QueueDrawer', () => {
 
       // #then
       expect(dialog).toHaveAttribute('inert');
+    });
+  });
+
+  describe('axe (#1728)', () => {
+    it('has no WCAG 2.1 AA violations while open', async () => {
+      // #given
+      render(<Wrapper><QueueDrawer {...defaultProps} /></Wrapper>);
+
+      // #then
+      await expectNoAxeViolations(document.body);
     });
   });
 });

@@ -171,9 +171,9 @@ function getDraggables(): HTMLElement[] {
 }
 
 function nodeRefWrapper(draggable: HTMLElement): HTMLElement {
-  const parent = draggable.parentElement;
-  if (!parent) throw new Error('sortable draggable has no setNodeRef wrapper');
-  return parent;
+  const wrapper = draggable.closest('[data-testid="queue-track-row"]')?.parentElement;
+  if (!wrapper) throw new Error('sortable draggable has no setNodeRef wrapper');
+  return wrapper;
 }
 
 describe('QueueTrackList — drag gesture survives mid-drag rename', () => {
