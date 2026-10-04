@@ -2,7 +2,7 @@
 
 **Initiative label:** [`project:vorbis-player-architecture-v2`](https://github.com/smallorbit/vorbis-player/labels/project%3Avorbis-player-architecture-v2) (RFC 0001)  
 **Working mode:** **one workstream (epic) at a time**; within an epic, **one child issue at a time**.  
-**Updated:** 2026-10-04 (after #1724 — WS6 3/7; next #1725)
+**Updated:** 2026-10-04 (WS6 closed — 7/7; next epic not yet chosen)
 
 Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tier-codebase.md`, which is **not yet on `main`** — landing that RFC is part of **[WS11](https://github.com/smallorbit/vorbis-player/issues/1757)**.
 
@@ -17,7 +17,7 @@ Source of truth for issue text is GitHub. Epic bodies cite `docs/rfcs/0001-s-tie
 | WS3 | [#1699](https://github.com/smallorbit/vorbis-player/issues/1699) State, persistence & events | **Done** |
 | WS10 | [#1729](https://github.com/smallorbit/vorbis-player/issues/1729) Close the toolchain blind spots | **Done** (8/8) |
 | WS7 | [#1738](https://github.com/smallorbit/vorbis-player/issues/1738) Component & styling coherence | **Done** (4/4) |
-| WS6 | [#1721](https://github.com/smallorbit/vorbis-player/issues/1721) Accessibility as a first-class dimension | **Next** |
+| WS6 | [#1721](https://github.com/smallorbit/vorbis-player/issues/1721) Accessibility as a first-class dimension | **Done** (7/7) |
 | WS4–WS5, WS8–WS9, WS11–WS12 | Reliability → DevBug | Open (one epic at a time) |
 
 Pre-initiative foundations already on `main`: async-race harness, honest e2e, full CI gate (coverage + knip + audit ≥ high).
@@ -26,26 +26,27 @@ Pre-initiative foundations already on `main`: async-race harness, honest e2e, fu
 
 ## Do this next
 
-### Immediate: continue WS6 at #1725
+### Immediate: pick the next epic
 
-Epic: **[#1721 — Accessibility as a first-class dimension](https://github.com/smallorbit/vorbis-player/issues/1721)**  
-Principle: P7 — the platform is part of elegance.
+WS6 is closed. Choose the next epic from the open set (WS4–WS5, WS8–WS9, WS11–WS12) and record it here. [#1798](https://github.com/smallorbit/vorbis-player/issues/1798) (ResumeHero panel color literals, leftover from #1742) is no longer blocked behind WS6.
+
+### WS6 closed (reference)
+
+**[#1721](https://github.com/smallorbit/vorbis-player/issues/1721)** — accessibility as a first-class dimension. P7.
 
 | # | Issue | State | Notes |
 |---|--------|--------|--------|
-| 1722 | Fix LibraryCard keyboard activation | **Done** | PR [#1799](https://github.com/smallorbit/vorbis-player/pull/1799) |
-| 1723 | Honor prefers-reduced-motion at the visualizer choke point | **Done** | PR [#1800](https://github.com/smallorbit/vorbis-player/pull/1800) — F10; `audit-ci.jsonc` braces allowlist |
-| 1724 | Make the queue fully keyboard-operable | **Done** | F9 — focusable rows, KeyboardSensor, menu trigger |
-| **1725** | Give drawers dialog semantics and focus management | **← NEXT** | |
-| 1726 | Stop global shortcuts hijacking keys from focused controls | Open | |
-| 1727 | Compute real WCAG contrast ratios for the accent foreground | Open | |
-| 1728 | Institutionalize a11y with axe gates and a keyboard-journey spec | Open | |
+| 1722 | Fix LibraryCard keyboard activation | **Closed** | PR [#1799](https://github.com/smallorbit/vorbis-player/pull/1799) |
+| 1723 | Honor prefers-reduced-motion at the visualizer choke point | **Closed** | PR [#1800](https://github.com/smallorbit/vorbis-player/pull/1800) — F10; `audit-ci.jsonc` braces allowlist |
+| 1724 | Make the queue fully keyboard-operable | **Closed** | PR [#1802](https://github.com/smallorbit/vorbis-player/pull/1802) — F9; row structure reworked in #1728 (track body is the button, grip is the keyboard drag handle) |
+| 1725 | Give drawers dialog semantics and focus management | **Closed** | PR [#1805](https://github.com/smallorbit/vorbis-player/pull/1805) — F55; `hooks/useModalOverlay` (dialog role, focus in/trap/restore, `inert` when closed) |
+| 1726 | Stop global shortcuts hijacking keys from focused controls | **Closed** | PR [#1804](https://github.com/smallorbit/vorbis-player/pull/1804) — F56; Space yields to activatable controls, arrows only to arrow-navigated widgets (incl. sortable handles); see `docs/keyboard.md` |
+| 1727 | Compute real WCAG contrast ratios for the accent foreground | **Closed** | PR [#1806](https://github.com/smallorbit/vorbis-player/pull/1806) — F57; `getContrastRatio`, AA fallback to pure black/white |
+| 1728 | Institutionalize a11y with axe gates and a keyboard-journey spec | **Closed** | F58, F97 — `a11y-axe.spec.ts`, `keyboard-journey.spec.ts`, `src/test/axe.ts`; zen-hidden controls `inert`, zen overlay buttons reveal on `:focus-visible`; slider `aria-label` forwarded to the thumb |
 
-**WS6 exit criteria** (epic): keyboard-journey spec passes; axe scans gate CI; a keyboard-only user can browse, play, queue, reorder, and remove.
+**WS6 exit criteria** (epic): keyboard-journey spec passes; axe scans gate CI; a keyboard-only user can browse, play, queue, reorder, and remove. Met by #1728.
 
-Branch from latest **`main`**.
-
-Non-blocking leftover from #1742: [#1798](https://github.com/smallorbit/vorbis-player/issues/1798) (ResumeHero panel color literals). Do not start it ahead of WS6 children.
+Gotcha for future keyboard drag specs: dnd-kit's KeyboardSensor attaches its keydown listener in a `setTimeout(0)` and needs measured rects, so wait for the first "moved over" announcement before pressing arrows (see `keyboard-journey.spec.ts`).
 
 ### WS7 closed (reference)
 
@@ -223,11 +224,10 @@ Reduced-motion choke point (F10). On `main` via [#1800](https://github.com/small
 - Dependency policy: [`docs/dependency-upgrades.md`](../dependency-upgrades.md)  
 - Toolchain RFC: [`docs/rfcs/0002-coordinated-toolchain-upgrade.md`](../rfcs/0002-coordinated-toolchain-upgrade.md)  
 - WS7 epic: [#1738](https://github.com/smallorbit/vorbis-player/issues/1738) (done)
-- Next epic: [WS6 a11y #1721](https://github.com/smallorbit/vorbis-player/issues/1721)
-- Next issue: [#1725](https://github.com/smallorbit/vorbis-player/issues/1725) (drawer dialog semantics)
+- WS6 epic: [#1721](https://github.com/smallorbit/vorbis-player/issues/1721) (done)
 - Reduced motion / visualizer: `src/components/BackgroundVisualizer.tsx`, `src/hooks/useReducedMotion.ts`
 - Audit allowlist: `audit-ci.jsonc`
-- Non-blocking leftover: [#1798](https://github.com/smallorbit/vorbis-player/issues/1798) (panel color tokens; not WS6)
+- Unblocked leftover: [#1798](https://github.com/smallorbit/vorbis-player/issues/1798) (panel color tokens)
 - Shared icons: `src/components/icons/`
 - Resume hero: `src/components/ResumeHero/`
 - Touch hook: `src/hooks/useIsTouchDevice.ts`  

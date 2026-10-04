@@ -228,6 +228,10 @@ so a desktop-only run leaves the mobile surface unasserted:
 | `@mobile-only` | mobile only — touch affordances, bottom sheet |
 | `@responsive` | both viewports |
 
+Accessibility gates: `a11y-axe.spec.ts` (axe WCAG 2.1 AA scans, both viewports),
+`keyboard-journey.spec.ts` (keyboard-only browse → play → queue → reorder → remove),
+and `expectNoAxeViolations` from `src/test/axe.ts` in unit tests. See `docs/testing.md`.
+
 Shared spec helpers live in `playwright/fixtures/player.ts`. Prefer
 `openPlaylist` over `window.__mockTest.setQueue` when a spec depends on queue
 position: `setQueue` dispatches into TrackContext alone, so the drawer re-renders

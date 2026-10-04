@@ -34,6 +34,36 @@ test.describe('Zen Mode', () => {
     await expect(page.locator('button[title="Zen Mode ON"]')).toBeVisible({ timeout: 5000 });
   });
 
+  test('every control Tab reaches in zen mode is visible', async ({ page }) => {
+    // #given - zen mode engaged and the controls faded out
+    await page.locator('button[title="Zen Mode OFF"]').click();
+    await expect(page.locator('button[title="Zen Mode ON"]')).toBeVisible({ timeout: 5000 });
+    await waitForZenControlsHidden(page);
+
+    // #when - a keyboard user tabs through the page
+    const invisibleFocusTargets: string[] = [];
+    for (let i = 0; i < 30; i++) {
+      await page.keyboard.press('Tab');
+      // let any focus-triggered reveal transition settle before measuring
+      await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 250)));
+      const invisible = await page.evaluate(() => {
+        const el = document.activeElement;
+        if (!el || el === document.body) return null;
+        const rect = el.getBoundingClientRect();
+        let opacity = 1;
+        for (let anc: Element | null = el; anc; anc = anc.parentElement) {
+          opacity *= parseFloat(window.getComputedStyle(anc).opacity);
+        }
+        const hidden = opacity < 0.1 || rect.width === 0 || rect.height === 0;
+        return hidden ? (el.getAttribute('aria-label') ?? el.tagName) : null;
+      });
+      if (invisible) invisibleFocusTargets.push(invisible);
+    }
+
+    // #then - focus never lands on a control the user cannot see (F97)
+    expect(invisibleFocusTargets).toEqual([]);
+  });
+
   test('escape key exits zen mode', async ({ page }) => {
     // #given - zen mode engaged
     const zenButton = page.locator('button[title="Zen Mode OFF"]');

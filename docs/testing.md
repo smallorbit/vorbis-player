@@ -17,6 +17,17 @@ Playwright (`npm run test:e2e`) boots the **production build** via `npm run prev
 | `fixtures.ts` | Factory functions for domain objects: `makeTrack()`, `makeMediaTrack()`, `makeProviderDescriptor()` — all accept partial overrides |
 | `testWrappers.tsx` | `TestWrapper` component that nests all app context providers (`ThemeProvider`, `ProviderProvider`, `PlayerSizingProvider`, `TrackProvider`, `ColorProvider`, `VisualEffectsProvider`, `PinnedItemsProvider`) for component/hook tests |
 | `providerTestUtils.tsx` | `ProviderWrapper` — lighter wrapper with only `ProviderProvider`, for hooks that only need provider context |
+| `axe.ts` | `expectNoAxeViolations(container)` — `vitest-axe` scan against WCAG 2.1 A/AA (contrast disabled: jsdom has no layout) |
+
+## Accessibility gates
+
+Accessibility is checked at two levels, and both run in CI:
+
+- **Unit (`src/test/axe.ts`)** — call `expectNoAxeViolations(container)` in component tests for interactive surfaces (queue list in both modes, queue drawer, library card). Catches structural ARIA problems such as nested interactive controls or unnamed widgets.
+- **Playwright (`playwright/fixtures/axe.ts`)** — `a11y-axe.spec.ts` scans library, player, queue, app settings, and keyboard help at both viewports with `@axe-core/playwright`, including color contrast against real rendering.
+- **`keyboard-journey.spec.ts`** — the WS6 exit criterion: browse, play, queue, select, reorder, remove, and Escape using only Tab/Enter/Space/arrows, with focus moving into the queue dialog and back to its opener.
+
+Don't silence a rule to get green. If a rule genuinely cannot apply to a surface, pass `disableRules` at that call site with a comment saying why.
 
 ## BDD comment convention
 
