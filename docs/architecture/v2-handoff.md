@@ -45,6 +45,8 @@ Principle: P7 — the platform is part of elegance.
 
 Branch from latest **`main`**.
 
+Non-blocking leftover from #1742: [#1798](https://github.com/smallorbit/vorbis-player/issues/1798) (ResumeHero panel color literals). Do not start it ahead of #1722.
+
 ### WS7 closed (reference)
 
 **[#1738](https://github.com/smallorbit/vorbis-player/issues/1738)** — component & styling coherence. P2.
@@ -191,6 +193,7 @@ Icon, resume-hero, and touch-hook sweep (F82).
 - **`components/ResumeHero/`** — one component, `variant="library" | "panel"`; library test ids unchanged
 - **`components/icons/`** — playback, heart, action, and brand marks. Provider logos stay in `providers/` (layering). Volume and quick-action icons were already there
 - Inline `<svg>` remains in `components/icons/`, provider icon components, and test fixtures
+- Review on [#1797](https://github.com/smallorbit/vorbis-player/pull/1797): decorative `♪` fallback is shared and `aria-hidden` on both variants. Panel color literals (including `rgba(100, 108, 255, …)`) are [#1798](https://github.com/smallorbit/vorbis-player/issues/1798) — **do not** fold into #1722. `ExternalLink.icon` is still `string`, so `ICON_MAP` stays a string record. A third ResumeHero variant does not exist; do not split the component ahead of one.
 
 ---
 
@@ -213,6 +216,7 @@ Icon, resume-hero, and touch-hook sweep (F82).
 - WS7 epic: [#1738](https://github.com/smallorbit/vorbis-player/issues/1738) (done)
 - Next epic: [WS6 a11y #1721](https://github.com/smallorbit/vorbis-player/issues/1721)
 - Next issue: [#1722](https://github.com/smallorbit/vorbis-player/issues/1722)
+- Non-blocking leftover: [#1798](https://github.com/smallorbit/vorbis-player/issues/1798) (panel color tokens; not WS6)
 - Shared icons: `src/components/icons/`
 - Resume hero: `src/components/ResumeHero/`
 - Touch hook: `src/hooks/useIsTouchDevice.ts`  

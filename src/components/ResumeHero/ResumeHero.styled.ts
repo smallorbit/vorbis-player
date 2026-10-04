@@ -26,6 +26,13 @@ export const LibraryArt = styled.div`
     object-fit: cover;
     display: block;
   }
+
+  span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+  }
 `;
 
 export const LibraryText = styled.div`

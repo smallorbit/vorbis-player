@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
 import { PlayIcon } from '@/components/icons/PlaybackIcons';
 import {
@@ -26,11 +25,11 @@ interface ResumeHeroProps {
   variant: ResumeHeroVariant;
 }
 
-function ArtSlot({ image, fallback }: { image: string | undefined; fallback: ReactNode }) {
+function ArtSlot({ image }: { image: string | undefined }) {
   if (image) {
     return <img src={image} alt="" loading="lazy" />;
   }
-  return fallback;
+  return <span aria-hidden="true">♪</span>;
 }
 
 const ResumeHero = ({ session, onResume, variant }: ResumeHeroProps) => {
@@ -40,7 +39,7 @@ const ResumeHero = ({ session, onResume, variant }: ResumeHeroProps) => {
     return (
       <LibraryRoot data-testid="library-section-resume" aria-label={`Resume ${title}`}>
         <LibraryArt>
-          <ArtSlot image={session.trackImage} fallback={<span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>♪</span>} />
+          <ArtSlot image={session.trackImage} />
         </LibraryArt>
         <LibraryText>
           <LibraryTrackName>{title}</LibraryTrackName>
@@ -60,7 +59,7 @@ const ResumeHero = ({ session, onResume, variant }: ResumeHeroProps) => {
   return (
     <PanelSection aria-labelledby="qap-resume-hero-title">
       <PanelArt>
-        <ArtSlot image={session.trackImage} fallback={<span aria-hidden="true">♪</span>} />
+        <ArtSlot image={session.trackImage} />
       </PanelArt>
       <PanelText>
         <PanelEyebrow>Pick up where you left off</PanelEyebrow>
