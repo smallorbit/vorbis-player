@@ -105,6 +105,26 @@ export const QueueListItem = styled.div<{ $isSelected: boolean }>`
   `}
 `;
 
+const queueRowFocusRing = `
+  outline: none;
+
+  &:focus-visible {
+    box-shadow:
+      0 0 0 2px rgba(0, 0, 0, 0.9),
+      0 0 0 4px rgba(255, 255, 255, 0.9);
+  }
+`;
+
+export const QueueRowBody = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.sm};
+  flex: 1;
+  min-width: 0;
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  ${queueRowFocusRing}
+`;
+
 export const AlbumArtContainer = styled.div`
   position: relative;
   flex-shrink: 0;
@@ -173,6 +193,8 @@ export const DragHandle = styled.div`
   align-items: center;
   padding: 0 2px;
   touch-action: none;
+  border-radius: ${({ theme }) => theme.borderRadius.sm};
+  ${queueRowFocusRing}
 
   &:active {
     cursor: grabbing;

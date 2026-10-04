@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
+import React, { memo, useCallback, useRef, useState } from 'react';
 import type { MediaTrack } from '@/types/domain';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -13,6 +13,7 @@ import { StrokeHeartIcon } from '@/components/icons/HeartIcons';
 import { PlayIcon } from '@/components/icons/PlaybackIcons';
 import {
   QueueListItem,
+  QueueRowBody,
   DragHandle,
   RemoveButton,
   QueueRowMenuButton,
@@ -152,43 +153,38 @@ function QueueRowMoreButton({
   );
 }
 
-function useNavigableQueueRowProps(
+interface QueueRowBodyA11yProps {
+  role?: 'button' | undefined;
+  tabIndex?: number | undefined;
+  'aria-label'?: string | undefined;
+  'aria-current'?: 'true' | undefined;
+  onKeyDown?: ((e: React.KeyboardEvent) => void) | undefined;
+}
+
+function useSelectableRowBodyProps(
   track: MediaTrack,
   index: number,
   isSelected: boolean,
   onSelect: (index: number) => void,
-  isEditMode: boolean,
-  isDragActive: boolean,
-  sortableEditActive: boolean,
-) {
-  const rowLabel = formatQueueRowAriaLabel(track, isSelected);
-
-  const handleRowKeyDown = useCallback(
+  isSelectable: boolean,
+): QueueRowBodyA11yProps {
+  const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.target !== e.currentTarget) return;
-      if (sortableEditActive || isDragActive) return;
       if (!isQueueRowActivationKey(e.key)) return;
       e.preventDefault();
-      if (!isEditMode) {
-        onSelect(index);
-      }
+      onSelect(index);
     },
-    [sortableEditActive, isDragActive, isEditMode, onSelect, index],
+    [onSelect, index],
   );
 
-  if (sortableEditActive) {
-    return { rowLabel, navigableProps: {} };
-  }
+  if (!isSelectable) return {};
 
   return {
-    rowLabel,
-    navigableProps: {
-      role: 'button' as const,
-      tabIndex: 0,
-      'aria-label': rowLabel,
-      'aria-current': isSelected ? ('true' as const) : undefined,
-      onKeyDown: handleRowKeyDown,
-    },
+    role: 'button',
+    tabIndex: 0,
+    'aria-label': formatQueueRowAriaLabel(track, isSelected),
+    'aria-current': isSelected ? 'true' : undefined,
+    onKeyDown: handleKeyDown,
   };
 }
 
@@ -197,24 +193,23 @@ function QueueItemRowChrome({
   isSelected,
   showProviderIcon,
   showPlayingIndicator,
-  children,
+  bodyProps,
 }: {
   track: MediaTrack;
   isSelected: boolean;
   showProviderIcon?: boolean | undefined;
   showPlayingIndicator?: boolean | undefined;
-  children?: React.ReactNode;
+  bodyProps: QueueRowBodyA11yProps;
 }) {
   return (
-    <>
+    <QueueRowBody {...bodyProps}>
       <QueueTrackRowBody
         track={track}
         isSelected={isSelected}
         showProviderIcon={showProviderIcon}
         showPlayingIndicator={showPlayingIndicator}
       />
-      {children}
-    </>
+    </QueueRowBody>
   );
 }
 
@@ -230,20 +225,9 @@ export const SortableQueueItem = memo<QueueItemProps>(({
   isDragActive,
   isEditMode,
 }) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: track.id,
-  });
-
-  const rowFocusedDragListeners = useMemo(() => {
-    if (!listeners) return undefined;
-    const { onKeyDown, ...pointerListeners } = listeners;
-    return {
-      ...pointerListeners,
-      onKeyDown: (e: React.KeyboardEvent) => {
-        if (e.target === e.currentTarget) onKeyDown?.(e);
-      },
-    };
-  }, [listeners]);
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
+    useSortable({ id: track.id });
+  const { onKeyDown: handleDragKeyDown, ...pointerDragListeners } = listeners ?? {};
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -278,14 +262,12 @@ export const SortableQueueItem = memo<QueueItemProps>(({
   } = useQueueItemContextMenu(track, index, isSelected, onRemove, onPlayNext);
 
   const sortableEditActive = !!(isEditMode && onRemove);
-  const { navigableProps } = useNavigableQueueRowProps(
+  const bodyProps = useSelectableRowBodyProps(
     track,
     index,
     isSelected,
     onSelect,
-    !!isEditMode,
-    !!isDragActive,
-    sortableEditActive,
+    !isEditMode && !isDragActive,
   );
 
   return (
@@ -297,8 +279,7 @@ export const SortableQueueItem = memo<QueueItemProps>(({
         data-testid="queue-track-row"
         $isSelected={isSelected}
         {...longPressHandlers}
-        {...navigableProps}
-        {...(sortableEditActive ? { ...attributes, ...rowFocusedDragListeners } : {})}
+        {...(sortableEditActive ? pointerDragListeners : {})}
         style={
           sortableEditActive
             ? { cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none' }
@@ -306,11 +287,23 @@ export const SortableQueueItem = memo<QueueItemProps>(({
         }
       >
         {sortableEditActive && (
-          <DragHandle>
+          <DragHandle
+            ref={setActivatorNodeRef}
+            {...attributes}
+            aria-label={`Reorder ${track.name}`}
+            onKeyDown={(e: React.KeyboardEvent) => {
+              handleDragKeyDown?.(e);
+            }}
+          >
             <GripIcon />
           </DragHandle>
         )}
-        <QueueItemRowChrome track={track} isSelected={isSelected} showProviderIcon={showProviderIcon} />
+        <QueueItemRowChrome
+          track={track}
+          isSelected={isSelected}
+          showProviderIcon={showProviderIcon}
+          bodyProps={bodyProps}
+        />
         <QueueRowMoreButton
           track={track}
           menuTriggerRef={menuTriggerRef}
@@ -371,15 +364,7 @@ export const SwipeableQueueItem = memo<QueueItemProps>(({
     openMenuFromTrigger,
   } = useQueueItemContextMenu(track, index, isSelected, onRemove, onPlayNext);
 
-  const { navigableProps } = useNavigableQueueRowProps(
-    track,
-    index,
-    isSelected,
-    onSelect,
-    !!isEditMode,
-    false,
-    false,
-  );
+  const bodyProps = useSelectableRowBodyProps(track, index, isSelected, onSelect, !isEditMode);
 
   const rowProps = {
     ref: itemRef,
@@ -387,7 +372,6 @@ export const SwipeableQueueItem = memo<QueueItemProps>(({
     'data-testid': 'queue-track-row',
     $isSelected: isSelected,
     ...longPressHandlers,
-    ...navigableProps,
   } as const;
 
   if (!canRemove) {
@@ -399,7 +383,12 @@ export const SwipeableQueueItem = memo<QueueItemProps>(({
             if (!isEditMode) onSelect(index);
           }}
         >
-          <QueueItemRowChrome track={track} isSelected={isSelected} showProviderIcon={showProviderIcon} />
+          <QueueItemRowChrome
+            track={track}
+            isSelected={isSelected}
+            showProviderIcon={showProviderIcon}
+            bodyProps={bodyProps}
+          />
           <QueueRowMoreButton
             track={track}
             menuTriggerRef={menuTriggerRef}
@@ -450,6 +439,7 @@ export const SwipeableQueueItem = memo<QueueItemProps>(({
               isSelected={isSelected}
               showProviderIcon={showProviderIcon}
               showPlayingIndicator={!isRevealed}
+              bodyProps={isRevealed ? {} : bodyProps}
             />
             <QueueRowMoreButton
               track={track}

@@ -134,7 +134,7 @@ test.describe('Persisted-session hydrate (no 0:00 flicker)', () => {
     // captured snapshot — the locator wait gives the observer a fair chance,
     // and toHaveAttribute below would catch any post-flicker settlement we
     // missed. The captured snapshot itself is asserted directly.
-    const sliderLocator = page.locator(`[aria-label="${SEEK_TIMELINE_LABEL}"] [role="slider"]`);
+    const sliderLocator = page.locator(`[role="slider"][aria-label="${SEEK_TIMELINE_LABEL}"]`);
     await sliderLocator.waitFor({ state: 'attached', timeout: 15_000 });
 
     // Give the observer one frame to record the first real-duration mutation.
