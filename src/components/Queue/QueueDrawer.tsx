@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import { theme } from '@/styles/theme';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
+import { useModalOverlay } from '@/hooks/useModalOverlay';
 import QueueSkeleton from './QueueSkeleton';
 import { QueueDismissOverlay } from './QueueDismissOverlay.styled';
 import { QueueShellHeader } from './QueueShellHeader';
@@ -94,6 +95,7 @@ const QueueDrawer = memo<QueueSurfaceProps>(
 
     const { viewport, isMobile, isTablet, transitionDuration, transitionEasing } =
       usePlayerSizingContext();
+    const { containerRef, dialogProps } = useModalOverlay<HTMLDivElement>(isOpen);
 
     const drawerWidth = useMemo(() => {
       if (isMobile) return Math.min(viewport.width, parseInt(theme.breakpoints.xs, 10));
@@ -105,9 +107,12 @@ const QueueDrawer = memo<QueueSurfaceProps>(
 
     return createPortal(
       <>
-        <QueueDismissOverlay $isOpen={isOpen} onClick={onClose} />
+        <QueueDismissOverlay $isOpen={isOpen} onClick={onClose} aria-hidden="true" />
 
         <QueueDrawerContainer
+          ref={containerRef}
+          {...dialogProps}
+          aria-label={radioActive ? 'Radio' : 'Up Next'}
           $isOpen={isOpen}
           $width={drawerWidth}
           $transitionDuration={transitionDuration}

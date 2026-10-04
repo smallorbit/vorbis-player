@@ -205,4 +205,26 @@ describe('QueueDrawer', () => {
       expect(onRemoveTrack).toHaveBeenCalledWith(0);
     });
   });
+
+  describe('dialog semantics (#1725)', () => {
+    it('exposes a labelled modal dialog while open', () => {
+      // #given / #when
+      render(<Wrapper><QueueDrawer {...defaultProps} /></Wrapper>);
+
+      // #then
+      expect(screen.getByRole('dialog', { name: 'Up Next' })).toHaveAttribute('aria-modal', 'true');
+    });
+
+    it('leaves the tab order once closed', () => {
+      // #given
+      const { rerender } = render(<Wrapper><QueueDrawer {...defaultProps} /></Wrapper>);
+      const dialog = screen.getByRole('dialog', { name: 'Up Next' });
+
+      // #when
+      rerender(<Wrapper><QueueDrawer {...defaultProps} isOpen={false} /></Wrapper>);
+
+      // #then
+      expect(dialog).toHaveAttribute('inert');
+    });
+  });
 });
