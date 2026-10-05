@@ -4,7 +4,7 @@ import { STORAGE_KEYS } from '@/constants/storage';
 import { migrateLegacySpotifyStorageKeys } from '@/utils/migrateSpotifyStorageKeys';
 import { purgeSpotifyPersistedData } from '@/services/spotify/purgePersistedData';
 import {
-  MissingCodeVerifierError,
+  PendingLoginMissingError,
   PkceOAuthClient,
   type RefreshOutcome,
 } from '@/services/oauth/pkceOAuthClient';
@@ -237,7 +237,7 @@ class SpotifyAuth {
     } catch (e) {
       sessionStorage.removeItem('spotify_processed_code');
 
-      if (e instanceof MissingCodeVerifierError) {
+      if (e instanceof PendingLoginMissingError) {
         this.logout();
         await this.redirectToAuth();
         return;

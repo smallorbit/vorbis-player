@@ -387,7 +387,7 @@ describe('SpotifyAuth', () => {
       expect(global.fetch).not.toHaveBeenCalled();
     });
 
-    it('throws when no state was stored (login never started in this browser)', async () => {
+    it('throws a sign-in-again error when no state was stored (login never started in this browser)', async () => {
       // #given
       vi.mocked(localStorage.getItem).mockImplementation((key: string) => {
         if (key === 'vorbis-player-spotify-code-verifier') return 'test-verifier';
@@ -397,7 +397,7 @@ describe('SpotifyAuth', () => {
 
       // #when / #then
       await expect(auth.handleAuthCallback('test-code', 'some-state')).rejects.toThrow(
-        'OAuth state mismatch',
+        'Please sign in again',
       );
       expect(global.fetch).not.toHaveBeenCalled();
     });
@@ -490,6 +490,58 @@ describe('SpotifyAuth', () => {
       expect(global.fetch).not.toHaveBeenCalled();
       expect(sessionStorage.setItem).not.toHaveBeenCalledWith('spotify_processed_code', 'abc123');
       expect(localStorage.removeItem).toHaveBeenCalledWith('vorbis-player-spotify-code-verifier');
+    });
+
+    it('handles a double-invoked callback (StrictMode) with one exchange and no restart', async () => {
+      // #given
+      Object.defineProperty(window, 'location', {
+        value: {
+          href: 'http://127.0.0.1:3000/auth/spotify/callback?code=abc123&state=st',
+          origin: 'http://127.0.0.1:3000',
+          pathname: '/auth/spotify/callback',
+          search: '?code=abc123&state=st',
+        },
+        writable: true,
+      });
+      const store = new Map<string, string>([
+        ['vorbis-player-spotify-code-verifier', 'verifier'],
+        ['vorbis-player-spotify-oauth-state', 'st'],
+      ]);
+      vi.mocked(localStorage.getItem).mockImplementation((key: string) => store.get(key) ?? null);
+      vi.mocked(localStorage.removeItem).mockImplementation((key: string) => {
+        store.delete(key);
+      });
+      const auth = await freshAuth();
+      mockFetchResponse({ access_token: 'tok', refresh_token: 'ref', expires_in: 3600 });
+
+      // #when
+      await Promise.all([auth.handleRedirect(), auth.handleRedirect()]);
+
+      // #then
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(window.location.href).not.toMatch(/accounts\.spotify\.com/);
+      expect(auth.getAccessToken()).toBe('tok');
+    });
+
+    it('restarts the login when this browser holds no pending login', async () => {
+      // #given
+      Object.defineProperty(window, 'location', {
+        value: {
+          href: 'http://127.0.0.1:3000/auth/spotify/callback?code=abc123&state=st',
+          origin: 'http://127.0.0.1:3000',
+          pathname: '/auth/spotify/callback',
+          search: '?code=abc123&state=st',
+        },
+        writable: true,
+      });
+      const auth = await freshAuth();
+
+      // #when
+      await auth.handleRedirect();
+
+      // #then
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(window.location.href).toMatch(/^https:\/\/accounts\.spotify\.com\/authorize\?/);
     });
 
     it('skips already-seen code via sessionStorage deduplication', async () => {

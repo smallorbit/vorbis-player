@@ -46,10 +46,16 @@ export class OAuthStateMismatchError extends Error {
   }
 }
 
-export class MissingCodeVerifierError extends Error {
+/**
+ * The callback arrived but this browser holds no pending login (state or
+ * verifier absent): storage was cleared mid-flow, or the login began before a
+ * deploy that introduced `state`. Not evidence of forgery, so callers may
+ * safely restart the login.
+ */
+export class PendingLoginMissingError extends Error {
   constructor(label: string) {
-    super(`${label} code verifier not found. Please restart the authentication flow.`);
-    this.name = 'MissingCodeVerifierError';
+    super(`${label} login was not started in this browser or has expired. Please sign in again.`);
+    this.name = 'PendingLoginMissingError';
   }
 }
 
@@ -77,6 +83,7 @@ async function codeChallengeFor(verifier: string): Promise<string> {
 /** `TRefresh` is what a provider's refresh handler resolves to. */
 export class PkceOAuthClient<TRefresh> {
   private refreshInFlight: Promise<TRefresh> | null = null;
+  private exchangeInFlight: { code: string; promise: Promise<OAuthTokenResponse> } | null = null;
 
   private readonly config: PkceOAuthConfig;
 
@@ -107,19 +114,40 @@ export class PkceOAuthClient<TRefresh> {
   /**
    * Verifies the returned `state` against the stored one, then trades the code
    * for tokens. The stored state is single-use: it is cleared before the
-   * comparison so a replayed callback cannot reuse it.
+   * comparison so a replayed callback cannot reuse it. A missing stored state
+   * throws `PendingLoginMissingError`; a present-but-different one throws
+   * `OAuthStateMismatchError`. Neither reaches the token endpoint.
+   *
+   * Concurrent calls for the same code share one exchange: React StrictMode
+   * runs the auth effect twice, and the second run would otherwise find the
+   * state already consumed.
    */
-  async exchangeCode(code: string, returnedState: string | null): Promise<OAuthTokenResponse> {
+  exchangeCode(code: string, returnedState: string | null): Promise<OAuthTokenResponse> {
+    if (this.exchangeInFlight?.code === code) {
+      return this.exchangeInFlight.promise;
+    }
+    const promise = this.performExchange(code, returnedState).finally(() => {
+      if (this.exchangeInFlight?.promise === promise) {
+        this.exchangeInFlight = null;
+      }
+    });
+    this.exchangeInFlight = { code, promise };
+    return promise;
+  }
+
+  private async performExchange(
+    code: string,
+    returnedState: string | null,
+  ): Promise<OAuthTokenResponse> {
     const { storageKeys, label } = this.config;
     const expectedState = readLocalStorageRaw(storageKeys.state);
     removeLocalStorageKey(storageKeys.state);
-    if (!expectedState || returnedState !== expectedState) {
-      throw new OAuthStateMismatchError();
-    }
-
     const codeVerifier = readLocalStorageRaw(storageKeys.codeVerifier);
-    if (!codeVerifier) {
-      throw new MissingCodeVerifierError(label);
+    if (!expectedState || !codeVerifier) {
+      throw new PendingLoginMissingError(label);
+    }
+    if (returnedState !== expectedState) {
+      throw new OAuthStateMismatchError();
     }
 
     const response = await this.postToTokenEndpoint({

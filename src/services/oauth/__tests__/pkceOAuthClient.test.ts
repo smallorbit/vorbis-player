@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createStorageMock } from '@/test/storageMock';
 import {
-  MissingCodeVerifierError,
   OAuthStateMismatchError,
+  PendingLoginMissingError,
   PkceOAuthClient,
   type RefreshOutcome,
 } from '../pkceOAuthClient';
@@ -103,6 +103,25 @@ describe('PkceOAuthClient', () => {
       expect(localStorageMock.getItem(VERIFIER_KEY)).toBeNull();
     });
 
+    it('shares one exchange between concurrent callbacks for the same code', async () => {
+      // #given
+      const client = makeClient();
+      await client.buildAuthorizeUrl();
+      const state = localStorageMock.getItem(STATE_KEY);
+      const fetchMock = stubFetch(tokenResponse({ access_token: 'tok' }));
+
+      // #when
+      const [first, second] = await Promise.all([
+        client.exchangeCode('the-code', state),
+        client.exchangeCode('the-code', state),
+      ]);
+
+      // #then
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(first).toEqual({ access_token: 'tok' });
+      expect(second).toEqual({ access_token: 'tok' });
+    });
+
     it('rejects a mismatched state and consumes the stored one', async () => {
       // #given
       const client = makeClient();
@@ -117,7 +136,7 @@ describe('PkceOAuthClient', () => {
       expect(localStorageMock.getItem(STATE_KEY)).toBeNull();
     });
 
-    it('rejects a replayed callback after the state was consumed', async () => {
+    it('refuses a replayed callback after the state was consumed', async () => {
       // #given
       const client = makeClient();
       await client.buildAuthorizeUrl();
@@ -127,11 +146,23 @@ describe('PkceOAuthClient', () => {
 
       // #when / #then
       await expect(client.exchangeCode('the-code', state)).rejects.toBeInstanceOf(
-        OAuthStateMismatchError,
+        PendingLoginMissingError,
       );
     });
 
-    it('throws MissingCodeVerifierError when the verifier is gone', async () => {
+    it('throws PendingLoginMissingError when no state was stored', async () => {
+      // #given
+      const client = makeClient();
+      const fetchMock = stubFetch(tokenResponse({ access_token: 'tok' }));
+
+      // #when / #then
+      await expect(client.exchangeCode('the-code', 'any-state')).rejects.toBeInstanceOf(
+        PendingLoginMissingError,
+      );
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('throws PendingLoginMissingError when the verifier is gone', async () => {
       // #given
       const client = makeClient();
       await client.buildAuthorizeUrl();
@@ -140,7 +171,7 @@ describe('PkceOAuthClient', () => {
 
       // #when / #then
       await expect(client.exchangeCode('the-code', state)).rejects.toBeInstanceOf(
-        MissingCodeVerifierError,
+        PendingLoginMissingError,
       );
     });
 
