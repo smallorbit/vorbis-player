@@ -34,6 +34,18 @@
         {
           "key": "X-XSS-Protection",
           "value": "1; mode=block"
+        },
+        {
+          "key": "Content-Security-Policy-Report-Only",
+          "value": "default-src 'self'; script-src 'self' https://sdk.scdn.co; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.scdn.co https://*.spotifycdn.com https://*.byspotify.com https://via.placeholder.com; media-src 'self' blob: https://*.dropboxusercontent.com; connect-src 'self' https://api.spotify.com https://accounts.spotify.com https://api.dropboxapi.com https://content.dropboxapi.com https://*.dropboxusercontent.com https://ws.audioscrobbler.com https://api.github.com https://raw.githubusercontent.com; frame-src https://sdk.scdn.co; worker-src 'self' blob:; font-src 'self' data:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
         }
       ]
     }
