@@ -30,8 +30,13 @@ function setActionHandler(
 function syncPlaybackState(session: MediaSession): void {
   const { isPlaying, positionMs, durationMs } = playbackStore.getSnapshot();
   session.playbackState = isPlaying ? 'playing' : 'paused';
-  if (durationMs <= 0 || typeof session.setPositionState !== 'function') return;
+  if (typeof session.setPositionState !== 'function') return;
   try {
+    if (durationMs <= 0) {
+      // Clear the previous track's position so the OS stops extrapolating it.
+      session.setPositionState();
+      return;
+    }
     session.setPositionState({
       duration: durationMs / 1000,
       position: Math.min(Math.max(positionMs, 0), durationMs) / 1000,
@@ -81,7 +86,9 @@ export function useMediaSession(track: MediaTrack | null | undefined, handlers: 
         'seekto',
         (details) => {
           if (details.seekTime === undefined) return;
-          void playbackStore.seek(details.seekTime * 1000, trackProvider);
+          playbackStore.seek(details.seekTime * 1000, trackProvider).catch((err: unknown) => {
+            logCaughtError('useMediaSession.seekto', err);
+          });
         },
       ],
     ];
@@ -99,6 +106,7 @@ export function useMediaSession(track: MediaTrack | null | undefined, handlers: 
     return () => {
       unsubscribe();
       session.playbackState = 'none';
+      session.metadata = null;
     };
   }, []);
 }

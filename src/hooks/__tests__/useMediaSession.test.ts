@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import type { PlaybackSnapshot } from '@/stores/playbackStore';
 import { makeTrack } from '@/test/fixtures';
+import { logCaughtError } from '@/utils/logCaughtError';
 import { useMediaSession, type MediaSessionHandlers } from '../useMediaSession';
 
 const store = vi.hoisted(() => {
@@ -15,6 +16,8 @@ const store = vi.hoisted(() => {
   };
   return { listeners, snapshot, seek: vi.fn(async () => {}) };
 });
+
+vi.mock('@/utils/logCaughtError', () => ({ logCaughtError: vi.fn() }));
 
 vi.mock('@/stores/playbackStore', () => ({
   playbackStore: {
@@ -150,17 +153,17 @@ describe('useMediaSession', () => {
     });
   });
 
-  it('skips position state until the duration is known and clamps overshoot', () => {
+  it('clears position state until the duration is known and clamps overshoot', () => {
     // #given
     renderHook(() => useMediaSession(makeTrack(), makeHandlers()));
 
     // #when
     emit({ isPlaying: true, positionMs: 5_000, durationMs: 0 });
-    const callsWithoutDuration = fake.session.setPositionState.mock.calls.length;
+    const callWithoutDuration = fake.session.setPositionState.mock.lastCall;
     emit({ positionMs: 210_000, durationMs: 200_000 });
 
-    // #then
-    expect(callsWithoutDuration).toBe(0);
+    // #then — an unknown duration clears position state instead of keeping the last track's
+    expect(callWithoutDuration).toEqual([]);
     expect(fake.session.setPositionState).toHaveBeenLastCalledWith({
       duration: 200,
       position: 200,
@@ -178,6 +181,20 @@ describe('useMediaSession', () => {
     // #then
     expect(fake.handlers.size).toBe(0);
     expect(fake.session.playbackState).toBe('none');
+    expect(fake.session.metadata).toBeNull();
+  });
+
+  it('logs instead of rejecting when an OS seek fails', async () => {
+    // #given
+    const failure = new Error('network down');
+    store.seek.mockRejectedValueOnce(failure);
+    renderHook(() => useMediaSession(makeTrack(), makeHandlers()));
+
+    // #when
+    fake.handlers.get('seekto')?.({ action: 'seekto', seekTime: 10 });
+
+    // #then
+    await vi.waitFor(() => expect(logCaughtError).toHaveBeenCalledWith('useMediaSession.seekto', failure));
   });
 
   it('survives a browser that rejects an action', () => {
