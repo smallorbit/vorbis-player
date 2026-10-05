@@ -3,14 +3,17 @@ import { SESSION_EXPIRED_EVENT, dispatchAppEvent } from '@/constants/events';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { migrateLegacySpotifyStorageKeys } from '@/utils/migrateSpotifyStorageKeys';
 import { purgeSpotifyPersistedData } from '@/services/spotify/purgePersistedData';
+import {
+  MissingCodeVerifierError,
+  PkceOAuthClient,
+  type RefreshOutcome,
+} from '@/services/oauth/pkceOAuthClient';
 import { logCaughtError } from '@/utils/logCaughtError';
 import {
   readLocalStorageRaw,
   removeLocalStorageKey,
   writeLocalStorageJson,
-  writeLocalStorageRaw,
 } from '@/utils/persistedStorage';
-import { parseOAuthTokenResponse } from '@/utils/oauthTokenResponse';
 
 const SPOTIFY_CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
 
@@ -37,14 +40,32 @@ const SCOPES = [
 
 const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
 
+function requireSpotifyClientId(): string {
+  if (!SPOTIFY_CLIENT_ID) {
+    throw new Error('VITE_SPOTIFY_CLIENT_ID is not defined. Please set it in your .env.local file.');
+  }
+  return SPOTIFY_CLIENT_ID;
+}
+
 // =============================================================================
 // SpotifyAuth Class
 // =============================================================================
 
 class SpotifyAuth {
   private tokenData: TokenData | null = null;
-  private refreshInFlight: Promise<void> | null = null;
   private sessionExpiredNotified = false;
+  private readonly oauth = new PkceOAuthClient<void>({
+    label: 'Spotify',
+    authorizeUrl: 'https://accounts.spotify.com/authorize',
+    tokenUrl: 'https://accounts.spotify.com/api/token',
+    getClientId: requireSpotifyClientId,
+    getRedirectUri: getSpotifyRedirectUri,
+    storageKeys: {
+      codeVerifier: STORAGE_KEYS.SPOTIFY_CODE_VERIFIER,
+      state: STORAGE_KEYS.SPOTIFY_OAUTH_STATE,
+    },
+    authorizeParams: { scope: SCOPES.join(' ') },
+  });
 
   constructor() {
     this.loadTokenFromStorage();
@@ -80,74 +101,14 @@ class SpotifyAuth {
     writeLocalStorageJson(STORAGE_KEYS.SPOTIFY_TOKEN, tokenData);
   }
 
-  private base64UrlEncode(bytes: Uint8Array): string {
-    const base64 = btoa(String.fromCharCode.apply(null, Array.from(bytes)));
-    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-  }
-
-  private generateCodeVerifier(): string {
-    const array = new Uint8Array(32);
-    crypto.getRandomValues(array);
-    return this.base64UrlEncode(array);
-  }
-
-  private async generateCodeChallenge(verifier: string): Promise<string> {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(verifier);
-    const digest = await crypto.subtle.digest('SHA-256', data);
-    return this.base64UrlEncode(new Uint8Array(digest));
-  }
-
   public async getAuthUrl(): Promise<string> {
-    if (!SPOTIFY_CLIENT_ID) {
-      throw new Error('VITE_SPOTIFY_CLIENT_ID is not defined. Please set it in your .env.local file.');
-    }
-
-    const codeVerifier = this.generateCodeVerifier();
-    const codeChallenge = await this.generateCodeChallenge(codeVerifier);
-
-    writeLocalStorageRaw(STORAGE_KEYS.SPOTIFY_CODE_VERIFIER, codeVerifier);
-
-    const params = new URLSearchParams({
-      client_id: SPOTIFY_CLIENT_ID,
-      response_type: 'code',
-      redirect_uri: getSpotifyRedirectUri(),
-      scope: SCOPES.join(' '),
-      code_challenge_method: 'S256',
-      code_challenge: codeChallenge,
-    });
-
-    return `https://accounts.spotify.com/authorize?${params.toString()}`;
+    requireSpotifyClientId();
+    return this.oauth.buildAuthorizeUrl();
   }
 
-  public async handleAuthCallback(code: string): Promise<void> {
-    if (!SPOTIFY_CLIENT_ID) {
-      throw new Error('VITE_SPOTIFY_CLIENT_ID is not defined.');
-    }
-
-    const codeVerifier = readLocalStorageRaw(STORAGE_KEYS.SPOTIFY_CODE_VERIFIER);
-    if (!codeVerifier) {
-      throw new Error('Code verifier not found. Please restart the authentication flow.');
-    }
-
-    const response = await fetch('https://accounts.spotify.com/api/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: SPOTIFY_CLIENT_ID,
-        grant_type: 'authorization_code',
-        code,
-        redirect_uri: getSpotifyRedirectUri(),
-        code_verifier: codeVerifier,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Token exchange failed: ${response.statusText} - ${errorText}`);
-    }
-
-    const data = parseOAuthTokenResponse(await response.json());
+  public async handleAuthCallback(code: string, state: string | null): Promise<void> {
+    requireSpotifyClientId();
+    const data = await this.oauth.exchangeCode(code, state);
     const tokenPayload: TokenData = {
       access_token: data.access_token,
       expires_at: Date.now() + (data.expires_in ?? 0) * 1000,
@@ -156,54 +117,34 @@ class SpotifyAuth {
       tokenPayload.refresh_token = data.refresh_token;
     }
     this.saveTokenToStorage(tokenPayload);
-
-    removeLocalStorageKey(STORAGE_KEYS.SPOTIFY_CODE_VERIFIER);
   }
 
   public async refreshAccessToken(): Promise<void> {
-    if (this.refreshInFlight) {
-      return this.refreshInFlight;
-    }
-
-    this.refreshInFlight = this.performRefresh().finally(() => {
-      this.refreshInFlight = null;
-    });
-    return this.refreshInFlight;
-  }
-
-  private async performRefresh(): Promise<void> {
-    if (!this.tokenData?.refresh_token) {
+    const refreshToken = this.tokenData?.refresh_token;
+    if (!refreshToken) {
       throw new Error('No refresh token available');
     }
+    requireSpotifyClientId();
+    return this.oauth.refresh(refreshToken, (outcome) => this.applyRefresh(outcome, refreshToken));
+  }
 
-    if (!SPOTIFY_CLIENT_ID) {
-      throw new Error('VITE_SPOTIFY_CLIENT_ID is not defined.');
-    }
-
-    const response = await fetch('https://accounts.spotify.com/api/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'refresh_token',
-        refresh_token: this.tokenData.refresh_token,
-        client_id: SPOTIFY_CLIENT_ID,
-      }),
-    });
-
-    if (!response.ok) {
-      if (response.status === 400 || response.status === 401) {
+  private applyRefresh(outcome: RefreshOutcome, previousRefreshToken: string): void {
+    switch (outcome.kind) {
+      case 'success':
+        this.saveTokenToStorage({
+          access_token: outcome.token.access_token,
+          refresh_token: outcome.token.refresh_token ?? previousRefreshToken,
+          expires_at: Date.now() + (outcome.token.expires_in ?? 0) * 1000,
+        });
+        return;
+      case 'terminal':
         this.reportUnauthorized();
-      }
-      throw new Error(`Token refresh failed: ${response.statusText}`);
+        throw new Error(`Token refresh failed: ${outcome.status}`);
+      case 'transient':
+        throw new Error(`Token refresh failed: ${outcome.status ?? 'network error'}`, {
+          cause: outcome.error,
+        });
     }
-
-    const data = parseOAuthTokenResponse(await response.json());
-    const tokenPayload: TokenData = {
-      access_token: data.access_token,
-      refresh_token: data.refresh_token ?? this.tokenData.refresh_token,
-      expires_at: Date.now() + (data.expires_in ?? 0) * 1000,
-    };
-    this.saveTokenToStorage(tokenPayload);
   }
 
   /**
@@ -264,12 +205,13 @@ class SpotifyAuth {
     // Token keys are also in PROVIDER_PURGE_LOCAL_STORAGE_KEYS; clearing here
     // keeps direct spotifyAuth.logout() callers (OAuth error paths) safe.
     removeLocalStorageKey(STORAGE_KEYS.SPOTIFY_TOKEN);
-    removeLocalStorageKey(STORAGE_KEYS.SPOTIFY_CODE_VERIFIER);
+    this.oauth.clearPendingLogin();
   }
 
   public async handleRedirect(): Promise<void> {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
+    const state = urlParams.get('state');
     const error = urlParams.get('error');
 
     if (error) {
@@ -289,13 +231,13 @@ class SpotifyAuth {
     }
 
     try {
-      await this.handleAuthCallback(code);
+      await this.handleAuthCallback(code, state);
       sessionStorage.setItem('spotify_processed_code', code);
       window.history.replaceState({}, document.title, '/');
     } catch (e) {
       sessionStorage.removeItem('spotify_processed_code');
 
-      if (e instanceof Error && e.message.includes('Code verifier not found')) {
+      if (e instanceof MissingCodeVerifierError) {
         this.logout();
         await this.redirectToAuth();
         return;
