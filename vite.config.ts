@@ -48,6 +48,30 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const require = createRequire(import.meta.url)
 const pkg = require('./package.json') as { version: string }
 
+interface VercelHeaderRule {
+  source: string
+  headers: { key: string; value: string }[]
+}
+
+/**
+ * Serves the production response headers from vercel.json on `vite preview`,
+ * so the Playwright run (which tests the preview build) executes under the
+ * real CSP. Report-only is promoted to enforcing here: a violation in e2e
+ * should break the run, not scroll past in a console. HSTS is dropped because
+ * preview is plain http.
+ */
+function productionHeadersForPreview(): Record<string, string> {
+  const { headers } = require('./vercel.json') as { headers: VercelHeaderRule[] }
+  const siteWide = headers.find((rule) => rule.source === '/(.*)')?.headers ?? []
+  const previewHeaders: Record<string, string> = {}
+  for (const { key, value } of siteWide) {
+    if (key === 'Strict-Transport-Security') continue
+    const previewKey = key === 'Content-Security-Policy-Report-Only' ? 'Content-Security-Policy' : key
+    previewHeaders[previewKey] = value
+  }
+  return previewHeaders
+}
+
 // Build provenance, baked in at build time so the running app can report exactly
 // which commit is deployed (staging / production verification). On Vercel the
 // VERCEL_GIT_* system env vars are authoritative; locally we fall back to git.
@@ -107,6 +131,7 @@ export default defineConfig({
   preview: {
     host: '127.0.0.1',
     port: 3000,
+    headers: productionHeadersForPreview(),
   },
   test: {
     globals: true,
