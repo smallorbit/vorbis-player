@@ -121,7 +121,10 @@ export default defineConfig({
             options: {
               cacheName: 'spotify-artwork',
               expiration: { maxEntries: 500, maxAgeSeconds: 30 * 24 * 60 * 60 },
-              cacheableResponse: { statuses: [0, 200] },
+              // CORS responses only. Cache Storage matches by URL, so an opaque
+              // copy from a plain <img> would be served to the crossOrigin
+              // loads (AlbumArt canvas, accent-color extraction) and fail them.
+              cacheableResponse: { statuses: [200] },
             },
           },
         ],

@@ -364,6 +364,28 @@ describe('SpotifyLibrarySyncEngine', () => {
       await vi.waitFor(() => expect(mockGetPlaylistCount).toHaveBeenCalled());
     });
 
+    it('ignores a reconnect while the initial load is still running', async () => {
+      // #given — cold start whose full fetch has not resolved yet
+      mockGetPlaylistCount.mockResolvedValue(1);
+      mockGetAlbumCount.mockResolvedValue(1);
+      mockGetLikedSongsCount.mockResolvedValue(5);
+      let releaseLibrary: () => void = () => {};
+      const gate = new Promise<void>((resolve) => { releaseLibrary = resolve; });
+      mockGetUserLibraryInterleaved.mockImplementation(() => gate);
+      const started = engine.start();
+      await vi.waitFor(() => expect(mockGetUserLibraryInterleaved).toHaveBeenCalledTimes(1));
+      setOnline(false);
+
+      // #when
+      setOnline(true);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      // #then
+      expect(mockGetPlaylistCount).not.toHaveBeenCalled();
+      releaseLibrary();
+      await started;
+    });
+
     it('stops reacting to reconnects after stop()', async () => {
       // #given
       await startWarmEngine();
@@ -372,7 +394,7 @@ describe('SpotifyLibrarySyncEngine', () => {
 
       // #when
       setOnline(true);
-      await Promise.resolve();
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       // #then
       expect(mockGetPlaylistCount).not.toHaveBeenCalled();

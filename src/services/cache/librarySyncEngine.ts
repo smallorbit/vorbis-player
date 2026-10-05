@@ -376,7 +376,9 @@ export class SpotifyLibrarySyncEngine {
   }
 
   private handleConnectivityChange = (isOnline: boolean): void => {
-    if (!isOnline) return;
+    // initialLoad is still fetching; a parallel sync would race it on the
+    // cache and orphan its abort controller.
+    if (!isOnline || this.startPromise) return;
     this.syncNow().catch((err) => {
       console.warn('[librarySyncEngine] Sync on reconnect failed:', err);
     });
