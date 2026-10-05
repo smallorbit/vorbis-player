@@ -30,6 +30,33 @@ test.describe('Content Security Policy @responsive', () => {
     }
   });
 
+  test('connect-src covers every cross-origin image and script host', async ({ page }) => {
+    // The service worker is served this same policy, and everything it
+    // proxies goes through fetch() — governed by connect-src, not by
+    // img-src/script-src. Violations there never reach the page, so the
+    // lists must be kept aligned explicitly.
+    const response = await page.goto('/');
+    const policy = response?.headers()['content-security-policy'] ?? '';
+    const directive = (name: string): string[] =>
+      policy
+        .split(';')
+        .map((part) => part.trim().split(/\s+/))
+        .find(([key]) => key === name)
+        ?.slice(1) ?? [];
+
+    const connectSources = directive('connect-src');
+    const crossOriginFetchedHosts = [...directive('img-src'), ...directive('script-src')].filter(
+      (source) => source.startsWith('https://'),
+    );
+    const isCovered = (host: string): boolean =>
+      connectSources.includes(host) ||
+      connectSources.some(
+        (source) => source.startsWith('https://*.') && host.endsWith(source.slice('https://*'.length)),
+      );
+
+    expect(crossOriginFetchedHosts.filter((host) => !isCovered(host))).toEqual([]);
+  });
+
   test('browsing, skipping tracks, and opening the queue raise no violations', async ({ page }) => {
     await page.addInitScript(() => {
       window.__cspViolations = [];
