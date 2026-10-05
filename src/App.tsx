@@ -20,6 +20,7 @@ import { logApp } from '@/lib/debugLog';
 import { DevBugProvider } from '@/contexts/DevBugContext';
 import { DevBugFAB } from '@/components/DevBug';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useConnectivityToast } from '@/hooks/useConnectivityToast';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { removeLocalStorageKey } from '@/utils/persistedStorage';
 import { Toaster } from '@/components/ui/sonner';
@@ -74,6 +75,7 @@ function App() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [isPopupCallback, setIsPopupCallback] = useState(false);
   const [devbugEnabled] = useLocalStorage(STORAGE_KEYS.DEVBUG_ENABLED, false);
+  useConnectivityToast();
 
   useEffect(() => {
     // Clean up deprecated localStorage keys on app initialization
