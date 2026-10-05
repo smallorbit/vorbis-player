@@ -126,13 +126,13 @@ describe('DropboxAuthAdapter', () => {
       await expect(adapter.handleCallback(url)).rejects.toThrow('OAuth state mismatch');
     });
 
-    it('throws when no state was stored (e.g. beginLogin was never called)', async () => {
+    it('throws a sign-in-again error when no state was stored (e.g. beginLogin was never called)', async () => {
       // #given
       const adapter = new DropboxAuthAdapter();
       const url = makeCallbackUrl('abc', 'some-state');
 
       // #when / #then
-      await expect(adapter.handleCallback(url)).rejects.toThrow('OAuth state mismatch');
+      await expect(adapter.handleCallback(url)).rejects.toThrow('Please sign in again');
     });
 
     it('clears the stored state after a mismatched callback', async () => {

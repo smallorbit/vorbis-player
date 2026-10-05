@@ -59,6 +59,7 @@ export const STORAGE_KEYS = {
   // Spotify authentication
   SPOTIFY_TOKEN: storageKey('spotify-token'),
   SPOTIFY_CODE_VERIFIER: storageKey('spotify-code-verifier'),
+  SPOTIFY_OAUTH_STATE: storageKey('spotify-oauth-state'),
 
   // Dropbox authentication and sync
   DROPBOX_TOKEN: storageKey('dropbox-token'),

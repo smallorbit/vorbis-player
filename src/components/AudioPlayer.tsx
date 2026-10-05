@@ -34,6 +34,7 @@ import { useAudioPlayerLibraryIntegration } from '@/hooks/useAudioPlayerLibraryI
 import { decodeLegacySelection } from '@/services/sessionPersistence';
 import { playbackStore } from '@/stores/playbackStore';
 import { usePlaybackState } from '@/hooks/usePlaybackState';
+import { useMediaSession } from '@/hooks/useMediaSession';
 import QuickAccessPanel from './QuickAccessPanel';
 import { CmdKPalette } from './CmdKPalette';
 import type { CollectionSelection, MediaCollection } from '@/types/domain';
@@ -262,6 +263,8 @@ const AudioPlayerComponent = () => {
     handleQueueLikedTracks,
     withResumeDismiss,
   ]);
+
+  useMediaSession(currentTrack, playbackHandlers);
 
   const { chosenProviderId, activeDescriptor, connectedProviderIds } = useProviderContext();
 
