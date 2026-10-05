@@ -39,6 +39,7 @@
 
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
+import { VitePWA } from 'vite-plugin-pwa'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createRequire } from 'node:module'
@@ -93,7 +94,40 @@ export default defineConfig({
     __BUILD_REF__: JSON.stringify(buildRef),
     __BUILD_ENV__: JSON.stringify(buildEnv),
   },
-  plugins: [react()],
+  plugins: [
+    react(),
+    // Generated Workbox service worker (replaces the hand-rolled public/sw.js, #1716).
+    // Precache comes from the build output, so the shell and its hashed chunks
+    // always match. Runtime caching is limited to public Spotify artwork:
+    // authenticated API responses (Spotify, Dropbox, Last.fm) never touch Cache
+    // Storage. Registration lives in src/main.tsx.
+    VitePWA({
+      injectRegister: false,
+      manifest: false,
+      workbox: {
+        globPatterns: ['index.html', 'assets/*.{js,css}', 'favicon.ico', 'icon-*.png', 'apple-touch-icon.png'],
+        globIgnores: ['playwright-fixtures/**'],
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+        navigateFallback: '/index.html',
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) =>
+              (url.hostname.endsWith('.scdn.co') && url.hostname !== 'sdk.scdn.co') ||
+              url.hostname.endsWith('.spotifycdn.com'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'spotify-artwork',
+              expiration: { maxEntries: 500, maxAgeSeconds: 30 * 24 * 60 * 60 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
+      },
+    }),
+  ],
   build: {
     rollupOptions: {
       output: {
