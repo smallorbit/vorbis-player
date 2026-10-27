@@ -10,9 +10,9 @@ echo "trim start=$START end=$END dur=$DUR"
 FADE_OUT_START=$(python3 -c "print(round($DUR - 0.8, 3))")
 AFADE_OUT_START=$(python3 -c "print(round($DUR - 3.0, 3))")
 
-# 1. Silent master mp4 (1080p, h264, 30fps)
+# 1. Silent master mp4 (h264, 30fps, at the recorded viewport size)
 ffmpeg -v error -y -ss "$START" -t "$DUR" -i "$VIDEO" \
-  -vf "fps=30,scale=1920:1080:flags=lanczos,fade=t=in:st=0:d=0.5,fade=t=out:st=$FADE_OUT_START:d=0.8,format=yuv420p" \
+  -vf "fps=30,fade=t=in:st=0:d=0.5,fade=t=out:st=$FADE_OUT_START:d=0.8,format=yuv420p" \
   -c:v libx264 -preset slow -crf 20 -movflags +faststart -an "$OUT/vorbis-player-teaser-silent.mp4"
 
 # 2. Scored mp4: same video + CC0 music bed, normalized, faded

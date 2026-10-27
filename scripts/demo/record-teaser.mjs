@@ -7,7 +7,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const OUT = process.argv[2];
-const W = 1920, H = 1080;
+// Viewport (and recording) size. Override with DEMO_WIDTH / DEMO_HEIGHT, e.g. 2560x1440.
+const W = Number(process.env.DEMO_WIDTH) || 1920;
+const H = Number(process.env.DEMO_HEIGHT) || 1080;
 const PLAYLIST = 'playlist_29c76609'; // awaken (one track per album, high-res fixture art)
 
 const CURSOR_SCRIPT = `
