@@ -24,6 +24,8 @@
     "capture": "playwright test --config playwright/capture/capture.config.ts --project desktop --project mobile",
     "capture:desktop": "playwright test --config playwright/capture/capture.config.ts --project desktop",
     "capture:mobile": "playwright test --config playwright/capture/capture.config.ts --project mobile",
+    "demo:record": "node scripts/demo/record-teaser.mjs",
+    "demo:encode": "bash scripts/demo/encode-teaser.sh",
     "snapshot:spotify": "tsx scripts/snapshot-spotify.ts",
     "snapshot:dropbox": "tsx scripts/snapshot-dropbox.ts",
     "audit:ci": "audit-ci --config audit-ci.jsonc"
