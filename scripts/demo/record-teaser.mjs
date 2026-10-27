@@ -1,4 +1,6 @@
 // Records the Vorbis Player teaser against the mock provider.
+// The awaken playlist is used because its eight albums carry 1600px art in the fixture
+// (upgraded from the Cover Art Archive); other fixture albums are 300px.
 // Usage: npm run demo:record -- <outDir>   (dev server must be running with VITE_MOCK_PROVIDER=true)
 import { chromium } from '@playwright/test';
 import fs from 'node:fs';
@@ -6,7 +8,7 @@ import path from 'node:path';
 
 const OUT = process.argv[2];
 const W = 1920, H = 1080;
-const PLAYLIST = 'playlist_567fd4d9'; // Synthwave Chill
+const PLAYLIST = 'playlist_29c76609'; // awaken (one track per album, high-res fixture art)
 
 const CURSOR_SCRIPT = `
 (() => {
