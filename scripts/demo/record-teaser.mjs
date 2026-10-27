@@ -5,11 +5,17 @@
 import { chromium } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawn } from 'node:child_process';
 
 const OUT = process.argv[2];
 // Viewport (and recording) size. Override with DEMO_WIDTH / DEMO_HEIGHT, e.g. 2560x1440.
 const W = Number(process.env.DEMO_WIDTH) || 1920;
 const H = Number(process.env.DEMO_HEIGHT) || 1080;
+// DEMO_CAPTURE=playwright (default): Playwright's built-in 25fps VP8 screencast.
+// DEMO_CAPTURE=x11: headful Chromium in kiosk mode on $DISPLAY (an Xvfb started by
+// record-x11.sh), grabbed by ffmpeg at DEMO_FPS (default 60) into an h264 mp4.
+const CAPTURE = process.env.DEMO_CAPTURE === 'x11' ? 'x11' : 'playwright';
+const FPS = Number(process.env.DEMO_FPS) || 60;
 const PLAYLIST = 'playlist_29c76609'; // awaken (one track per album, high-res fixture art)
 
 const CURSOR_SCRIPT = `
@@ -80,17 +86,44 @@ async function click(page, locator, { ms = 650, settle = 400, dx = 0, dy = 0 } =
 }
 
 const marks = [];
-const t0 = Date.now();
+let t0 = Date.now();
 const mark = (label) => { marks.push({ label, t: (Date.now() - t0) / 1000 }); console.log(`[${((Date.now() - t0) / 1000).toFixed(2)}s] ${label}`); };
 
-const browser = await chromium.launch();
-const context = await browser.newContext({
-  viewport: { width: W, height: H },
-  deviceScaleFactor: 1,
-  recordVideo: { dir: OUT, size: { width: W, height: H } },
-});
+let ffmpeg = null;
+const browser = CAPTURE === 'x11'
+  ? await chromium.launch({
+      headless: false,
+      ignoreDefaultArgs: ['--enable-automation'],
+      args: ['--kiosk', `--window-size=${W},${H}`, '--window-position=0,0', '--disable-infobars', '--hide-scrollbars'],
+    })
+  : await chromium.launch();
+const context = await browser.newContext(
+  CAPTURE === 'x11'
+    ? { viewport: null }
+    : { viewport: { width: W, height: H }, deviceScaleFactor: 1, recordVideo: { dir: OUT, size: { width: W, height: H } } },
+);
 await context.addInitScript(CURSOR_SCRIPT);
 const page = await context.newPage();
+let capturePath = null;
+if (CAPTURE === 'x11') {
+  if (!process.env.DISPLAY) throw new Error('DEMO_CAPTURE=x11 needs DISPLAY (use scripts/demo/record-x11.sh)');
+  capturePath = path.join(OUT, 'capture.mp4');
+  // --kiosk is not honoured for Playwright-launched windows, so go fullscreen through CDP
+  // and verify the page fills the virtual screen before the grabber starts.
+  const cdp = await context.newCDPSession(page);
+  const { windowId } = await cdp.send('Browser.getWindowForTarget');
+  await cdp.send('Browser.setWindowBounds', { windowId, bounds: { windowState: 'fullscreen' } });
+  // Chromium reports the fullscreen window one pixel short of the Xvfb screen (1919x1079 on a
+  // 1920x1080 display); the grabber still captures the full screen, so allow that slack.
+  await page.waitForFunction(([w, h]) => Math.abs(window.innerWidth - w) <= 2 && Math.abs(window.innerHeight - h) <= 2, [W, H], { timeout: 10_000 });
+  ffmpeg = spawn('ffmpeg', [
+    '-y', '-loglevel', 'error',
+    '-f', 'x11grab', '-framerate', String(FPS), '-video_size', `${W}x${H}`, '-draw_mouse', '0', '-i', process.env.DISPLAY,
+    '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '16', '-pix_fmt', 'yuv420p', capturePath,
+  ], { stdio: ['pipe', 'inherit', 'inherit'] });
+  t0 = Date.now();
+  await sleep(1000); // let the grabber settle before the first scene
+}
 mark('context ready');
 
 await page.goto('http://127.0.0.1:3000/?provider=mock');
@@ -156,9 +189,13 @@ mark('zen off');
 await sleep(2400);
 mark('end');
 
-const videoPath = await page.video().path();
+let videoPath = capturePath;
+if (CAPTURE === 'playwright') videoPath = await page.video().path();
 await page.close();
 await context.close();
 await browser.close();
-fs.writeFileSync(path.join(OUT, 'marks.json'), JSON.stringify({ videoPath, marks }, null, 2));
+if (ffmpeg) {
+  await new Promise((resolve) => { ffmpeg.on('exit', resolve); ffmpeg.stdin.write('q'); ffmpeg.stdin.end(); });
+}
+fs.writeFileSync(path.join(OUT, 'marks.json'), JSON.stringify({ videoPath, capture: CAPTURE, fps: CAPTURE === 'x11' ? FPS : 25, width: W, height: H, marks }, null, 2));
 console.log('video:', videoPath);

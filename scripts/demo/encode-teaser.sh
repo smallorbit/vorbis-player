@@ -2,7 +2,11 @@
 # Usage: npm run demo:encode -- <recDir> <outDir> <music file>
 set -euo pipefail
 REC="$1"; OUT="$2"; MUSIC="$3"
-VIDEO=$(ls "$REC"/*.webm | head -1)
+# Playwright captures are page@*.webm; x11 captures are capture.mp4. (ls fails under pipefail when a glob misses.)
+VIDEO=$( { ls "$REC"/capture.mp4 "$REC"/*.webm 2>/dev/null || true; } | head -1)
+[ -n "$VIDEO" ] || { echo "no capture found in $REC" >&2; exit 1; }
+FPS=$(python3 -c "import json; print(min(60, json.load(open('$REC/marks.json')).get('fps', 25)))")
+if [ "$FPS" -lt 30 ]; then FPS=30; fi
 START=$(python3 -c "import json,sys; m=json.load(open('$REC/marks.json'))['marks']; print(max(0, next(x['t'] for x in m if x['label']=='welcome visible') + 0.15))")
 END=$(python3 -c "import json,sys; m=json.load(open('$REC/marks.json'))['marks']; print(next(x['t'] for x in m if x['label']=='end') + 0.2)")
 DUR=$(python3 -c "print(round($END - $START, 3))")
@@ -10,9 +14,9 @@ echo "trim start=$START end=$END dur=$DUR"
 FADE_OUT_START=$(python3 -c "print(round($DUR - 0.8, 3))")
 AFADE_OUT_START=$(python3 -c "print(round($DUR - 3.0, 3))")
 
-# 1. Silent master mp4 (h264, 30fps, at the recorded viewport size)
+# 1. Silent master mp4 (h264, 30fps for Playwright captures / source fps for x11, at the recorded size)
 ffmpeg -v error -y -ss "$START" -t "$DUR" -i "$VIDEO" \
-  -vf "fps=30,fade=t=in:st=0:d=0.5,fade=t=out:st=$FADE_OUT_START:d=0.8,format=yuv420p" \
+  -vf "fps=$FPS,fade=t=in:st=0:d=0.5,fade=t=out:st=$FADE_OUT_START:d=0.8,format=yuv420p" \
   -c:v libx264 -preset slow -crf 20 -movflags +faststart -an "$OUT/vorbis-player-teaser-silent.mp4"
 
 # 2. Scored mp4: same video + CC0 music bed, normalized, faded
