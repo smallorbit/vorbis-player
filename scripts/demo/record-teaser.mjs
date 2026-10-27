@@ -5,17 +5,25 @@
 import { chromium } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 
 const OUT = process.argv[2];
 // Viewport (and recording) size. Override with DEMO_WIDTH / DEMO_HEIGHT, e.g. 2560x1440.
-const W = Number(process.env.DEMO_WIDTH) || 1920;
-const H = Number(process.env.DEMO_HEIGHT) || 1080;
+// In screen-capture mode on macOS the fullscreen window takes the display's size instead,
+// and these are updated after the window settles.
+let W = Number(process.env.DEMO_WIDTH) || 1920;
+let H = Number(process.env.DEMO_HEIGHT) || 1080;
 // DEMO_CAPTURE=playwright (default): Playwright's built-in 25fps VP8 screencast.
-// DEMO_CAPTURE=x11: headful Chromium in kiosk mode on $DISPLAY (an Xvfb started by
-// record-x11.sh), grabbed by ffmpeg at DEMO_FPS (default 60) into an h264 mp4.
-const CAPTURE = process.env.DEMO_CAPTURE === 'x11' ? 'x11' : 'playwright';
+// DEMO_CAPTURE=screen: headful Chromium forced fullscreen, grabbed by ffmpeg at DEMO_FPS
+//   (default 60) into an h264 mp4. The grabber follows the platform:
+//     linux  -> x11grab on $DISPLAY (record-x11.sh starts an Xvfb for it)
+//     darwin -> avfoundation screen capture (record-mac.sh), hardware-encoded with
+//               VideoToolbox; DEMO_SCREEN_DEVICE picks the avfoundation screen index
+//               (auto-detected from "Capture screen 0" when unset).
+// 'x11' is accepted as an alias of 'screen' for older invocations.
+const CAPTURE = ['screen', 'x11'].includes(process.env.DEMO_CAPTURE ?? '') ? 'screen' : 'playwright';
 const FPS = Number(process.env.DEMO_FPS) || 60;
+const GRABBER = process.platform === 'darwin' ? 'avfoundation' : 'x11grab';
 const PLAYLIST = 'playlist_29c76609'; // awaken (one track per album, high-res fixture art)
 
 const CURSOR_SCRIPT = `
@@ -90,44 +98,139 @@ let t0 = Date.now();
 const mark = (label) => { marks.push({ label, t: (Date.now() - t0) / 1000 }); console.log(`[${((Date.now() - t0) / 1000).toFixed(2)}s] ${label}`); };
 
 let ffmpeg = null;
-const browser = CAPTURE === 'x11'
+const browser = CAPTURE === 'screen'
   ? await chromium.launch({
       headless: false,
       ignoreDefaultArgs: ['--enable-automation'],
-      args: ['--kiosk', `--window-size=${W},${H}`, '--window-position=0,0', '--disable-infobars', '--hide-scrollbars'],
+      args: [`--window-size=${W},${H}`, '--window-position=0,0', '--disable-infobars', '--hide-scrollbars'],
     })
   : await chromium.launch();
 const context = await browser.newContext(
-  CAPTURE === 'x11'
+  CAPTURE === 'screen'
     ? { viewport: null }
     : { viewport: { width: W, height: H }, deviceScaleFactor: 1, recordVideo: { dir: OUT, size: { width: W, height: H } } },
 );
 await context.addInitScript(CURSOR_SCRIPT);
 const page = await context.newPage();
 let capturePath = null;
-if (CAPTURE === 'x11') {
-  if (!process.env.DISPLAY) throw new Error('DEMO_CAPTURE=x11 needs DISPLAY (use scripts/demo/record-x11.sh)');
+let captureInfo = {};
+
+function detectMacScreenDevice() {
+  if (process.env.DEMO_SCREEN_DEVICE) return process.env.DEMO_SCREEN_DEVICE;
+  // avfoundation lists cameras first, then "[N] Capture screen 0"; the index shifts with
+  // the number of cameras, so parse it rather than guessing.
+  const probe = spawnSync('ffmpeg', ['-hide_banner', '-f', 'avfoundation', '-list_devices', 'true', '-i', ''], { encoding: 'utf8' });
+  const m = /\[(\d+)\]\s+Capture screen 0/.exec(probe.stderr + probe.stdout);
+  if (!m) throw new Error('could not find "Capture screen 0" in ffmpeg -list_devices output; set DEMO_SCREEN_DEVICE');
+  return m[1];
+}
+
+async function windowGeometry() {
+  return page.evaluate(() => ({
+    x: window.screenX, y: window.screenY,
+    w: window.innerWidth, h: window.innerHeight,
+    dpr: window.devicePixelRatio,
+    screenW: window.screen.width, screenH: window.screen.height,
+  }));
+}
+
+async function waitForFullscreen() {
+  // Chromium reports the fullscreen window one pixel short of an Xvfb screen (1919x1079 on
+  // 1920x1080); on macOS the native fullscreen transition animates for ~1s and the window
+  // ends up at the display size minus any camera housing. Wait until the size has been
+  // stable for a second and fills the screen width.
+  let last = null, stableSince = Date.now();
+  const deadline = Date.now() + 15_000;
+  while (Date.now() < deadline) {
+    const g = await windowGeometry();
+    const same = last && g.w === last.w && g.h === last.h && g.x === last.x && g.y === last.y;
+    if (!same) { last = g; stableSince = Date.now(); }
+    if (same && Date.now() - stableSince >= 1000 && g.w >= g.screenW - 2) return g;
+    await sleep(250);
+  }
+  throw new Error(`window never settled fullscreen: ${JSON.stringify(last)}`);
+}
+
+async function waitForCaptureStart(progressFile) {
+  // ffmpeg -progress appends a block every ~0.5s with frame=N and out_time_us=T. Once a
+  // frame has been written, the capture origin is now minus T, which keeps the scene marks
+  // aligned with the video regardless of how long ffmpeg took to start up.
+  const deadline = Date.now() + 20_000;
+  while (Date.now() < deadline) {
+    try {
+      const text = fs.readFileSync(progressFile, 'utf8');
+      const frames = [...text.matchAll(/frame=\s*(\d+)/g)];
+      const times = [...text.matchAll(/out_time_us=\s*(\d+)/g)];
+      const lastFrame = frames.length ? Number(frames[frames.length - 1][1]) : 0;
+      const lastUs = times.length ? Number(times[times.length - 1][1]) : NaN;
+      if (lastFrame > 0 && Number.isFinite(lastUs)) return Date.now() - lastUs / 1000;
+    } catch { /* not written yet */ }
+    await sleep(50);
+  }
+  throw new Error('ffmpeg did not report any captured frame within 20s; check the ffmpeg output above');
+}
+
+function stopFfmpeg() {
+  return new Promise((resolve) => {
+    if (!ffmpeg || ffmpeg.exitCode !== null) return resolve();
+    const hard = setTimeout(() => ffmpeg.kill('SIGINT'), 5000);
+    ffmpeg.on('exit', () => { clearTimeout(hard); resolve(); });
+    try { ffmpeg.stdin.write('q'); ffmpeg.stdin.end(); } catch { ffmpeg.kill('SIGINT'); }
+  });
+}
+// Never leave a grabber running if the script dies mid-take.
+process.on('exit', () => { if (ffmpeg && ffmpeg.exitCode === null) ffmpeg.kill('SIGINT'); });
+process.on('uncaughtException', (err) => { console.error(err); process.exit(1); });
+process.on('unhandledRejection', (err) => { console.error(err); process.exit(1); });
+
+if (CAPTURE === 'screen') {
+  if (GRABBER === 'x11grab' && !process.env.DISPLAY) throw new Error('DEMO_CAPTURE=screen on Linux needs DISPLAY (use scripts/demo/record-x11.sh)');
   capturePath = path.join(OUT, 'capture.mp4');
-  // --kiosk is not honoured for Playwright-launched windows, so go fullscreen through CDP
-  // and verify the page fills the virtual screen before the grabber starts.
+  // --kiosk is not honoured for Playwright-launched windows, so go fullscreen through CDP.
   const cdp = await context.newCDPSession(page);
   const { windowId } = await cdp.send('Browser.getWindowForTarget');
   await cdp.send('Browser.setWindowBounds', { windowId, bounds: { windowState: 'fullscreen' } });
-  // Chromium reports the fullscreen window one pixel short of the Xvfb screen (1919x1079 on a
-  // 1920x1080 display); the grabber still captures the full screen, so allow that slack.
-  await page.waitForFunction(([w, h]) => Math.abs(window.innerWidth - w) <= 2 && Math.abs(window.innerHeight - h) <= 2, [W, H], { timeout: 10_000 });
-  ffmpeg = spawn('ffmpeg', [
-    '-y', '-loglevel', 'error',
-    '-f', 'x11grab', '-framerate', String(FPS), '-video_size', `${W}x${H}`, '-draw_mouse', '0', '-i', process.env.DISPLAY,
-    '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '16', '-pix_fmt', 'yuv420p', capturePath,
-  ], { stdio: ['pipe', 'inherit', 'inherit'] });
-  t0 = Date.now();
-  await sleep(1000); // let the grabber settle before the first scene
+  const g = await waitForFullscreen();
+  await sleep(4500); // Chromium's "press and hold Esc to exit full screen" bubble fades after ~4s
+  if (GRABBER === 'avfoundation') {
+    // The viewport is whatever the display gives us; keep cursor targets inside it.
+    W = g.w; H = g.h;
+  }
+  const even = (n) => Math.round(n / 2) * 2;
+  let args;
+  if (GRABBER === 'x11grab') {
+    args = [
+      '-f', 'x11grab', '-framerate', String(FPS), '-video_size', `${W}x${H}`, '-draw_mouse', '0', '-i', process.env.DISPLAY,
+      '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '16', '-pix_fmt', 'yuv420p',
+    ];
+  } else {
+    // avfoundation grabs the whole display at device pixels (2x on Retina); crop to the
+    // browser window (which sits below the camera housing on notched MacBooks) and, unless
+    // DEMO_NATIVE_SCALE=1, scale back to CSS pixels so the output matches the viewport.
+    const crop = `crop=${even(g.w * g.dpr)}:${even(g.h * g.dpr)}:${even(g.x * g.dpr)}:${even(g.y * g.dpr)}`;
+    const scale = process.env.DEMO_NATIVE_SCALE === '1' ? '' : `,scale=${even(g.w)}:${even(g.h)}:flags=lanczos`;
+    const encoder = process.env.DEMO_ENCODER === 'libx264'
+      ? ['-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '16']
+      : ['-c:v', 'h264_videotoolbox', '-b:v', '40M', '-realtime', '1'];
+    args = [
+      '-f', 'avfoundation', '-framerate', String(FPS), '-capture_cursor', '0', '-i', `${detectMacScreenDevice()}:none`,
+      '-vf', crop + scale, ...encoder, '-pix_fmt', 'yuv420p',
+    ];
+    captureInfo = { crop, dpr: g.dpr, nativeScale: process.env.DEMO_NATIVE_SCALE === '1' };
+  }
+  console.log(`capturing ${GRABBER} ${W}x${H}@${FPS} (dpr ${g.dpr}) -> ${capturePath}`);
+  const progressFile = path.join(OUT, 'ffmpeg-progress.txt');
+  ffmpeg = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-progress', progressFile, ...args, capturePath], { stdio: ['pipe', 'ignore', 'inherit'] });
+  ffmpeg.on('exit', (code) => { if (code && code !== 255) console.error(`ffmpeg exited with ${code}`); });
+  t0 = await waitForCaptureStart(progressFile);
+  await sleep(800); // let the grabber settle before the first scene
 }
-mark('context ready');
-
 await page.goto('http://127.0.0.1:3000/?provider=mock');
 await page.getByRole('button', { name: 'Browse your library' }).waitFor();
+// Playwright's "visible" precedes the pixels on screen: wait for web fonts and two
+// composited frames, plus a margin on screen captures where software rendering lags.
+await page.evaluate(() => document.fonts.ready.then(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))));
+await sleep(CAPTURE === 'screen' ? 1200 : 200);
 await page.mouse.move(W * 0.62, H * 0.72); cur = { x: W * 0.62, y: H * 0.72 };
 mark('welcome visible');
 await sleep(1600);
@@ -194,8 +297,6 @@ if (CAPTURE === 'playwright') videoPath = await page.video().path();
 await page.close();
 await context.close();
 await browser.close();
-if (ffmpeg) {
-  await new Promise((resolve) => { ffmpeg.on('exit', resolve); ffmpeg.stdin.write('q'); ffmpeg.stdin.end(); });
-}
-fs.writeFileSync(path.join(OUT, 'marks.json'), JSON.stringify({ videoPath, capture: CAPTURE, fps: CAPTURE === 'x11' ? FPS : 25, width: W, height: H, marks }, null, 2));
+await stopFfmpeg();
+fs.writeFileSync(path.join(OUT, 'marks.json'), JSON.stringify({ videoPath, capture: CAPTURE, grabber: CAPTURE === 'screen' ? GRABBER : null, fps: CAPTURE === 'screen' ? FPS : 25, width: W, height: H, ...captureInfo, marks }, null, 2));
 console.log('video:', videoPath);

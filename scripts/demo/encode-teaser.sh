@@ -16,7 +16,7 @@ AFADE_OUT_START=$(python3 -c "print(round($DUR - 3.0, 3))")
 
 # 1. Silent master mp4 (h264, 30fps for Playwright captures / source fps for x11, at the recorded size)
 ffmpeg -v error -y -ss "$START" -t "$DUR" -i "$VIDEO" \
-  -vf "fps=$FPS,fade=t=in:st=0:d=0.5,fade=t=out:st=$FADE_OUT_START:d=0.8,format=yuv420p" \
+  -vf "fps=$FPS,pad=ceil(iw/2)*2:ceil(ih/2)*2,fade=t=in:st=0:d=0.5,fade=t=out:st=$FADE_OUT_START:d=0.8,format=yuv420p" \
   -c:v libx264 -preset slow -crf 20 -movflags +faststart -an "$OUT/vorbis-player-teaser-silent.mp4"
 
 # 2. Scored mp4: same video + CC0 music bed, normalized, faded

@@ -16,7 +16,8 @@ menu switching Comet / Grid / Wave -> zen mode -> keyboard next track -> exit.
 
 ```bash
 VITE_MOCK_PROVIDER=true npm run dev              # terminal 1
-npm run demo:record:x11 -- /tmp/teaser-rec       # terminal 2: 60fps capture via Xvfb + ffmpeg
+npm run demo:record:mac -- /tmp/teaser-rec       # terminal 2 (macOS): 60fps avfoundation capture
+npm run demo:record:x11 -- /tmp/teaser-rec       #            (Linux): 60fps capture via Xvfb + ffmpeg
 npm run demo:encode -- /tmp/teaser-rec docs/media/demo path/to/music.mp3
 ```
 
@@ -25,10 +26,12 @@ npm run demo:encode -- /tmp/teaser-rec docs/media/demo path/to/music.mp3
 
 | Command | How it captures | Notes |
 |---|---|---|
-| `npm run demo:record:x11` | Headful Chromium fullscreen on a virtual X display, grabbed by `ffmpeg -f x11grab` at `DEMO_FPS` (default 60) into an h264 mp4 | Linux only (needs `Xvfb`). Clean source, true 60fps cursor and transitions. |
+| `npm run demo:record:mac` | Headful Chromium fullscreen on your main display, grabbed by `ffmpeg -f avfoundation` at `DEMO_FPS` (default 60), VideoToolbox-encoded | macOS. Needs Homebrew `ffmpeg` and Screen Recording permission for your terminal. The viewport is the display's logical size; Retina pixels are scaled back to CSS pixels unless `DEMO_NATIVE_SCALE=1`. Leave the machine alone while it records. |
+| `npm run demo:record:x11` | Headful Chromium fullscreen on a virtual X display, grabbed by `ffmpeg -f x11grab` at `DEMO_FPS` (default 60) into an h264 mp4 | Linux (needs `Xvfb`). Clean source, true 60fps cursor and transitions. |
 | `npm run demo:record` | Playwright's built-in screencast | Works anywhere Playwright does, but 25fps VP8 at a fixed quality. |
 
-`DEMO_WIDTH` / `DEMO_HEIGHT` set the viewport (default 1920x1080). `encode-teaser.sh` trims
+`DEMO_WIDTH` / `DEMO_HEIGHT` set the viewport (default 1920x1080) for the Playwright and
+x11 modes; the macOS mode uses the display size. `encode-teaser.sh` trims
 the capture by the scene marks and produces the silent mp4, the scored mp4, the highlight
 GIF and a full-length GIF at the source frame rate (minimum 30). Requires `ffmpeg` on PATH.
 

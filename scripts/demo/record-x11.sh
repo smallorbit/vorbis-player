@@ -13,4 +13,4 @@ XVFB_PID=$!
 trap 'kill "$XVFB_PID" 2>/dev/null || true' EXIT
 for _ in $(seq 1 50); do [ -S "/tmp/.X11-unix/X${DISPLAY_NUM#:}" ] && break; sleep 0.1; done
 sleep 0.5
-DISPLAY="$DISPLAY_NUM" DEMO_CAPTURE=x11 DEMO_WIDTH="$W" DEMO_HEIGHT="$H" node "$(dirname "$0")/record-teaser.mjs" "$OUT"
+DISPLAY="$DISPLAY_NUM" DEMO_CAPTURE=screen DEMO_WIDTH="$W" DEMO_HEIGHT="$H" node "$(dirname "$0")/record-teaser.mjs" "$OUT"
