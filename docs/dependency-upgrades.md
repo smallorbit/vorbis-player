@@ -36,6 +36,8 @@ Tailwind 4, ESLint 10, and TypeScript 7 are also multiple majors behind (F94). T
 
 As of WS10 close, remaining audit noise is **moderate** Vitest/`@vitest/mocker` ([GHSA-82fw-gwwq-j7x9](https://github.com/advisories/GHSA-82fw-gwwq-j7x9)); dev/test only, not production runtime.
 
+Allowlisted until RFC 0002 lands Vitest 5: the two **critical** tinypool advisories ([GHSA-5gmw-xhrv-c9v3](https://github.com/advisories/GHSA-5gmw-xhrv-c9v3), [GHSA-85c8-ppgw-ccpr](https://github.com/advisories/GHSA-85c8-ppgw-ccpr)). Vitest 3 pins tinypool `^1.1.1` and the fix is only in tinypool 2.1.2+, which Vitest 5 pulls in. Test-runner only, never in the production bundle. Remove the allowlist entries in the same PR that bumps Vitest.
+
 ## Adding or removing packages
 
 - Prefer existing stack choices (see `docs/contributing.md` tech stack).
