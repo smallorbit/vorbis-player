@@ -936,7 +936,9 @@
       "externalUrl": "https://open.spotify.com/track/1tnZxHryc2wWtjUZC1LQw5",
       "id": "1tnZxHryc2wWtjUZC1LQw5",
       "image": {
-        "url": "/playwright-fixtures/art/96fb131099e441db.jpg"
+        "height": 1600,
+        "url": "/playwright-fixtures/art/96fb131099e441db.jpg",
+        "width": 1600
       },
       "isrc": "USQX92405785",
       "name": "Noid",
@@ -1058,7 +1060,9 @@
       "externalUrl": "https://open.spotify.com/track/27OqNFBwYkOOZKhXShri4n",
       "id": "27OqNFBwYkOOZKhXShri4n",
       "image": {
-        "url": "/playwright-fixtures/art/0ebf84bb11a5da56.jpg"
+        "height": 1600,
+        "url": "/playwright-fixtures/art/0ebf84bb11a5da56.jpg",
+        "width": 1600
       },
       "isrc": "QZHN81940404",
       "name": "Cemetery",
@@ -1126,7 +1130,9 @@
       "externalUrl": "https://open.spotify.com/track/2HBjPMwy9yAoMkUB1cSg2p",
       "id": "2HBjPMwy9yAoMkUB1cSg2p",
       "image": {
-        "url": "/playwright-fixtures/art/0c7bc2749020182c.jpg"
+        "height": 1600,
+        "url": "/playwright-fixtures/art/0c7bc2749020182c.jpg",
+        "width": 1600
       },
       "isrc": "GBBPW2401238",
       "name": "Pieces Of A Dream",
@@ -1174,7 +1180,9 @@
       "externalUrl": "https://open.spotify.com/track/2MBREe3NbK7ATDS7nZ3Hc3",
       "id": "2MBREe3NbK7ATDS7nZ3Hc3",
       "image": {
-        "url": "/playwright-fixtures/art/24c866d215afda78.jpg"
+        "height": 1440,
+        "url": "/playwright-fixtures/art/24c866d215afda78.jpg",
+        "width": 1440
       },
       "isrc": "QZES61940206",
       "name": "She All Ova Me",
@@ -1608,7 +1616,9 @@
       "externalUrl": "https://open.spotify.com/track/3pANfZVFdtuVnJsE6xa5Ox",
       "id": "3pANfZVFdtuVnJsE6xa5Ox",
       "image": {
-        "url": "/playwright-fixtures/art/1d6ba3d3cdbd3a2d.jpg"
+        "height": 1200,
+        "url": "/playwright-fixtures/art/1d6ba3d3cdbd3a2d.jpg",
+        "width": 1200
       },
       "isrc": "USJ5G1815007",
       "name": "Me and My Husband",
@@ -1656,7 +1666,9 @@
       "externalUrl": "https://open.spotify.com/track/3qiz8r4kKzXVlMTWGu3LiF",
       "id": "3qiz8r4kKzXVlMTWGu3LiF",
       "image": {
-        "url": "/playwright-fixtures/art/0386a10446e1b5f7.jpg"
+        "height": 1600,
+        "url": "/playwright-fixtures/art/0386a10446e1b5f7.jpg",
+        "width": 1600
       },
       "isrc": "GBBPW1200150",
       "name": "Sun In Your Eyes",
@@ -2536,7 +2548,9 @@
       "externalUrl": "https://open.spotify.com/track/5xJc58mBWz68WhwU2n5seR",
       "id": "5xJc58mBWz68WhwU2n5seR",
       "image": {
-        "url": "/playwright-fixtures/art/37c6c8be9bf6d1eb.jpg"
+        "height": 1425,
+        "url": "/playwright-fixtures/art/37c6c8be9bf6d1eb.jpg",
+        "width": 1425
       },
       "isrc": "GBAYE0001587",
       "name": "Life In a Glasshouse",
@@ -2680,7 +2694,9 @@
       "externalUrl": "https://open.spotify.com/track/6HRWnBa2iwVWqbrKuVD565",
       "id": "6HRWnBa2iwVWqbrKuVD565",
       "image": {
-        "url": "/playwright-fixtures/art/2979ae2ef3be1ff7.jpg"
+        "height": 1600,
+        "url": "/playwright-fixtures/art/2979ae2ef3be1ff7.jpg",
+        "width": 1600
       },
       "isrc": "SE5AJ1900771",
       "name": "Birdbath",
