@@ -2,6 +2,7 @@
 # Usage: npm run demo:encode -- <recDir> <outDir> <music file>
 set -euo pipefail
 REC="$1"; OUT="$2"; MUSIC="$3"
+mkdir -p "$OUT"
 # Playwright captures are page@*.webm; x11 captures are capture.mp4. (ls fails under pipefail when a glob misses.)
 VIDEO=$( { ls "$REC"/capture.mp4 "$REC"/*.webm 2>/dev/null || true; } | head -1)
 [ -n "$VIDEO" ] || { echo "no capture found in $REC" >&2; exit 1; }

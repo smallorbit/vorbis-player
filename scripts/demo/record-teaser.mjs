@@ -8,6 +8,8 @@ import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 
 const OUT = process.argv[2];
+if (!OUT) throw new Error('usage: record-teaser.mjs <outDir>');
+fs.mkdirSync(OUT, { recursive: true });
 // Viewport (and recording) size. Override with DEMO_WIDTH / DEMO_HEIGHT, e.g. 2560x1440.
 // In screen-capture mode on macOS the fullscreen window takes the display's size instead,
 // and these are updated after the window settles.
@@ -68,9 +70,11 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 let cur = { x: W / 2, y: H / 2 };
 const ease = (t) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
 
-async function glide(page, x, y, ms = 650) {
+async function glide(page, x, y, ms = 650, gap = 0) {
   // Time-based: each mouse.move round-trip can take 40-200ms while the canvas
   // visualizer is busy, so sample the eased path by wall clock instead of step count.
+  // `gap` throttles the mouse-move events (ms between them) for steps where the app is
+  // already busy, e.g. the flip menu's 3D transition and the zen enter/exit animation.
   const start = Date.now();
   const sx = cur.x, sy = cur.y;
   for (;;) {
@@ -78,16 +82,18 @@ async function glide(page, x, y, ms = 650) {
     const t = ease(Math.min(1, el / ms));
     await page.mouse.move(sx + (x - sx) * t, sy + (y - sy) * t);
     if (el >= ms) break;
+    if (gap) await sleep(gap);
   }
   cur = { x, y };
 }
-async function glideTo(page, locator, ms = 650, dx = 0, dy = 0) {
+const CALM = 45; // mouse-move gap (ms) around the flip menu and zen mode, roughly 20 events/s
+async function glideTo(page, locator, ms = 650, dx = 0, dy = 0, gap = 0) {
   const b = await locator.boundingBox();
   if (!b) throw new Error('no box for ' + locator);
-  await glide(page, b.x + b.width / 2 + dx, b.y + b.height / 2 + dy, ms);
+  await glide(page, b.x + b.width / 2 + dx, b.y + b.height / 2 + dy, ms, gap);
 }
-async function click(page, locator, { ms = 650, settle = 400, dx = 0, dy = 0 } = {}) {
-  await glideTo(page, locator, ms, dx, dy);
+async function click(page, locator, { ms = 650, settle = 400, dx = 0, dy = 0, gap = 0 } = {}) {
+  await glideTo(page, locator, ms, dx, dy, gap);
   await sleep(120);
   await page.mouse.down(); await sleep(70); await page.mouse.up();
   await sleep(settle);
@@ -114,6 +120,61 @@ await context.addInitScript(CURSOR_SCRIPT);
 const page = await context.newPage();
 let capturePath = null;
 let captureInfo = {};
+
+const APP_URL = 'http://127.0.0.1:3000/?provider=mock';
+const STORAGE_RESET_KEYS = [
+  'vorbis-player-welcome-seen',     // land on the welcome screen again
+  'vorbis-player-last-session',     // no resume hero on the library home
+  'vorbis-player-recently-played',  // no recently-played row on the library home
+  'vorbis-player-zen-mode-enabled',
+];
+
+// The app re-saves its session on unload, so clearing localStorage from inside the warm-up
+// page is undone by the reload itself. Instead the warm-up sets a one-shot sessionStorage
+// flag and this init script clears the keys on the next navigation, before the app boots.
+await context.addInitScript((keys) => {
+  if (sessionStorage.getItem('__demo_reset') === '1') {
+    sessionStorage.removeItem('__demo_reset');
+    for (const k of keys) localStorage.removeItem(k);
+  }
+}, STORAGE_RESET_KEYS);
+
+// Drive the app once through everything the take touches so the first recorded run is
+// not also the first cold run: Vite's dev transforms of the lazy chunks, the HTTP and
+// decoded-image caches for the 1600px covers, the color-extraction worker, the flip
+// menu's 3D transition and the zen animation all warm up here. Runs before the grabber
+// starts (screen mode) or before the first scene mark (Playwright mode, where the trim
+// drops it), so none of it reaches the video. Ends with a reload to the same URL so the
+// take's reload starts from the welcome screen exactly as a fresh session would.
+async function warmUp() {
+  const t = Date.now();
+  await page.goto(APP_URL);
+  await page.getByRole('button', { name: 'Browse your library' }).click();
+  await page.locator(`[data-testid="library-card-playlist-${PLAYLIST}"]`).click();
+  await page.locator('button[title^="Zen Mode"]').waitFor();
+  await page.locator('[data-testid="player-track-info-name"]').waitFor();
+  await sleep(1500);
+  for (let i = 0; i < 2; i++) { // the take shows the first three tracks' art
+    await page.getByRole('button', { name: 'Next track' }).click();
+    await sleep(1500);
+  }
+  await page.mouse.click(5, 5);
+  const name = (await page.locator('[data-testid="player-track-info-name"]').textContent())?.trim() ?? '';
+  await page.locator(`img[alt="${name}"]`).first().click();
+  await sleep(900);
+  for (const style of ['Comet', 'Grid', 'Wave', 'Fireflies']) { // back to the default last
+    await page.getByRole('radio', { name: style, exact: true }).or(page.getByRole('button', { name: style, exact: true })).first().click();
+    await sleep(700);
+  }
+  await page.getByRole('button', { name: 'Close menu' }).click();
+  await sleep(900);
+  await page.keyboard.press('z');
+  await sleep(2500);
+  await page.keyboard.press('Escape');
+  await sleep(2000);
+  await page.evaluate(() => sessionStorage.setItem('__demo_reset', '1'));
+  console.log(`warm-up done in ${((Date.now() - t) / 1000).toFixed(1)}s`);
+}
 
 function detectMacScreenDevice() {
   if (process.env.DEMO_SCREEN_DEVICE) return process.env.DEMO_SCREEN_DEVICE;
@@ -191,7 +252,7 @@ if (CAPTURE === 'screen') {
   const { windowId } = await cdp.send('Browser.getWindowForTarget');
   await cdp.send('Browser.setWindowBounds', { windowId, bounds: { windowState: 'fullscreen' } });
   const g = await waitForFullscreen();
-  await sleep(4500); // Chromium's "press and hold Esc to exit full screen" bubble fades after ~4s
+  await warmUp(); // at the real window size, and long enough for the fullscreen bubble to fade
   if (GRABBER === 'avfoundation') {
     // The viewport is whatever the display gives us; keep cursor targets inside it.
     W = g.w; H = g.h;
@@ -224,8 +285,10 @@ if (CAPTURE === 'screen') {
   ffmpeg.on('exit', (code) => { if (code && code !== 255) console.error(`ffmpeg exited with ${code}`); });
   t0 = await waitForCaptureStart(progressFile);
   await sleep(800); // let the grabber settle before the first scene
+} else {
+  await warmUp(); // recorded, but the encode trims to the first scene mark
 }
-await page.goto('http://127.0.0.1:3000/?provider=mock');
+await page.goto(APP_URL);
 await page.getByRole('button', { name: 'Browse your library' }).waitFor();
 // Playwright's "visible" precedes the pixels on screen: wait for web fonts and two
 // composited frames, plus a margin on screen captures where software rendering lags.
@@ -264,12 +327,12 @@ const art = () => page.locator('[data-testid="player-track-info-name"]').first()
 async function switchStyle(name, hold) {
   const trackName = (await art().textContent())?.trim() ?? '';
   const img = page.locator(`img[alt="${trackName}"]`).first();
-  await click(page, img, { ms: 750, settle: 900 });
+  await click(page, img, { ms: 750, settle: 900, gap: CALM });
   const chip = page.getByRole('radio', { name, exact: true }).or(page.getByRole('button', { name, exact: true })).first();
-  await click(page, chip, { ms: 600, settle: 600 });
+  await click(page, chip, { ms: 600, settle: 600, gap: CALM });
   mark(`style ${name}`);
-  await click(page, page.getByRole('button', { name: 'Close menu' }), { ms: 600, settle: 700 });
-  await glide(page, W * (0.2 + Math.random() * 0.1), H * 0.5, 900);
+  await click(page, page.getByRole('button', { name: 'Close menu' }), { ms: 600, settle: 700, gap: CALM });
+  await glide(page, W * (0.2 + Math.random() * 0.1), H * 0.5, 900, CALM);
   await sleep(hold);
 }
 // Grid before Wave so zen mode (and the README GIF cut) runs on the smooth Wave band,
@@ -279,9 +342,9 @@ await switchStyle('Grid', 3200);
 await switchStyle('Wave', 3200);
 
 // 4. Zen mode
-await click(page, page.locator('button[title="Zen Mode OFF"]'), { ms: 900, settle: 300 });
+await click(page, page.locator('button[title="Zen Mode OFF"]'), { ms: 900, settle: 300, gap: CALM });
 mark('zen on');
-await glide(page, W - 4, H * 0.42, 500); // park cursor at the right edge, clear of the art and bottom bar
+await glide(page, W - 4, H * 0.42, 500, CALM); // park cursor at the right edge, clear of the art and bottom bar
 await page.evaluate(() => { const c = document.getElementById('__demo_cursor'); if (c) c.style.opacity = '0'; });
 await sleep(3000);
 await page.keyboard.press('ArrowRight');

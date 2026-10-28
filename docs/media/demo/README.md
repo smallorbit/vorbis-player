@@ -31,7 +31,13 @@ npm run demo:encode -- /tmp/teaser-rec docs/media/demo path/to/music.mp3
 | `npm run demo:record` | Playwright's built-in screencast | Works anywhere Playwright does, but 25fps VP8 at a fixed quality. |
 
 `DEMO_WIDTH` / `DEMO_HEIGHT` set the viewport (default 1920x1080) for the Playwright and
-x11 modes; the macOS mode uses the display size. `encode-teaser.sh` trims
+x11 modes; the macOS mode uses the display size.
+
+Every mode runs a warm-up pass first (about 20s): it opens the awaken playlist, steps through
+the first three tracks, cycles the flip-menu styles and toggles zen mode so Vite's lazy-chunk
+transforms, the image caches and the color-extraction worker are hot, then resets the welcome
+flag, last session and recently-played history and reloads. None of it reaches the video: the
+screen grabber starts after it, and the Playwright mode trims to the first scene mark. `encode-teaser.sh` trims
 the capture by the scene marks and produces the silent mp4, the scored mp4, the highlight
 GIF and a full-length GIF at the source frame rate (minimum 30). Requires `ffmpeg` on PATH.
 

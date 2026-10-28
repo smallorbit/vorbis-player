@@ -18,7 +18,9 @@ set -euo pipefail
 OUT="${1:?outDir required}"
 if [ "$(uname -s)" != "Darwin" ]; then echo "record-mac.sh is for macOS; use record-x11.sh on Linux" >&2; exit 1; fi
 command -v ffmpeg >/dev/null || { echo "ffmpeg not found; brew install ffmpeg" >&2; exit 1; }
-ffmpeg -hide_banner -f avfoundation -list_devices true -i "" 2>&1 | grep -q "Capture screen" \
+# -list_devices exits non-zero after printing ("Error opening input" is normal there), and pipefail
+# would turn that into a failure despite the grep match, so swallow ffmpeg's status.
+{ ffmpeg -hide_banner -f avfoundation -list_devices true -i "" 2>&1 || true; } | grep -q "Capture screen" \
   || { echo "ffmpeg has no avfoundation screen device; is this a Homebrew ffmpeg build?" >&2; exit 1; }
 mkdir -p "$OUT"
 DEMO_CAPTURE=screen node "$(dirname "$0")/record-teaser.mjs" "$OUT"
