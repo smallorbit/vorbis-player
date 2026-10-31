@@ -143,7 +143,6 @@ export function useCollectionLoader({
       if (firstTrack) {
         const firstProvider = getDescriptor(firstTrack.provider);
         if (firstProvider) {
-          playbackStore.setDrivingProvider(firstTrack.provider);
           if (firstTrack.provider !== activeDescriptor?.id) {
             setActiveProviderId(firstTrack.provider);
           }
@@ -218,7 +217,6 @@ export function useCollectionLoader({
       if (list.length === 0) return clearWithError('No tracks found in this collection.');
 
       applyTracks(list, { forceShuffle: isAllMusicRef(collectionRef) });
-      playbackStore.setDrivingProvider(providerId);
       queueSnapshot(`${providerId} playlist loaded`, list, queueStore.getTracks().length, 0);
       if (token.isStale()) return SUPERSEDED;
       await playTrack(0);
@@ -296,11 +294,8 @@ export function useCollectionLoader({
 
       applyTracks(tracks);
 
-      if (targetProviderId) {
-        playbackStore.setDrivingProvider(targetProviderId);
-        if (targetProviderId !== activeDescriptor?.id) {
-          setActiveProviderId(targetProviderId);
-        }
+      if (targetProviderId && targetProviderId !== activeDescriptor?.id) {
+        setActiveProviderId(targetProviderId);
       }
 
       queueSnapshot('Direct tracks loaded', tracks, queueStore.getTracks().length, 0);

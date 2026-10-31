@@ -82,6 +82,50 @@ test.describe('Cross-provider handoff', () => {
     expect(mixed.length).toBeGreaterThan(spotifyOnly.length);
   });
 
+  test('opening a Dropbox album while Spotify plays leaves only Dropbox playing', async ({ page }) => {
+    // #given - a Spotify track playing, and the library open over the mini-player
+    await page.getByRole('button', { name: 'Back to Library' }).click();
+    await page.locator('[data-testid="library-home"]').waitFor({ state: 'visible', timeout: 15_000 });
+
+    // #when - the user starts a Dropbox album directly
+    await page.locator(`[data-testid="library-card-album-${dropboxAlbum.id}"]`).click();
+
+    // #then - Dropbox took over and Spotify is silent
+    await expect.poll(async () => (await providerPlayback(page)).dropbox.isPlaying, {
+      timeout: 15_000,
+    }).toBe(true);
+    const state = await providerPlayback(page);
+    expect(state.spotify.isPlaying, 'outgoing provider was left playing').toBe(false);
+  });
+
+  test('opening a Dropbox album while a queued Spotify track plays leaves only Dropbox playing', async ({ page }) => {
+    // #given - Dropbox is the active provider, but the queue has advanced into
+    // a Spotify track, so the driving provider differs from the active one
+    await page.getByRole('button', { name: 'Back to Library' }).click();
+    await page.locator('[data-testid="library-home"]').waitFor({ state: 'visible', timeout: 15_000 });
+    await page.locator(`[data-testid="library-card-album-${dropboxAlbum.id}"]`).click();
+    await trackName(page).waitFor({ state: 'visible', timeout: 15_000 });
+    await page.getByRole('button', { name: 'Back to Library' }).click();
+    await page.locator(`[data-testid="library-card-playlist-${playlist.id}"]`).first().click({ button: 'right' });
+    await page.getByRole('menuitem', { name: 'Play Next' }).click();
+    await page.locator('[data-testid="mini-expand"]').click();
+    await page.getByRole('button', { name: 'Next track' }).click();
+    await expect.poll(async () => (await providerPlayback(page)).spotify.isPlaying, {
+      timeout: 15_000,
+    }).toBe(true);
+
+    // #when - the user starts a Dropbox album from the library
+    await page.getByRole('button', { name: 'Back to Library' }).click();
+    await page.locator(`[data-testid="library-card-album-${dropboxAlbum.id}"]`).first().click();
+
+    // #then - Dropbox took over and Spotify is silent
+    await expect.poll(async () => (await providerPlayback(page)).dropbox.isPlaying, {
+      timeout: 15_000,
+    }).toBe(true);
+    const state = await providerPlayback(page);
+    expect(state.spotify.isPlaying, 'outgoing provider was left playing').toBe(false);
+  });
+
   test('advancing into a Dropbox track hands playback over', async ({ page }) => {
     // #given - a Spotify track playing ahead of a queued Dropbox album
     const spotifyTrack = (await trackName(page).textContent())?.trim();

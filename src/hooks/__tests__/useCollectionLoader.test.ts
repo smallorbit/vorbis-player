@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useCollectionLoader } from '../useCollectionLoader';
+import { playbackStore } from '@/stores/playbackStore';
 import { queueStore } from '@/stores/queueStore';
 import { makeTrack, makeProviderDescriptor, makePlaybackProvider, makeCapabilities } from '@/test/fixtures';
 import { LIKED_SONGS_NAME } from '@/constants/playlist';
@@ -132,6 +133,30 @@ describe('useCollectionLoader', () => {
     });
     return { history, unsubscribe };
   }
+
+  it('leaves the driving provider to playTrack so it can pause the outgoing provider', async () => {
+    // #given - another provider is producing audio when the collection loads
+    playbackStore.setDrivingProvider('spotify');
+    mockActiveDescriptor = stubDescriptor({
+      id: 'dropbox',
+      listTracks: vi.fn().mockResolvedValue([makeListedTrack('1')]),
+      pause: vi.fn(),
+    });
+    let drivingAtPlayTrack: ProviderId | null = null;
+    mockPlayTrack.mockImplementation(async () => {
+      drivingAtPlayTrack = playbackStore.getSnapshot().drivingProviderId;
+    });
+    const { result } = renderLoader();
+
+    // #when
+    await act(async () => {
+      await result.current.loadCollection(folderSel('/album'));
+    });
+
+    // #then
+    expect(mockPlayTrack).toHaveBeenCalledWith(0);
+    expect(drivingAtPlayTrack).toBe('spotify');
+  });
 
   it('loading a standard provider collection sets tracks and calls playTrack(0)', async () => {
     // #given
