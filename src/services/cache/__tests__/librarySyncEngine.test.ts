@@ -320,6 +320,87 @@ describe('SpotifyLibrarySyncEngine', () => {
     });
   });
 
+  describe('connectivity', () => {
+    function setOnline(isOnline: boolean): void {
+      vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(isOnline);
+      window.dispatchEvent(new Event(isOnline ? 'online' : 'offline'));
+    }
+
+    afterEach(() => {
+      setOnline(true);
+      vi.restoreAllMocks();
+    });
+
+    async function startWarmEngine(): Promise<void> {
+      await seedCacheMeta({ playlists: [makePlaylist('p1')], albums: [makeAlbum('a1')], likedCount: 5 });
+      mockGetPlaylistCount.mockResolvedValue(1);
+      mockGetAlbumCount.mockResolvedValue(1);
+      mockGetLikedSongsCount.mockResolvedValue(5);
+      await engine.start();
+      vi.clearAllMocks();
+    }
+
+    it('skips sync cycles while offline', async () => {
+      // #given
+      await startWarmEngine();
+      setOnline(false);
+
+      // #when
+      await engine.syncNow();
+
+      // #then
+      expect(mockGetPlaylistCount).not.toHaveBeenCalled();
+    });
+
+    it('syncs immediately when the connection comes back', async () => {
+      // #given
+      await startWarmEngine();
+      setOnline(false);
+
+      // #when
+      setOnline(true);
+
+      // #then
+      await vi.waitFor(() => expect(mockGetPlaylistCount).toHaveBeenCalled());
+    });
+
+    it('ignores a reconnect while the initial load is still running', async () => {
+      // #given — cold start whose full fetch has not resolved yet
+      mockGetPlaylistCount.mockResolvedValue(1);
+      mockGetAlbumCount.mockResolvedValue(1);
+      mockGetLikedSongsCount.mockResolvedValue(5);
+      let releaseLibrary: () => void = () => {};
+      const gate = new Promise<void>((resolve) => { releaseLibrary = resolve; });
+      mockGetUserLibraryInterleaved.mockImplementation(() => gate);
+      const started = engine.start();
+      await vi.waitFor(() => expect(mockGetUserLibraryInterleaved).toHaveBeenCalledTimes(1));
+      setOnline(false);
+
+      // #when
+      setOnline(true);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      // #then
+      expect(mockGetPlaylistCount).not.toHaveBeenCalled();
+      releaseLibrary();
+      await started;
+    });
+
+    it('stops reacting to reconnects after stop()', async () => {
+      // #given
+      await startWarmEngine();
+      engine.stop();
+      setOnline(false);
+
+      // #when
+      setOnline(true);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      // #then
+      expect(mockGetPlaylistCount).not.toHaveBeenCalled();
+    });
+  });
+
   describe('incremental playlist updates', () => {
     it('should remove deleted playlists from cache', async () => {
       // #given

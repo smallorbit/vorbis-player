@@ -19,7 +19,7 @@ import {
   removeLocalStorageKey,
   writeLocalStorageRaw,
 } from '@/utils/persistedStorage';
-import { parseOAuthTokenResponse } from '@/utils/oauthTokenResponse';
+import { PkceOAuthClient, type RefreshOutcome } from '@/services/oauth/pkceOAuthClient';
 
 function notifyDropboxSessionExpired(): void {
   dispatchAppEvent(DROPBOX_AUTH_ERROR_EVENT);
@@ -35,29 +35,6 @@ function getRedirectUri(): string {
   return `${window.location.origin}/auth/dropbox/callback`;
 }
 
-
-function generateRandomString(length: number): string {
-  const array = new Uint8Array(length);
-  crypto.getRandomValues(array);
-  return Array.from(array, (b) => b.toString(36).padStart(2, '0'))
-    .join('')
-    .slice(0, length);
-}
-
-async function sha256(plain: string): Promise<ArrayBuffer> {
-  const encoder = new TextEncoder();
-  return crypto.subtle.digest('SHA-256', encoder.encode(plain));
-}
-
-function base64urlEncode(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let str = '';
-  for (const byte of bytes) {
-    str += String.fromCharCode(byte);
-  }
-  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
 /** How many seconds before expiry to proactively refresh the token. */
 const TOKEN_EXPIRY_BUFFER_MS = 60 * 1000;
 
@@ -66,7 +43,18 @@ export class DropboxAuthAdapter implements AuthProvider {
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
   private tokenExpiresAt: number | null = null;
-  private refreshInFlight: Promise<string | null> | null = null;
+  private readonly oauth = new PkceOAuthClient<string | null>({
+    label: 'Dropbox',
+    authorizeUrl: 'https://www.dropbox.com/oauth2/authorize',
+    tokenUrl: 'https://api.dropboxapi.com/oauth2/token',
+    getClientId: getDropboxClientId,
+    getRedirectUri,
+    storageKeys: {
+      codeVerifier: STORAGE_KEYS.DROPBOX_CODE_VERIFIER,
+      state: STORAGE_KEYS.DROPBOX_OAUTH_STATE,
+    },
+    authorizeParams: { token_access_type: 'offline' },
+  });
 
   constructor() {
     this.accessToken = readLocalStorageRaw(STORAGE_KEYS.DROPBOX_TOKEN);
@@ -103,27 +91,7 @@ export class DropboxAuthAdapter implements AuthProvider {
       return;
     }
 
-    const codeVerifier = generateRandomString(64);
-    writeLocalStorageRaw(STORAGE_KEYS.DROPBOX_CODE_VERIFIER, codeVerifier);
-
-    const state = generateRandomString(32);
-    writeLocalStorageRaw(STORAGE_KEYS.DROPBOX_OAUTH_STATE, state);
-
-    const challengeBuffer = await sha256(codeVerifier);
-    const codeChallenge = base64urlEncode(challengeBuffer);
-
-    const redirectUri = getRedirectUri();
-    const params = new URLSearchParams({
-      client_id: getDropboxClientId(),
-      response_type: 'code',
-      redirect_uri: redirectUri,
-      code_challenge: codeChallenge,
-      code_challenge_method: 'S256',
-      token_access_type: 'offline',
-      state,
-    });
-
-    const authUrl = `https://www.dropbox.com/oauth2/authorize?${params.toString()}`;
+    const authUrl = await this.oauth.buildAuthorizeUrl();
 
     if (options?.popup) {
       const win = window.open(authUrl, '_blank');
@@ -153,39 +121,7 @@ export class DropboxAuthAdapter implements AuthProvider {
       return false;
     }
 
-    const expectedState = readLocalStorageRaw(STORAGE_KEYS.DROPBOX_OAUTH_STATE);
-    removeLocalStorageKey(STORAGE_KEYS.DROPBOX_OAUTH_STATE);
-    if (!expectedState || returnedState !== expectedState) {
-      throw new Error('OAuth state mismatch — possible CSRF attack');
-    }
-
-    const codeVerifier = readLocalStorageRaw(STORAGE_KEYS.DROPBOX_CODE_VERIFIER);
-    if (!codeVerifier) {
-      throw new Error('Missing code verifier for Dropbox PKCE');
-    }
-
-    // Exchange code for token (use same redirect_uri as beginLogin so Dropbox accepts it)
-    const redirectUri = getRedirectUri();
-    const body = new URLSearchParams({
-      code,
-      grant_type: 'authorization_code',
-      client_id: getDropboxClientId(),
-      redirect_uri: redirectUri,
-      code_verifier: codeVerifier,
-    });
-
-    const response = await fetch('https://api.dropboxapi.com/oauth2/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body.toString(),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Dropbox token exchange failed: ${response.status} ${errorText}`);
-    }
-
-    const data = parseOAuthTokenResponse(await response.json());
+    const data = await this.oauth.exchangeCode(code, returnedState);
     this.accessToken = data.access_token;
     this.refreshToken = data.refresh_token ?? null;
     this.tokenExpiresAt = data.expires_in
@@ -199,7 +135,6 @@ export class DropboxAuthAdapter implements AuthProvider {
     if (this.tokenExpiresAt !== null) {
       writeLocalStorageRaw(STORAGE_KEYS.DROPBOX_TOKEN_EXPIRY, String(this.tokenExpiresAt));
     }
-    removeLocalStorageKey(STORAGE_KEYS.DROPBOX_CODE_VERIFIER);
 
     // Kick provider-owned syncs now that a fresh token is in place. Fire and
     // forget: login success must not depend on sync availability.
@@ -242,60 +177,32 @@ export class DropboxAuthAdapter implements AuthProvider {
 
   /** Refresh the access token using the stored refresh token. Single-flight: concurrent callers share one request. */
   async refreshAccessToken(): Promise<string | null> {
-    if (this.refreshInFlight) {
-      return this.refreshInFlight;
-    }
-
-    this.refreshInFlight = this.performRefresh().finally(() => {
-      this.refreshInFlight = null;
-    });
-    return this.refreshInFlight;
+    if (!this.refreshToken || !getDropboxClientId()) return null;
+    return this.oauth.refresh(this.refreshToken, (outcome) => this.applyRefresh(outcome));
   }
 
-  private async performRefresh(): Promise<string | null> {
-    if (!this.refreshToken || !getDropboxClientId()) return null;
-
-    const body = new URLSearchParams({
-      grant_type: 'refresh_token',
-      refresh_token: this.refreshToken,
-      client_id: getDropboxClientId(),
-    });
-
-    let response: Response;
-    try {
-      response = await fetch('https://api.dropboxapi.com/oauth2/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: body.toString(),
-      });
-    } catch (error) {
-      console.warn('[DropboxAuth] Token refresh network error:', error);
-      this.clearAccessToken();
-      return null;
-    }
-
-    if (!response.ok) {
-      console.warn('[DropboxAuth] Token refresh failed:', response.status);
-      if (response.status === 400 || response.status === 401) {
+  private applyRefresh(outcome: RefreshOutcome): string | null {
+    switch (outcome.kind) {
+      case 'success': {
+        const { token } = outcome;
+        this.accessToken = token.access_token;
+        this.tokenExpiresAt = token.expires_in ? Date.now() + token.expires_in * 1000 : null;
+        writeLocalStorageRaw(STORAGE_KEYS.DROPBOX_TOKEN, token.access_token);
+        if (this.tokenExpiresAt !== null) {
+          writeLocalStorageRaw(STORAGE_KEYS.DROPBOX_TOKEN_EXPIRY, String(this.tokenExpiresAt));
+        }
+        return token.access_token;
+      }
+      case 'terminal':
+        console.warn('[DropboxAuth] Token refresh rejected:', outcome.status);
         void this.logout();
         notifyDropboxSessionExpired();
-      } else {
+        return null;
+      case 'transient':
+        console.warn('[DropboxAuth] Token refresh failed:', outcome.status ?? outcome.error);
         this.clearAccessToken();
-      }
-      return null;
+        return null;
     }
-
-    const data = parseOAuthTokenResponse(await response.json());
-    this.accessToken = data.access_token;
-    this.tokenExpiresAt = data.expires_in
-      ? Date.now() + data.expires_in * 1000
-      : null;
-
-    writeLocalStorageRaw(STORAGE_KEYS.DROPBOX_TOKEN, data.access_token);
-    if (this.tokenExpiresAt !== null) {
-      writeLocalStorageRaw(STORAGE_KEYS.DROPBOX_TOKEN_EXPIRY, String(this.tokenExpiresAt));
-    }
-    return data.access_token;
   }
 
   /** Get a valid token, refreshing proactively if it is expired or near expiry. */

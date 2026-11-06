@@ -10,6 +10,7 @@
  * `MediaTrack`), so everything the engine caches and emits is provider-neutral.
  *
  * Pauses when the browser tab is hidden, resumes + immediate sync on focus.
+ * Skips cycles while offline and syncs immediately on reconnect.
  */
 
 import type { MediaCollection } from '@/types/domain';
@@ -20,6 +21,7 @@ import {
   getUserLibraryInterleaved,
   spotifyAuth,
 } from '../spotify';
+import { connectivityStore } from '@/stores/connectivityStore';
 import * as cache from './libraryCache';
 import { detectChanges, applyChanges } from './libraryDiffEngine';
 import { writeLikedCountSnapshot } from './likedCountSnapshot';
@@ -48,6 +50,7 @@ export class SpotifyLibrarySyncEngine {
   private abortController: AbortController | null = null;
   private pollIntervalMs = DEFAULT_POLL_INTERVAL_MS;
   private isSyncInProgress = false;
+  private unsubscribeConnectivity: (() => void) | null = null;
 
   private state: SyncState = {
     isInitialLoadComplete: false,
@@ -83,6 +86,7 @@ export class SpotifyLibrarySyncEngine {
       if (typeof document !== 'undefined') {
         document.addEventListener('visibilitychange', this.handleVisibilityChange);
       }
+      this.unsubscribeConnectivity ??= connectivityStore.subscribe(this.handleConnectivityChange);
 
       await this.initialLoad();
       this.startPollingInterval();
@@ -107,12 +111,15 @@ export class SpotifyLibrarySyncEngine {
     if (typeof document !== 'undefined') {
       document.removeEventListener('visibilitychange', this.handleVisibilityChange);
     }
+    this.unsubscribeConnectivity?.();
+    this.unsubscribeConnectivity = null;
   }
 
   /** Force an immediate sync cycle. When force is true, skip change detection and re-fetch everything. */
   async syncNow(force = false): Promise<void> {
     if (this.isSyncInProgress) return;
     if (!spotifyAuth.isAuthenticated()) return;
+    if (!connectivityStore.isOnline()) return;
 
     this.isSyncInProgress = true;
     this.abortController = new AbortController();
@@ -367,6 +374,15 @@ export class SpotifyLibrarySyncEngine {
       }
     }
   }
+
+  private handleConnectivityChange = (isOnline: boolean): void => {
+    // initialLoad is still fetching; a parallel sync would race it on the
+    // cache and orphan its abort controller.
+    if (!isOnline || this.startPromise) return;
+    this.syncNow().catch((err) => {
+      console.warn('[librarySyncEngine] Sync on reconnect failed:', err);
+    });
+  };
 
   private handleVisibilityChange = (): void => {
     if (typeof document === 'undefined') return;
