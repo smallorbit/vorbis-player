@@ -158,6 +158,50 @@ describe('useCollectionLoader', () => {
     expect(drivingAtPlayTrack).toBe('spotify');
   });
 
+  it('leaves the handoff to playTrack when playing tracks directly', async () => {
+    // #given
+    playbackStore.setDrivingProvider('spotify');
+    const dropbox = stubDescriptor({ id: 'dropbox' });
+    mockGetDescriptor.mockReturnValue(dropbox);
+    let drivingAtPlayTrack: ProviderId | null = null;
+    mockPlayTrack.mockImplementation(async () => {
+      drivingAtPlayTrack = playbackStore.getSnapshot().drivingProviderId;
+    });
+    const { result } = renderLoader({ activeDescriptor: dropbox });
+
+    // #when
+    await act(async () => {
+      await result.current.playTracksDirectly([makeListedTrack('1')], folderSel('/album'));
+    });
+
+    // #then
+    expect(mockPlayTrack).toHaveBeenCalledWith(0);
+    expect(drivingAtPlayTrack).toBe('spotify');
+  });
+
+  it('leaves the handoff to playTrack when loading unified liked songs', async () => {
+    // #given
+    playbackStore.setDrivingProvider('dropbox');
+    mockActiveDescriptor = stubDescriptor({
+      listTracks: vi.fn().mockResolvedValue([makeListedTrack('1', 1000)]),
+    });
+    mockGetDescriptor.mockReturnValue(mockActiveDescriptor);
+    let drivingAtPlayTrack: ProviderId | null = null;
+    mockPlayTrack.mockImplementation(async () => {
+      drivingAtPlayTrack = playbackStore.getSnapshot().drivingProviderId;
+    });
+    const { result } = renderLoader({ isUnifiedLikedActive: true });
+
+    // #when
+    await act(async () => {
+      await result.current.loadCollection({ type: 'liked' });
+    });
+
+    // #then
+    expect(mockPlayTrack).toHaveBeenCalledWith(0);
+    expect(drivingAtPlayTrack).toBe('dropbox');
+  });
+
   it('loading a standard provider collection sets tracks and calls playTrack(0)', async () => {
     // #given
     const mockCatalog = {

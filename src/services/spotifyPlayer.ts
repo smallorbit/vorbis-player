@@ -22,6 +22,7 @@ import {
 const VOLUME_DEBOUNCE_MS = 200;
 
 class SpotifyPlayerService {
+  private cancelPendingResume: (() => void) | null = null;
   private player: SpotifyPlayer | null;
   private deviceId: string | null;
   private isReady: boolean;
@@ -141,6 +142,8 @@ class SpotifyPlayerService {
   }
 
   async pause(): Promise<void> {
+    // An intentional pause must not be mistaken for a stalled start.
+    this.cancelPendingResume?.();
     if (this.player) {
       await this.player.pause();
     }
@@ -289,11 +292,18 @@ class SpotifyPlayerService {
   }
 
   waitForPlaybackOrResume(activateDevice: () => Promise<void>, timeoutMs = SPOTIFY_RESUME_TIMEOUT_MS): void {
+    this.cancelPendingResume?.();
     let settled = false;
     let unsub: (() => void) | null = null;
 
     const cleanup = () => {
       if (unsub) { unsub(); unsub = null; }
+      this.cancelPendingResume = null;
+    };
+
+    this.cancelPendingResume = () => {
+      settled = true;
+      cleanup();
     };
 
     const onStateChange = async (state: SpotifyPlaybackState | null) => {

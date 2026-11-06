@@ -93,5 +93,36 @@ describe('useProviderPlayback — playTrack stale-write race', () => {
     expect(committed.at(-1)).toBe(2);
     expect(committed).not.toContain(1);
     expect(queueStore.getCurrentIndex()).toBe(2);
+    expect(mockPause).not.toHaveBeenCalled();
+  });
+
+  it('re-pauses the outgoing provider when its superseded start lands after the handoff', async () => {
+    // #given a Spotify start still in flight when a Dropbox track takes over
+    const callsBefore = play.callCount;
+    queueStore.replaceQueue([makeTrack('t0'), makeTrack('t1', 'dropbox')], { currentIndex: 0 });
+    const { result } = renderHook(() => useProviderPlayback({}));
+    let pSpotify!: Promise<void>;
+    let pDropbox!: Promise<void>;
+    await act(async () => {
+      pSpotify = result.current.playTrack(0);
+      await waitFor(() => expect(play.callCount).toBe(callsBefore + 1));
+      pDropbox = result.current.playTrack(1);
+      await waitFor(() => expect(play.callCount).toBe(callsBefore + 2));
+    });
+    const pausesAtHandoff = mockPause.mock.calls.length;
+
+    // #when the Spotify start finally lands
+    await act(async () => {
+      play.resolve(callsBefore, undefined);
+      await pSpotify;
+    });
+
+    // #then it is silenced again, and Dropbox's result still commits
+    expect(mockPause.mock.calls.length).toBe(pausesAtHandoff + 1);
+    await act(async () => {
+      play.resolve(callsBefore + 1, undefined);
+      await pDropbox;
+    });
+    expect(queueStore.getCurrentIndex()).toBe(1);
   });
 });

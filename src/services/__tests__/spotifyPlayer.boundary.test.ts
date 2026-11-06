@@ -181,6 +181,25 @@ describe('SpotifyPlayerService — SDK/API boundary', () => {
     expect(activateDevice).not.toHaveBeenCalled();
   });
 
+  it('waitForPlaybackOrResume does not resume after an intentional pause', async () => {
+    // #given
+    const spotifyPlayer = await freshPlayerService();
+    await spotifyPlayer.initialize();
+    vi.mocked(playerHarness.player.resume).mockClear();
+    spotifyPlayer.waitForPlaybackOrResume(vi.fn().mockResolvedValue(undefined));
+
+    // #when
+    await spotifyPlayer.pause();
+    playerHarness.emit(
+      'player_state_changed',
+      minimalPlaybackState({ paused: true, position: 0 }),
+    );
+    await Promise.resolve();
+
+    // #then
+    expect(playerHarness.player.resume).not.toHaveBeenCalled();
+  });
+
   it('waitForPlaybackOrResume falls back after timeout when no state event arrives', async () => {
     // #given
     vi.useFakeTimers();

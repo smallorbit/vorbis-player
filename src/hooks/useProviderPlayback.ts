@@ -6,6 +6,7 @@ import { playbackStore } from '@/stores/playbackStore';
 import { queueStore } from '@/stores/queueStore';
 import { useNewestWins } from '@/hooks/useNewestWins';
 import { logQueue, logArtRace } from '@/lib/debugLog';
+import { logCaughtError } from '@/utils/logCaughtError';
 import { SKIP_ON_ERROR_DELAY_MS } from '@/constants/timing';
 import { PROVIDER_RECONNECTED_EVENT, onAppEvent } from '@/constants/events';
 import { loadSession } from '@/services/sessionPersistence';
@@ -66,7 +67,9 @@ export const useProviderPlayback = ({
   const pausePreviousProvider = useCallback((nextProvider: ProviderId): void => {
     const previousProvider = playbackStore.getSnapshot().drivingProviderId;
     if (previousProvider && previousProvider !== nextProvider) {
-      providerRegistry.get(previousProvider)?.playback.pause().catch(() => {});
+      providerRegistry.get(previousProvider)?.playback.pause().catch((err: unknown) => {
+        logCaughtError('useProviderPlayback.pausePreviousProvider', err);
+      });
     }
   }, []);
 
@@ -130,6 +133,13 @@ export const useProviderPlayback = ({
 
     try {
       await descriptor.playback.playTrack(mediaTrack, options);
+
+      // Another provider took over while this start was in flight. The handoff
+      // pause ran before this audio began, so silence it now.
+      if (playbackStore.getSnapshot().drivingProviderId !== trackProvider) {
+        await descriptor.playback.pause();
+        return;
+      }
 
       // Superseded by a newer playTrack while the adapter was starting — drop
       // this stale result rather than commit its index or pre-warm its next.
