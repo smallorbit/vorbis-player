@@ -4,6 +4,7 @@ import './index.css'
 import './styles/shadcn-tokens.css'
 import App from './App.tsx'
 import { logSw } from '@/lib/debugLog'
+import { purgeLegacyServiceWorkerCaches } from '@/services/serviceWorkerCaches'
 
 // Deploy provenance: always log the running build and expose it on window so the
 // exact deployed commit can be confirmed from any environment (staging/prod).
@@ -25,16 +26,25 @@ if (import.meta.env.VITE_MOCK_PROVIDER === 'true' || import.meta.env.DEV) {
   await import('@/providers/mock/mockProvider');
 }
 
+function registerServiceWorker(): void {
+  navigator.serviceWorker.register('/sw.js')
+    .then((registration) => {
+      logSw('registered %s', registration.scope);
+      return purgeLegacyServiceWorkerCaches();
+    })
+    .catch((registrationError) => {
+      console.error('[SW] registration failed:', registrationError);
+    });
+}
+
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then((registration) => {
-        logSw('registered %s', registration.scope);
-      })
-      .catch((registrationError) => {
-        console.error('[SW] registration failed:', registrationError);
-      });
-  });
+  // The top-level await above can outlast the load event (mock builds), so
+  // register immediately when the page has already loaded.
+  if (document.readyState === 'complete') {
+    registerServiceWorker();
+  } else {
+    window.addEventListener('load', registerServiceWorker, { once: true });
+  }
 }
 
 const rootEl = document.getElementById('root');

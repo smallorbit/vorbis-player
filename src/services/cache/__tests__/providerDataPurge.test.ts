@@ -90,6 +90,7 @@ describe('purgeProviderPersistedData', () => {
     expect(PROVIDER_PURGE_LOCAL_STORAGE_KEYS.spotify).toEqual([
       STORAGE_KEYS.SPOTIFY_TOKEN,
       STORAGE_KEYS.SPOTIFY_CODE_VERIFIER,
+      STORAGE_KEYS.SPOTIFY_OAUTH_STATE,
       LEGACY_SPOTIFY_STORAGE_KEYS.TOKEN,
       LEGACY_SPOTIFY_STORAGE_KEYS.CODE_VERIFIER,
     ]);
@@ -145,6 +146,22 @@ describe('purgeProviderPersistedData', () => {
       expect(localStorage.getItem(LEGACY_SPOTIFY_STORAGE_KEYS.TOKEN)).toBeNull();
       expect(localStorage.getItem(LEGACY_SPOTIFY_STORAGE_KEYS.CODE_VERIFIER)).toBeNull();
       expect(remainingProviderLocalStorageKeys('spotify')).toEqual([]);
+    });
+
+    it('drops service-worker runtime caches but keeps the app-shell precache', async () => {
+      // #given
+      const cacheNames = new Set(['workbox-precache-v2-http://127.0.0.1:3000/', 'spotify-artwork']);
+      vi.stubGlobal('caches', {
+        keys: async () => [...cacheNames],
+        delete: async (name: string) => cacheNames.delete(name),
+      });
+
+      // #when
+      await purgeProviderPersistedData('spotify');
+
+      // #then
+      expect([...cacheNames]).toEqual(['workbox-precache-v2-http://127.0.0.1:3000/']);
+      vi.unstubAllGlobals();
     });
   });
 

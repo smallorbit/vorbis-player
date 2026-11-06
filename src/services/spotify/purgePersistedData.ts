@@ -12,6 +12,7 @@ import { logCaughtError } from '@/utils/logCaughtError';
 import { clearLikedCountSnapshot } from '@/services/cache/likedCountSnapshot';
 import { clearProviderData } from '@/services/cache/libraryCache';
 import { clearAllSpotifyInMemoryCaches } from '@/services/spotify/cache';
+import { purgeRuntimeCaches } from '@/services/serviceWorkerCaches';
 
 export async function purgeSpotifyPersistedData(): Promise<void> {
   for (const key of PROVIDER_PURGE_LOCAL_STORAGE_KEYS.spotify) {
@@ -27,6 +28,7 @@ export async function purgeSpotifyPersistedData(): Promise<void> {
   }
 
   clearAllSpotifyInMemoryCaches();
+  await purgeRuntimeCaches();
   try {
     sessionStorage.removeItem(SPOTIFY_PROCESSED_CODE_SESSION_KEY);
   } catch (err) {
