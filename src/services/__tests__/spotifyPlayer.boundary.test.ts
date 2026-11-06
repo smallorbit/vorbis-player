@@ -220,7 +220,22 @@ describe('SpotifyPlayerService — SDK/API boundary', () => {
 
     // #then
     expect(playerHarness.player.resume).not.toHaveBeenCalled();
-    vi.useRealTimers();
+  });
+
+  it('waitForPlaybackOrResume clears its timer when cancelled by a pause', async () => {
+    // #given
+    vi.useFakeTimers();
+    const spotifyPlayer = await freshPlayerService();
+    await spotifyPlayer.initialize();
+    const timersBefore = vi.getTimerCount();
+    spotifyPlayer.waitForPlaybackOrResume(vi.fn().mockResolvedValue(undefined), SPOTIFY_RESUME_TIMEOUT_MS);
+    expect(vi.getTimerCount()).toBe(timersBefore + 1);
+
+    // #when
+    await spotifyPlayer.pause();
+
+    // #then
+    expect(vi.getTimerCount()).toBe(timersBefore);
   });
 
   it('waitForPlaybackOrResume falls back after timeout when no state event arrives', async () => {

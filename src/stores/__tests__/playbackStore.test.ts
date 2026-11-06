@@ -130,18 +130,6 @@ describe('playbackStore', () => {
       expect(fakeProviders.get('spotify')?.playback.pause).not.toHaveBeenCalled();
     });
 
-    it('pauseOutgoing silences the driving provider without changing it', () => {
-      // #given
-      playbackStore.setDrivingProvider('spotify');
-
-      // #when
-      playbackStore.pauseOutgoing('dropbox');
-
-      // #then
-      expect(fakeProviders.get('spotify')?.playback.pause).toHaveBeenCalledOnce();
-      expect(playbackStore.getSnapshot().drivingProviderId).toBe('spotify');
-    });
-
     it('logs a failed outgoing pause instead of rejecting', async () => {
       // #given
       const failure = new Error('sdk gone');

@@ -88,6 +88,8 @@ export function useCollectionLoader({
 
   const clearWithError = useCallback((message: string): LoadCollectionResult => {
     setError(message);
+    // Nothing will replace the queue, so stop whatever was playing from it.
+    playbackStore.pauseDriving();
     queueStore.clear();
     setIsLoading(false);
     return EMPTY;
@@ -134,10 +136,7 @@ export function useCollectionLoader({
       const merged = results.flat();
       merged.sort((a, b) => (b.addedAt ?? 0) - (a.addedAt ?? 0));
 
-      if (merged.length === 0) {
-        playbackStore.pauseDriving();
-        return clearWithError('No liked tracks found.');
-      }
+      if (merged.length === 0) return clearWithError('No liked tracks found.');
 
       applyTracks(merged);
 
@@ -200,9 +199,6 @@ export function useCollectionLoader({
     const providerId = targetDescriptor.id;
     const name = selection.name;
 
-    // Silence the outgoing provider now rather than after the track list
-    // loads, and even if the load fails. playTrack completes the handoff.
-    playbackStore.pauseOutgoing(providerId);
 
     const token = beginLoad(selection);
     try {
@@ -277,8 +273,6 @@ export function useCollectionLoader({
 
       const targetProviderId = selectionProvider(selection) ?? activeDescriptor?.id;
 
-      const startingProviderId = tracks[0]?.provider ?? targetProviderId;
-      if (startingProviderId) playbackStore.pauseOutgoing(startingProviderId);
 
       setError(null);
       setIsLoading(true);

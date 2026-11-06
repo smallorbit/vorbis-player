@@ -298,9 +298,11 @@ class SpotifyPlayerService {
     let settled = false;
     let cancelled = false;
     let unsub: (() => void) | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
 
     const cancel = () => {
       cancelled = true;
+      if (timer !== null) { clearTimeout(timer); timer = null; }
       if (unsub) { unsub(); unsub = null; }
       if (this.cancelPendingResume === cancel) this.cancelPendingResume = null;
     };
@@ -324,7 +326,8 @@ class SpotifyPlayerService {
       void recover(state, 'onStateChange').finally(cancel);
     });
 
-    setTimeout(() => {
+    timer = setTimeout(() => {
+      timer = null;
       if (settled || cancelled) return;
       settled = true;
       if (unsub) { unsub(); unsub = null; }

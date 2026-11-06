@@ -146,16 +146,6 @@ function setDrivingProvider(providerId: ProviderId | null): void {
   commit({ drivingProviderId: providerId });
 }
 
-/**
- * Silence the driving provider if `nextProvider` is about to replace it. Safe
- * to call before the switch is certain (e.g. while a collection loads): the
- * driving provider is left unchanged.
- */
-function pauseOutgoing(nextProvider: ProviderId): void {
-  if (snapshot.drivingProviderId === nextProvider) return;
-  pauseDriving();
-}
-
 /** Silence whichever provider is driving, e.g. when a load fails and nothing replaces it. */
 function pauseDriving(): void {
   const driving = snapshot.drivingProviderId;
@@ -171,7 +161,7 @@ function pauseDriving(): void {
  * before it is overwritten, so callers never write it themselves first.
  */
 function handoffTo(nextProvider: ProviderId): void {
-  pauseOutgoing(nextProvider);
+  if (snapshot.drivingProviderId !== nextProvider) pauseDriving();
   handoffEpoch += 1;
   setDrivingProvider(nextProvider);
 }
@@ -468,6 +458,7 @@ function __resetForTests(): void {
     drivingProviderId: null,
   };
   expectedTrackId = null;
+  handoffEpoch = 0;
   pendingSeek = null;
   wasPlaying = false;
   hasEnded = false;
@@ -485,7 +476,6 @@ export const playbackStore = {
   resolveDrivingProviderId,
   getDrivingDescriptor,
   setDrivingProvider,
-  pauseOutgoing,
   pauseDriving,
   handoffTo,
   getHandoffEpoch,
