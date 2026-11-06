@@ -3,7 +3,7 @@ import { test, expect } from '../fixtures/auth-state';
 import spotifySnapshot from '../fixtures/data/spotify-snapshot.json' with { type: 'json' };
 import dropboxSnapshot from '../fixtures/data/dropbox-snapshot.json' with { type: 'json' };
 import { requirePlaylist } from '../fixtures/require-snapshot';
-import { openPlaylist, openQueue, queueOrder, trackName } from '../fixtures/player';
+import { expandMiniPlayer, openPlaylist, openQueue, queueOrder, trackName } from '../fixtures/player';
 
 /**
  * playback-engine, "Cross-Provider Handoff" and "Control Routing to Driving
@@ -55,8 +55,7 @@ async function queueDropboxAlbumNext(page: Page): Promise<void> {
   await page.getByRole('menuitem', { name: 'Play Next' }).click();
 
   // Back to the player: while a track plays the library shows a mini-player.
-  await page.locator('[data-testid="mini-expand"]').click();
-  await trackName(page).waitFor({ state: 'visible', timeout: 15_000 });
+  await expandMiniPlayer(page);
 }
 
 test.describe('Cross-provider handoff', () => {
@@ -82,7 +81,7 @@ test.describe('Cross-provider handoff', () => {
     expect(mixed.length).toBeGreaterThan(spotifyOnly.length);
   });
 
-  test('opening a Dropbox album while Spotify plays leaves only Dropbox playing', async ({ page }) => {
+  test('baseline: opening a Dropbox album while Spotify is active and driving leaves only Dropbox playing', async ({ page }) => {
     // #given - a Spotify track playing, and the library open over the mini-player
     await page.getByRole('button', { name: 'Back to Library' }).click();
     await page.locator('[data-testid="library-home"]').waitFor({ state: 'visible', timeout: 15_000 });
@@ -104,15 +103,19 @@ test.describe('Cross-provider handoff', () => {
     await page.getByRole('button', { name: 'Back to Library' }).click();
     await page.locator('[data-testid="library-home"]').waitFor({ state: 'visible', timeout: 15_000 });
     await page.locator(`[data-testid="library-card-album-${dropboxAlbum.id}"]`).click();
-    await trackName(page).waitFor({ state: 'visible', timeout: 15_000 });
+    await expect.poll(async () => {
+      const { spotify, dropbox } = await providerPlayback(page);
+      return dropbox.isPlaying && !spotify.isPlaying;
+    }, { timeout: 15_000 }).toBe(true);
     await page.getByRole('button', { name: 'Back to Library' }).click();
     await page.locator(`[data-testid="library-card-playlist-${playlist.id}"]`).first().click({ button: 'right' });
     await page.getByRole('menuitem', { name: 'Play Next' }).click();
-    await page.locator('[data-testid="mini-expand"]').click();
+    await expandMiniPlayer(page);
     await page.getByRole('button', { name: 'Next track' }).click();
-    await expect.poll(async () => (await providerPlayback(page)).spotify.isPlaying, {
-      timeout: 15_000,
-    }).toBe(true);
+    await expect.poll(async () => {
+      const { spotify, dropbox } = await providerPlayback(page);
+      return spotify.isPlaying && !dropbox.isPlaying;
+    }, { timeout: 15_000 }).toBe(true);
 
     // #when - the user starts a Dropbox album from the library
     await page.getByRole('button', { name: 'Back to Library' }).click();
@@ -122,8 +125,10 @@ test.describe('Cross-provider handoff', () => {
     await expect.poll(async () => (await providerPlayback(page)).dropbox.isPlaying, {
       timeout: 15_000,
     }).toBe(true);
-    const state = await providerPlayback(page);
-    expect(state.spotify.isPlaying, 'outgoing provider was left playing').toBe(false);
+    // Read twice: a late restart of the outgoing provider would pass a single read.
+    expect((await providerPlayback(page)).spotify.isPlaying, 'outgoing provider was left playing').toBe(false);
+    await page.waitForTimeout(500);
+    expect((await providerPlayback(page)).spotify.isPlaying, 'outgoing provider restarted').toBe(false);
   });
 
   test('advancing into a Dropbox track hands playback over', async ({ page }) => {
