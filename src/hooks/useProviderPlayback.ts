@@ -105,6 +105,7 @@ export const useProviderPlayback = ({
     const token = playGuard.begin();
 
     playbackStore.handoffTo(trackProvider);
+    const handoffEpoch = playbackStore.getHandoffEpoch();
 
     const descriptor = providerRegistry.get(trackProvider);
     if (!descriptor) {
@@ -121,21 +122,24 @@ export const useProviderPlayback = ({
       descriptor.playback.onQueueChanged?.(tracks, index);
     }
 
-    // A newer playTrack, or another provider taking over, cancels this start.
-    // Neither its failure nor its late success may act on the queue.
+    // A newer playTrack or any later handoff (another provider, or a context
+    // playback takeover) cancels this start. Neither its failure nor its late
+    // success may act on the queue.
+    const isDrivingElsewhere = () => playbackStore.getSnapshot().drivingProviderId !== trackProvider;
     const isSuperseded = () =>
-      token.isStale() || playbackStore.getSnapshot().drivingProviderId !== trackProvider;
+      token.isStale() || playbackStore.getHandoffEpoch() !== handoffEpoch || isDrivingElsewhere();
 
     try {
       await descriptor.playback.playTrack(mediaTrack, options);
     } catch (error) {
-      if (isSuperseded()) {
-        logCaughtError(`useProviderPlayback.playTrack.superseded.${trackProvider}`, error);
+      // An expired session still needs the re-auth prompt, cancelled or not.
+      if (error instanceof AuthExpiredError) {
+        onAuthExpired?.(error.providerId);
         return;
       }
 
-      if (error instanceof AuthExpiredError) {
-        onAuthExpired?.(error.providerId);
+      if (isSuperseded()) {
+        logCaughtError(`useProviderPlayback.playTrack.superseded.${trackProvider}`, error);
         return;
       }
 
@@ -154,18 +158,17 @@ export const useProviderPlayback = ({
       return;
     }
 
-    // Another provider took over while this start was in flight. The handoff
-    // pause ran before this audio began, so silence it now.
-    if (playbackStore.getSnapshot().drivingProviderId !== trackProvider) {
-      descriptor.playback.pause().catch((err: unknown) => {
-        logCaughtError(`useProviderPlayback.playTrack.repause.${trackProvider}`, err);
-      });
+    if (isSuperseded()) {
+      // Another provider took over while this start was in flight. The handoff
+      // pause ran before this audio began, so silence it now. A same-provider
+      // takeover owns that provider's audio, so it is left alone.
+      if (isDrivingElsewhere()) {
+        descriptor.playback.pause().catch((err: unknown) => {
+          logCaughtError(`useProviderPlayback.playTrack.repause.${trackProvider}`, err);
+        });
+      }
       return;
     }
-
-    // Superseded by a newer playTrack while the adapter was starting — drop
-    // this stale result rather than commit its index or pre-warm its next.
-    if (token.isStale()) return;
 
     queueStore.setCurrentIndex(index);
 

@@ -84,6 +84,7 @@ let snapshot: PlaybackSnapshot = {
 
 // --- private stale-event heuristics -----------------------------------------
 let expectedTrackId: string | null = null;
+let handoffEpoch = 0;
 let pendingSeek: { target: number; at: number } | null = null;
 let wasPlaying = false;
 let hasEnded = false;
@@ -151,10 +152,16 @@ function setDrivingProvider(providerId: ProviderId | null): void {
  * driving provider is left unchanged.
  */
 function pauseOutgoing(nextProvider: ProviderId): void {
-  const outgoing = snapshot.drivingProviderId;
-  if (!outgoing || outgoing === nextProvider) return;
-  providerRegistry.get(outgoing)?.playback.pause().catch((err: unknown) => {
-    logCaughtError(`playbackStore.pauseOutgoing.${outgoing}`, err);
+  if (snapshot.drivingProviderId === nextProvider) return;
+  pauseDriving();
+}
+
+/** Silence whichever provider is driving, e.g. when a load fails and nothing replaces it. */
+function pauseDriving(): void {
+  const driving = snapshot.drivingProviderId;
+  if (!driving) return;
+  providerRegistry.get(driving)?.playback.pause().catch((err: unknown) => {
+    logCaughtError(`playbackStore.pauseDriving.${driving}`, err);
   });
 }
 
@@ -165,7 +172,16 @@ function pauseOutgoing(nextProvider: ProviderId): void {
  */
 function handoffTo(nextProvider: ProviderId): void {
   pauseOutgoing(nextProvider);
+  handoffEpoch += 1;
   setDrivingProvider(nextProvider);
+}
+
+/**
+ * Bumped by every handoff, including a same-provider takeover (context
+ * playback). An in-flight start compares it to know it was replaced.
+ */
+function getHandoffEpoch(): number {
+  return handoffEpoch;
 }
 
 /**
@@ -470,7 +486,9 @@ export const playbackStore = {
   getDrivingDescriptor,
   setDrivingProvider,
   pauseOutgoing,
+  pauseDriving,
   handoffTo,
+  getHandoffEpoch,
   setActiveProviderFallback,
   beginTransition,
   clearTransition,

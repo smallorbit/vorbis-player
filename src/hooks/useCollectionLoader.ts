@@ -134,7 +134,10 @@ export function useCollectionLoader({
       const merged = results.flat();
       merged.sort((a, b) => (b.addedAt ?? 0) - (a.addedAt ?? 0));
 
-      if (merged.length === 0) return clearWithError('No liked tracks found.');
+      if (merged.length === 0) {
+        playbackStore.pauseDriving();
+        return clearWithError('No liked tracks found.');
+      }
 
       applyTracks(merged);
 
@@ -175,6 +178,9 @@ export function useCollectionLoader({
     const providerId = ref.provider;
     setIsLoading(false);
     playbackStore.handoffTo(providerId);
+    // Context playback has no expected track id; a guard left armed by a
+    // cancelled playTrack would make the queue ignore the SDK's track changes.
+    playbackStore.clearTransition();
     logQueue('Context playback path — delegating to legacy handler for %o', ref);
     // spotifyHandlePlaylistSelect mirrors the SDK's track window straight into
     // the queue store when it succeeds.
@@ -271,7 +277,8 @@ export function useCollectionLoader({
 
       const targetProviderId = selectionProvider(selection) ?? activeDescriptor?.id;
 
-      if (targetProviderId) playbackStore.pauseOutgoing(targetProviderId);
+      const startingProviderId = tracks[0]?.provider ?? targetProviderId;
+      if (startingProviderId) playbackStore.pauseOutgoing(startingProviderId);
 
       setError(null);
       setIsLoading(true);

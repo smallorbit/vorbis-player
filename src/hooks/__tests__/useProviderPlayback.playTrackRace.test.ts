@@ -1,8 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import { createDeferredFn } from '@/test/asyncRace';
 import { queueStore } from '@/stores/queueStore';
+import { playbackStore } from '@/stores/playbackStore';
+import { AuthExpiredError } from '@/providers/errors';
 import { SKIP_ON_ERROR_DELAY_MS } from '@/constants/timing';
 
 // The adapter's playTrack is the awaited async dependency whose two invocations
@@ -56,6 +58,10 @@ function makeDescriptor() {
 }
 
 describe('useProviderPlayback — playTrack stale-write race', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockRegistryGet.mockReturnValue(makeDescriptor());
@@ -99,12 +105,13 @@ describe('useProviderPlayback — playTrack stale-write race', () => {
 
   async function supersedeSpotifyStartWithDropbox(result: { current: ReturnType<typeof useProviderPlayback> }) {
     const callsBefore = play.callCount;
-    let pSpotify!: Promise<void>;
-    await act(async () => {
-      pSpotify = result.current.playTrack(0, true);
+    // Wrapped in an object: a promise returned from act's callback would be awaited.
+    const { pSpotify } = await act(async () => {
+      const pending = result.current.playTrack(0, true);
       await waitFor(() => expect(play.callCount).toBe(callsBefore + 1));
       void result.current.playTrack(1);
       await waitFor(() => expect(play.callCount).toBe(callsBefore + 2));
+      return { pSpotify: pending };
     });
     return { spotifyCall: callsBefore, pSpotify };
   }
@@ -126,7 +133,6 @@ describe('useProviderPlayback — playTrack stale-write race', () => {
 
     // #then no retry of the old queue is scheduled
     expect(play.callCount).toBe(callsAfterHandoff);
-    vi.useRealTimers();
   });
 
   it('does not skip ahead when the re-pause of a superseded start fails', async () => {
@@ -147,7 +153,46 @@ describe('useProviderPlayback — playTrack stale-write race', () => {
 
     // #then
     expect(play.callCount).toBe(callsAfterHandoff);
-    vi.useRealTimers();
+  });
+
+  it('drops a start replaced by a same-provider context takeover', async () => {
+    // #given a Spotify track start in flight
+    queueStore.replaceQueue([makeTrack('t0'), makeTrack('t1')], { currentIndex: 1 });
+    const callsBefore = play.callCount;
+    const { result } = renderHook(() => useProviderPlayback({}));
+    const { pending } = await act(async () => {
+      const start = result.current.playTrack(0);
+      await waitFor(() => expect(play.callCount).toBe(callsBefore + 1));
+      return { pending: start };
+    });
+
+    // #when Spotify context playback takes over, then the old start lands
+    playbackStore.handoffTo('spotify');
+    await act(async () => {
+      play.resolve(callsBefore, undefined);
+      await pending;
+    });
+
+    // #then the old start neither commits its index nor pauses the new playback
+    expect(queueStore.getCurrentIndex()).toBe(1);
+    expect(mockPause).not.toHaveBeenCalled();
+  });
+
+  it('still reports an expired session from a cancelled start', async () => {
+    // #given
+    queueStore.replaceQueue([makeTrack('t0'), makeTrack('t1', 'dropbox')], { currentIndex: 0 });
+    const onAuthExpired = vi.fn();
+    const { result } = renderHook(() => useProviderPlayback({ onAuthExpired }));
+    const { spotifyCall, pSpotify } = await supersedeSpotifyStartWithDropbox(result);
+
+    // #when
+    await act(async () => {
+      play.reject(spotifyCall, new AuthExpiredError('spotify'));
+      await pSpotify;
+    });
+
+    // #then
+    expect(onAuthExpired).toHaveBeenCalledWith('spotify');
   });
 
   it('re-pauses the outgoing provider when its superseded start lands after the handoff', async () => {
@@ -155,13 +200,12 @@ describe('useProviderPlayback — playTrack stale-write race', () => {
     const callsBefore = play.callCount;
     queueStore.replaceQueue([makeTrack('t0'), makeTrack('t1', 'dropbox')], { currentIndex: 0 });
     const { result } = renderHook(() => useProviderPlayback({}));
-    let pSpotify!: Promise<void>;
-    let pDropbox!: Promise<void>;
-    await act(async () => {
-      pSpotify = result.current.playTrack(0);
+    const [pSpotify, pDropbox] = await act(async () => {
+      const spotifyStart = result.current.playTrack(0);
       await waitFor(() => expect(play.callCount).toBe(callsBefore + 1));
-      pDropbox = result.current.playTrack(1);
+      const dropboxStart = result.current.playTrack(1);
       await waitFor(() => expect(play.callCount).toBe(callsBefore + 2));
+      return [spotifyStart, dropboxStart] as const;
     });
     const pausesAtHandoff = mockPause.mock.calls.length;
 

@@ -45,6 +45,8 @@ function makeFakeProvider(id: ProviderId): FakeProvider {
   return provider;
 }
 
+vi.mock('@/utils/logCaughtError', () => ({ logCaughtError: vi.fn() }));
+
 vi.mock('@/services/providerRegistry', () => ({
   providerRegistry: {
     getAll: () => [...fakeProviders.values()],
@@ -53,6 +55,7 @@ vi.mock('@/services/providerRegistry', () => ({
 }));
 
 import { playbackStore } from '@/stores/playbackStore';
+import { logCaughtError } from '@/utils/logCaughtError';
 import { queueStore } from '@/stores/queueStore';
 import type { MediaTrack } from '@/types/domain';
 import { makeTrack as makeTrackFixture } from '@/test/fixtures';
@@ -141,12 +144,29 @@ describe('playbackStore', () => {
 
     it('logs a failed outgoing pause instead of rejecting', async () => {
       // #given
+      const failure = new Error('sdk gone');
       playbackStore.setDrivingProvider('spotify');
-      fakeProviders.get('spotify')?.playback.pause.mockRejectedValueOnce(new Error('sdk gone'));
+      fakeProviders.get('spotify')?.playback.pause.mockRejectedValueOnce(failure);
 
-      // #when / #then
-      expect(() => playbackStore.handoffTo('dropbox')).not.toThrow();
-      await Promise.resolve();
+      // #when
+      playbackStore.handoffTo('dropbox');
+
+      // #then
+      await vi.waitFor(() =>
+        expect(logCaughtError).toHaveBeenCalledWith('playbackStore.pauseDriving.spotify', failure),
+      );
+    });
+
+    it('every handoff bumps the epoch, including a same-provider takeover', () => {
+      // #given
+      playbackStore.setDrivingProvider('spotify');
+      const before = playbackStore.getHandoffEpoch();
+
+      // #when
+      playbackStore.handoffTo('spotify');
+
+      // #then
+      expect(playbackStore.getHandoffEpoch()).toBe(before + 1);
     });
   });
 
