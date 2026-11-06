@@ -181,6 +181,63 @@ describe('SpotifyPlayerService — SDK/API boundary', () => {
     expect(activateDevice).not.toHaveBeenCalled();
   });
 
+  it('waitForPlaybackOrResume does not resume after an intentional pause', async () => {
+    // #given
+    const spotifyPlayer = await freshPlayerService();
+    await spotifyPlayer.initialize();
+    vi.mocked(playerHarness.player.resume).mockClear();
+    spotifyPlayer.waitForPlaybackOrResume(vi.fn().mockResolvedValue(undefined));
+
+    // #when
+    await spotifyPlayer.pause();
+    playerHarness.emit(
+      'player_state_changed',
+      minimalPlaybackState({ paused: true, position: 0 }),
+    );
+    await Promise.resolve();
+
+    // #then
+    expect(playerHarness.player.resume).not.toHaveBeenCalled();
+  });
+
+  it('waitForPlaybackOrResume does not resume when paused while the timeout path reads state', async () => {
+    // #given
+    vi.useFakeTimers();
+    const spotifyPlayer = await freshPlayerService();
+    await spotifyPlayer.initialize();
+    vi.mocked(playerHarness.player.resume).mockClear();
+    let releaseState: (state: ReturnType<typeof minimalPlaybackState>) => void = () => {};
+    vi.mocked(playerHarness.player.getCurrentState).mockReturnValue(
+      new Promise((resolve) => { releaseState = resolve; }),
+    );
+    spotifyPlayer.waitForPlaybackOrResume(vi.fn().mockResolvedValue(undefined), SPOTIFY_RESUME_TIMEOUT_MS);
+    await vi.advanceTimersByTimeAsync(SPOTIFY_RESUME_TIMEOUT_MS + 50);
+
+    // #when the handoff pause lands while the watchdog is still awaiting state
+    await spotifyPlayer.pause();
+    releaseState(minimalPlaybackState({ paused: true, position: 0 }));
+    await vi.advanceTimersByTimeAsync(0);
+
+    // #then
+    expect(playerHarness.player.resume).not.toHaveBeenCalled();
+  });
+
+  it('waitForPlaybackOrResume clears its timer when cancelled by a pause', async () => {
+    // #given
+    vi.useFakeTimers();
+    const spotifyPlayer = await freshPlayerService();
+    await spotifyPlayer.initialize();
+    const timersBefore = vi.getTimerCount();
+    spotifyPlayer.waitForPlaybackOrResume(vi.fn().mockResolvedValue(undefined), SPOTIFY_RESUME_TIMEOUT_MS);
+    expect(vi.getTimerCount()).toBe(timersBefore + 1);
+
+    // #when
+    await spotifyPlayer.pause();
+
+    // #then
+    expect(vi.getTimerCount()).toBe(timersBefore);
+  });
+
   it('waitForPlaybackOrResume falls back after timeout when no state event arrives', async () => {
     // #given
     vi.useFakeTimers();
