@@ -4,6 +4,11 @@
   "allowlist": [
     // GHSA-vfj7-8cjw-p6xm (CVE-2026-93687): transitive devDependency (tailwindcss → chokidar/micromatch → braces@3.0.3).
     // No patched npm release yet (upstream micromatch/braces#70). Remove this allowlist once lockfile resolves to braces >= 3.0.4.
-    "GHSA-vfj7-8cjw-p6xm"
+    "GHSA-vfj7-8cjw-p6xm",
+    // GHSA-5gmw-xhrv-c9v3 / GHSA-85c8-ppgw-ccpr: tinypool prototype-pollution gadgets, transitive devDependency
+    // (vitest@3 → tinypool ^1.1.1; test runner only, never shipped). Fixed in tinypool >= 2.1.2, which only
+    // vitest >= 5 pulls in — a coordinated major per RFC 0002. Remove both once vitest is on 5.x.
+    "GHSA-5gmw-xhrv-c9v3",
+    "GHSA-85c8-ppgw-ccpr"
   ]
 }

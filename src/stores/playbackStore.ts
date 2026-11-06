@@ -43,6 +43,7 @@ import {
   NEAR_END_FALLBACK_MS,
 } from '@/constants/timing';
 import { logQueue, logArtRace, logSeek } from '@/lib/debugLog';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 export interface PlaybackSnapshot {
   isPlaying: boolean;
@@ -83,6 +84,7 @@ let snapshot: PlaybackSnapshot = {
 
 // --- private stale-event heuristics -----------------------------------------
 let expectedTrackId: string | null = null;
+let handoffEpoch = 0;
 let pendingSeek: { target: number; at: number } | null = null;
 let wasPlaying = false;
 let hasEnded = false;
@@ -142,6 +144,34 @@ function getDrivingDescriptor(trackProvider?: ProviderId | null): ProviderDescri
 function setDrivingProvider(providerId: ProviderId | null): void {
   if (providerId === snapshot.drivingProviderId) return;
   commit({ drivingProviderId: providerId });
+}
+
+/** Silence whichever provider is driving, e.g. when a load fails and nothing replaces it. */
+function pauseDriving(): void {
+  const driving = snapshot.drivingProviderId;
+  if (!driving) return;
+  providerRegistry.get(driving)?.playback.pause().catch((err: unknown) => {
+    logCaughtError(`playbackStore.pauseDriving.${driving}`, err);
+  });
+}
+
+/**
+ * The one cross-provider handoff: pause the outgoing provider, then make
+ * `nextProvider` the driving one. Pausing must read the driving provider
+ * before it is overwritten, so callers never write it themselves first.
+ */
+function handoffTo(nextProvider: ProviderId): void {
+  if (snapshot.drivingProviderId !== nextProvider) pauseDriving();
+  handoffEpoch += 1;
+  setDrivingProvider(nextProvider);
+}
+
+/**
+ * Bumped by every handoff, including a same-provider takeover (context
+ * playback). An in-flight start compares it to know it was replaced.
+ */
+function getHandoffEpoch(): number {
+  return handoffEpoch;
 }
 
 /**
@@ -428,6 +458,7 @@ function __resetForTests(): void {
     drivingProviderId: null,
   };
   expectedTrackId = null;
+  handoffEpoch = 0;
   pendingSeek = null;
   wasPlaying = false;
   hasEnded = false;
@@ -445,6 +476,9 @@ export const playbackStore = {
   resolveDrivingProviderId,
   getDrivingDescriptor,
   setDrivingProvider,
+  pauseDriving,
+  handoffTo,
+  getHandoffEpoch,
   setActiveProviderFallback,
   beginTransition,
   clearTransition,

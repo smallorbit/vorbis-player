@@ -23,6 +23,19 @@ export async function openPlaylist(page: Page, playlistId: string): Promise<void
 }
 
 /**
+ * Return from the library to the player through the mini-player.
+ *
+ * Activated with Enter rather than a click: right after a "Play Next" the
+ * "Added … to play next" toast covers this button, and a click waits for it to
+ * leave. Sonner pauses that toast's timer while the pointer is over it, so a
+ * cursor left there by the previous action made the click wait out the test.
+ */
+export async function expandMiniPlayer(page: Page): Promise<void> {
+  await page.locator('[data-testid="mini-expand"]').press('Enter');
+  await trackName(page).waitFor({ state: 'visible', timeout: 15_000 });
+}
+
+/**
  * Click "Next track" until `targetName` is current, asserting the readout changes
  * on each step. Uses the real transport path, so React's currentTrackIndex — the
  * state the boundary guard actually reads — ends up where the spec claims it is.

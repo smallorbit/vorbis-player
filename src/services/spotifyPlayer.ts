@@ -22,6 +22,7 @@ import {
 const VOLUME_DEBOUNCE_MS = 200;
 
 class SpotifyPlayerService {
+  private cancelPendingResume: (() => void) | null = null;
   private player: SpotifyPlayer | null;
   private deviceId: string | null;
   private isReady: boolean;
@@ -141,6 +142,8 @@ class SpotifyPlayerService {
   }
 
   async pause(): Promise<void> {
+    // An intentional pause must not be mistaken for a stalled start.
+    this.cancelPendingResume?.();
     if (this.player) {
       await this.player.pause();
     }
@@ -289,21 +292,27 @@ class SpotifyPlayerService {
   }
 
   waitForPlaybackOrResume(activateDevice: () => Promise<void>, timeoutMs = SPOTIFY_RESUME_TIMEOUT_MS): void {
+    this.cancelPendingResume?.();
+    // `settled` stops a second trigger; `cancelled` stops an intentional pause
+    // from being undone, including while the timeout path awaits the state.
     let settled = false;
+    let cancelled = false;
     let unsub: (() => void) | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
 
-    const cleanup = () => {
+    const cancel = () => {
+      cancelled = true;
+      if (timer !== null) { clearTimeout(timer); timer = null; }
       if (unsub) { unsub(); unsub = null; }
+      if (this.cancelPendingResume === cancel) this.cancelPendingResume = null;
     };
+    this.cancelPendingResume = cancel;
 
-    const onStateChange = async (state: SpotifyPlaybackState | null) => {
-      if (settled) return;
-      settled = true;
-      cleanup();
-
+    const recover = async (state: SpotifyPlaybackState | null, context: string) => {
+      if (cancelled) return;
       if (state) {
         if (state.paused && state.position === 0) {
-          try { await this.resume(); } catch (err) { /* ignore */ logCaughtError('spotifyPlayer.waitForPlaybackOrResume.onStateChange.resume', err); }
+          try { await this.resume(); } catch (err) { logCaughtError(`spotifyPlayer.waitForPlaybackOrResume.${context}.resume`, err); }
         }
       } else {
         await activateDevice();
@@ -311,23 +320,21 @@ class SpotifyPlayerService {
     };
 
     unsub = this.onPlayerStateChanged((state) => {
-      void onStateChange(state);
-    });
-
-    setTimeout(() => {
       if (settled) return;
       settled = true;
-      cleanup();
+      if (unsub) { unsub(); unsub = null; }
+      void recover(state, 'onStateChange').finally(cancel);
+    });
+
+    timer = setTimeout(() => {
+      timer = null;
+      if (settled || cancelled) return;
+      settled = true;
+      if (unsub) { unsub(); unsub = null; }
       void (async () => {
         const state = await this.getCurrentState();
-        if (state) {
-          if (state.paused && state.position === 0) {
-            try { await this.resume(); } catch (err) { /* ignore */ logCaughtError('spotifyPlayer.waitForPlaybackOrResume.timeout.resume', err); }
-          }
-        } else {
-          await activateDevice();
-        }
-      })();
+        await recover(state, 'timeout');
+      })().finally(cancel);
     }, timeoutMs);
   }
 }

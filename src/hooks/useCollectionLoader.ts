@@ -3,7 +3,6 @@ import type { CollectionRef, CollectionSelection, LoadCollectionResult, MediaTra
 import type { ProviderDescriptor } from '@/types/providers';
 import type { TrackOperations } from '@/types/trackOperations';
 import { LIKED_SONGS_NAME, isAllMusicRef } from '@/constants/playlist';
-import { providerRegistry } from '@/providers/registry';
 import { putTrackList } from '@/services/cache/libraryCache';
 import { playbackStore } from '@/stores/playbackStore';
 import { queueStore } from '@/stores/queueStore';
@@ -89,6 +88,8 @@ export function useCollectionLoader({
 
   const clearWithError = useCallback((message: string): LoadCollectionResult => {
     setError(message);
+    // Nothing will replace the queue, so stop whatever was playing from it.
+    playbackStore.pauseDriving();
     queueStore.clear();
     setIsLoading(false);
     return EMPTY;
@@ -143,7 +144,6 @@ export function useCollectionLoader({
       if (firstTrack) {
         const firstProvider = getDescriptor(firstTrack.provider);
         if (firstProvider) {
-          playbackStore.setDrivingProvider(firstTrack.provider);
           if (firstTrack.provider !== activeDescriptor?.id) {
             setActiveProviderId(firstTrack.provider);
           }
@@ -176,11 +176,10 @@ export function useCollectionLoader({
   ): Promise<LoadCollectionResult> => {
     const providerId = ref.provider;
     setIsLoading(false);
-    const prevProvider = playbackStore.getSnapshot().drivingProviderId;
-    if (prevProvider && prevProvider !== providerId) {
-      providerRegistry.get(prevProvider)?.playback.pause().catch(() => {});
-    }
-    playbackStore.setDrivingProvider(providerId);
+    playbackStore.handoffTo(providerId);
+    // Context playback has no expected track id; a guard left armed by a
+    // cancelled playTrack would make the queue ignore the SDK's track changes.
+    playbackStore.clearTransition();
     logQueue('Context playback path — delegating to legacy handler for %o', ref);
     // spotifyHandlePlaylistSelect mirrors the SDK's track window straight into
     // the queue store when it succeeds.
@@ -200,9 +199,6 @@ export function useCollectionLoader({
     const providerId = targetDescriptor.id;
     const name = selection.name;
 
-    if (activeDescriptor && activeDescriptor.id !== providerId) {
-      activeDescriptor.playback.pause().catch(() => {});
-    }
 
     const token = beginLoad(selection);
     try {
@@ -218,7 +214,6 @@ export function useCollectionLoader({
       if (list.length === 0) return clearWithError('No tracks found in this collection.');
 
       applyTracks(list, { forceShuffle: isAllMusicRef(collectionRef) });
-      playbackStore.setDrivingProvider(providerId);
       queueSnapshot(`${providerId} playlist loaded`, list, queueStore.getTracks().length, 0);
       if (token.isStale()) return SUPERSEDED;
       await playTrack(0);
@@ -232,7 +227,7 @@ export function useCollectionLoader({
       return handleLoadError(err, 'Failed to load collection.');
     }
   }, [
-    activeDescriptor, beginLoad, clearWithError, handleLoadError,
+    beginLoad, clearWithError, handleLoadError,
     applyTracks, loadContextPlayback, playTrack, record,
   ]);
 
@@ -276,13 +271,8 @@ export function useCollectionLoader({
 
       const token = loadGuard.begin();
 
-      const provider = selectionProvider(selection);
-      const targetDescriptor = provider ? getDescriptor(provider) : activeDescriptor;
-      const targetProviderId = provider ?? activeDescriptor?.id;
+      const targetProviderId = selectionProvider(selection) ?? activeDescriptor?.id;
 
-      if (targetDescriptor && activeDescriptor && activeDescriptor.id !== targetDescriptor.id) {
-        activeDescriptor.playback.pause().catch(() => {});
-      }
 
       setError(null);
       setIsLoading(true);
@@ -296,11 +286,8 @@ export function useCollectionLoader({
 
       applyTracks(tracks);
 
-      if (targetProviderId) {
-        playbackStore.setDrivingProvider(targetProviderId);
-        if (targetProviderId !== activeDescriptor?.id) {
-          setActiveProviderId(targetProviderId);
-        }
+      if (targetProviderId && targetProviderId !== activeDescriptor?.id) {
+        setActiveProviderId(targetProviderId);
       }
 
       queueSnapshot('Direct tracks loaded', tracks, queueStore.getTracks().length, 0);
@@ -310,7 +297,7 @@ export function useCollectionLoader({
     },
     [
       radioStateIsActive, stopRadioBase, loadGuard,
-      getDescriptor, activeDescriptor,
+      activeDescriptor,
       setError, setIsLoading, setSelection,
       applyTracks, setActiveProviderId, playTrack,
     ]

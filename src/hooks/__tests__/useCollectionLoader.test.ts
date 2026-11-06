@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useCollectionLoader } from '../useCollectionLoader';
+import { playbackStore } from '@/stores/playbackStore';
+import { providerRegistry } from '@/services/providerRegistry';
 import { queueStore } from '@/stores/queueStore';
 import { makeTrack, makeProviderDescriptor, makePlaybackProvider, makeCapabilities } from '@/test/fixtures';
 import { LIKED_SONGS_NAME } from '@/constants/playlist';
@@ -133,6 +135,74 @@ describe('useCollectionLoader', () => {
     return { history, unsubscribe };
   }
 
+  it('leaves the driving provider to playTrack so it can pause the outgoing provider', async () => {
+    // #given - another provider is producing audio when the collection loads
+    playbackStore.setDrivingProvider('spotify');
+    mockActiveDescriptor = stubDescriptor({
+      id: 'dropbox',
+      listTracks: vi.fn().mockResolvedValue([makeListedTrack('1')]),
+      pause: vi.fn(),
+    });
+    let drivingAtPlayTrack: ProviderId | null = null;
+    mockPlayTrack.mockImplementation(async () => {
+      drivingAtPlayTrack = playbackStore.getSnapshot().drivingProviderId;
+    });
+    const { result } = renderLoader();
+
+    // #when
+    await act(async () => {
+      await result.current.loadCollection(folderSel('/album'));
+    });
+
+    // #then
+    expect(mockPlayTrack).toHaveBeenCalledWith(0);
+    expect(drivingAtPlayTrack).toBe('spotify');
+  });
+
+  it('leaves the handoff to playTrack when playing tracks directly', async () => {
+    // #given
+    playbackStore.setDrivingProvider('spotify');
+    const dropbox = stubDescriptor({ id: 'dropbox' });
+    mockGetDescriptor.mockReturnValue(dropbox);
+    let drivingAtPlayTrack: ProviderId | null = null;
+    mockPlayTrack.mockImplementation(async () => {
+      drivingAtPlayTrack = playbackStore.getSnapshot().drivingProviderId;
+    });
+    const { result } = renderLoader({ activeDescriptor: dropbox });
+
+    // #when
+    await act(async () => {
+      await result.current.playTracksDirectly([makeListedTrack('1')], folderSel('/album'));
+    });
+
+    // #then
+    expect(mockPlayTrack).toHaveBeenCalledWith(0);
+    expect(drivingAtPlayTrack).toBe('spotify');
+  });
+
+  it('leaves the handoff to playTrack when loading unified liked songs', async () => {
+    // #given
+    playbackStore.setDrivingProvider('dropbox');
+    mockActiveDescriptor = stubDescriptor({
+      listTracks: vi.fn().mockResolvedValue([makeListedTrack('1', 1000)]),
+    });
+    mockGetDescriptor.mockReturnValue(mockActiveDescriptor);
+    let drivingAtPlayTrack: ProviderId | null = null;
+    mockPlayTrack.mockImplementation(async () => {
+      drivingAtPlayTrack = playbackStore.getSnapshot().drivingProviderId;
+    });
+    const { result } = renderLoader({ isUnifiedLikedActive: true });
+
+    // #when
+    await act(async () => {
+      await result.current.loadCollection({ type: 'liked' });
+    });
+
+    // #then
+    expect(mockPlayTrack).toHaveBeenCalledWith(0);
+    expect(drivingAtPlayTrack).toBe('dropbox');
+  });
+
   it('loading a standard provider collection sets tracks and calls playTrack(0)', async () => {
     // #given
     const mockCatalog = {
@@ -208,6 +278,88 @@ describe('useCollectionLoader', () => {
     expect(queueStore.getTracks()).toEqual(expectedMergedOrder);
     expect(queueStore.getSnapshot().originalTracks).toEqual(expectedMergedOrder);
     expect(trackCount).toEqual({ status: 'loaded', count: 3 });
+  });
+
+  it('silences the driving provider even when the new collection fails to load', async () => {
+    // #given Spotify drives a queued track while Dropbox is the active provider
+    const spotifyPause = vi.fn().mockResolvedValue(undefined);
+    const spotify = stubDescriptor({ id: 'spotify', pause: spotifyPause });
+    vi.spyOn(providerRegistry, 'get').mockImplementation((id) => (id === 'spotify' ? spotify : undefined));
+    playbackStore.setDrivingProvider('spotify');
+    mockActiveDescriptor = stubDescriptor({
+      id: 'dropbox',
+      listTracks: vi.fn().mockRejectedValue(new Error('network down')),
+    });
+    const { result } = renderLoader();
+
+    // #when
+    await act(async () => {
+      await result.current.loadCollection(folderSel('/album'));
+    });
+
+    // #then
+    expect(spotifyPause).toHaveBeenCalled();
+    expect(mockPlayTrack).not.toHaveBeenCalled();
+  });
+
+  it('silences the driving provider when unified liked songs load nothing', async () => {
+    // #given
+    const spotifyPause = vi.fn().mockResolvedValue(undefined);
+    vi.spyOn(providerRegistry, 'get').mockImplementation((id) =>
+      id === 'spotify' ? stubDescriptor({ id: 'spotify', pause: spotifyPause }) : undefined,
+    );
+    playbackStore.setDrivingProvider('spotify');
+    mockActiveDescriptor = stubDescriptor({ listTracks: vi.fn().mockResolvedValue([]) });
+    mockGetDescriptor.mockReturnValue(mockActiveDescriptor);
+    const { result } = renderLoader({ isUnifiedLikedActive: true });
+
+    // #when
+    await act(async () => {
+      await result.current.loadCollection({ type: 'liked' });
+    });
+
+    // #then
+    expect(spotifyPause).toHaveBeenCalled();
+    expect(mockPlayTrack).not.toHaveBeenCalled();
+  });
+
+  it('leaves the cross-provider pause to playTrack when playing tracks directly', async () => {
+    // #given the selection names Dropbox; playTrack owns any handoff
+    const spotifyPause = vi.fn().mockResolvedValue(undefined);
+    vi.spyOn(providerRegistry, 'get').mockImplementation((id) =>
+      id === 'spotify' ? stubDescriptor({ id: 'spotify', pause: spotifyPause }) : undefined,
+    );
+    playbackStore.setDrivingProvider('spotify');
+    mockGetDescriptor.mockReturnValue(stubDescriptor({ id: 'dropbox' }));
+    const { result } = renderLoader();
+
+    // #when
+    await act(async () => {
+      await result.current.playTracksDirectly([makeListedTrack('1')], folderSel('/album'));
+    });
+
+    // #then
+    expect(spotifyPause).not.toHaveBeenCalled();
+  });
+
+  it('stops playback when a same-provider collection comes back empty', async () => {
+    // #given Spotify is playing and the user opens an empty Spotify playlist
+    const spotifyPause = vi.fn().mockResolvedValue(undefined);
+    vi.spyOn(providerRegistry, 'get').mockImplementation((id) =>
+      id === 'spotify' ? stubDescriptor({ id: 'spotify', pause: spotifyPause }) : undefined,
+    );
+    playbackStore.setDrivingProvider('spotify');
+    mockActiveDescriptor = stubDescriptor({ listTracks: vi.fn().mockResolvedValue([]) });
+    const { result } = renderLoader();
+
+    // #when
+    await act(async () => {
+      await result.current.loadCollection(playlistSel('empty'));
+    });
+
+    // #then the cleared queue is not left with audio still playing
+    expect(spotifyPause).toHaveBeenCalled();
+    expect(mockPlayTrack).not.toHaveBeenCalled();
   });
 
   it('an empty collection result sets error state', async () => {

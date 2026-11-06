@@ -6,6 +6,7 @@ import { playbackStore } from '@/stores/playbackStore';
 import { queueStore } from '@/stores/queueStore';
 import { useNewestWins } from '@/hooks/useNewestWins';
 import { logQueue, logArtRace } from '@/lib/debugLog';
+import { logCaughtError } from '@/utils/logCaughtError';
 import { SKIP_ON_ERROR_DELAY_MS } from '@/constants/timing';
 import { PROVIDER_RECONNECTED_EVENT, onAppEvent } from '@/constants/events';
 import { loadSession } from '@/services/sessionPersistence';
@@ -63,13 +64,6 @@ export const useProviderPlayback = ({
     });
   }, []);
 
-  const pausePreviousProvider = useCallback((nextProvider: ProviderId): void => {
-    const previousProvider = playbackStore.getSnapshot().drivingProviderId;
-    if (previousProvider && previousProvider !== nextProvider) {
-      providerRegistry.get(previousProvider)?.playback.pause().catch(() => {});
-    }
-  }, []);
-
   const playTrack = useCallback(async (index: number, skipOnError = false, options?: { positionMs?: number }) => {
     const tracks = queueStore.getTracks();
     const mediaTrack = tracks[index];
@@ -99,7 +93,7 @@ export const useProviderPlayback = ({
 
     // Raise the transition guard BEFORE any adapter call so that the playback
     // store's pipeline ignores provider state events emitted during the
-    // transition (pausePreviousProvider pause, adapter playTrack start, and
+    // transition (handoff pause, adapter playTrack start, and
     // the next-track prepareTrack pre-warm below). Must run before all of
     // those to cover every entry point into playTrack — fresh collection
     // load at index 0, empty-queue append, next/previous, etc.
@@ -110,8 +104,8 @@ export const useProviderPlayback = ({
     // the result if we're no longer the newest.
     const token = playGuard.begin();
 
-    pausePreviousProvider(trackProvider);
-    playbackStore.setDrivingProvider(trackProvider);
+    playbackStore.handoffTo(trackProvider);
+    const handoffEpoch = playbackStore.getHandoffEpoch();
 
     const descriptor = providerRegistry.get(trackProvider);
     if (!descriptor) {
@@ -128,28 +122,24 @@ export const useProviderPlayback = ({
       descriptor.playback.onQueueChanged?.(tracks, index);
     }
 
+    // A newer playTrack or any later handoff (another provider, or a context
+    // playback takeover) cancels this start. Neither its failure nor its late
+    // success may act on the queue.
+    const isDrivingElsewhere = () => playbackStore.getSnapshot().drivingProviderId !== trackProvider;
+    const isSuperseded = () =>
+      token.isStale() || playbackStore.getHandoffEpoch() !== handoffEpoch || isDrivingElsewhere();
+
     try {
       await descriptor.playback.playTrack(mediaTrack, options);
-
-      // Superseded by a newer playTrack while the adapter was starting — drop
-      // this stale result rather than commit its index or pre-warm its next.
-      if (token.isStale()) return;
-
-      queueStore.setCurrentIndex(index);
-
-      const nextIndex = (index + 1) % tracks.length;
-      const nextTrack = tracks[nextIndex];
-      if (nextTrack && nextIndex !== index) {
-        const nextDescriptor = providerRegistry.get(nextTrack.provider);
-        if (nextDescriptor?.playback.prepareTrack) {
-          logArtRace('pre-warm dispatch: next=%s (idx=%d, provider=%s)',
-            nextTrack.id.slice(0, 8), nextIndex, nextTrack.provider);
-          nextDescriptor.playback.prepareTrack(nextTrack);
-        }
-      }
     } catch (error) {
+      // An expired session still needs the re-auth prompt, cancelled or not.
       if (error instanceof AuthExpiredError) {
         onAuthExpired?.(error.providerId);
+        return;
+      }
+
+      if (isSuperseded()) {
+        logCaughtError(`useProviderPlayback.playTrack.superseded.${trackProvider}`, error);
         return;
       }
 
@@ -165,8 +155,34 @@ export const useProviderPlayback = ({
       if (skipOnError && index < tracks.length - 1) {
         setTimeout(() => playTrack(index + 1, skipOnError), SKIP_ON_ERROR_DELAY_MS);
       }
+      return;
     }
-  }, [playGuard, pausePreviousProvider, onAuthExpired]);
+
+    if (isSuperseded()) {
+      // Another provider took over while this start was in flight. The handoff
+      // pause ran before this audio began, so silence it now. A same-provider
+      // takeover owns that provider's audio, so it is left alone.
+      if (isDrivingElsewhere()) {
+        descriptor.playback.pause().catch((err: unknown) => {
+          logCaughtError(`useProviderPlayback.playTrack.repause.${trackProvider}`, err);
+        });
+      }
+      return;
+    }
+
+    queueStore.setCurrentIndex(index);
+
+    const nextIndex = (index + 1) % tracks.length;
+    const nextTrack = tracks[nextIndex];
+    if (nextTrack && nextIndex !== index) {
+      const nextDescriptor = providerRegistry.get(nextTrack.provider);
+      if (nextDescriptor?.playback.prepareTrack) {
+        logArtRace('pre-warm dispatch: next=%s (idx=%d, provider=%s)',
+          nextTrack.id.slice(0, 8), nextIndex, nextTrack.provider);
+        nextDescriptor.playback.prepareTrack(nextTrack);
+      }
+    }
+  }, [playGuard, onAuthExpired]);
 
   const resumePlayback = useCallback(async () => {
     const descriptor = playbackStore.getDrivingDescriptor();
