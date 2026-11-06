@@ -3,7 +3,6 @@ import type { CollectionRef, CollectionSelection, LoadCollectionResult, MediaTra
 import type { ProviderDescriptor } from '@/types/providers';
 import type { TrackOperations } from '@/types/trackOperations';
 import { LIKED_SONGS_NAME, isAllMusicRef } from '@/constants/playlist';
-import { providerRegistry } from '@/providers/registry';
 import { putTrackList } from '@/services/cache/libraryCache';
 import { playbackStore } from '@/stores/playbackStore';
 import { queueStore } from '@/stores/queueStore';
@@ -175,11 +174,7 @@ export function useCollectionLoader({
   ): Promise<LoadCollectionResult> => {
     const providerId = ref.provider;
     setIsLoading(false);
-    const prevProvider = playbackStore.getSnapshot().drivingProviderId;
-    if (prevProvider && prevProvider !== providerId) {
-      providerRegistry.get(prevProvider)?.playback.pause().catch(() => {});
-    }
-    playbackStore.setDrivingProvider(providerId);
+    playbackStore.handoffTo(providerId);
     logQueue('Context playback path — delegating to legacy handler for %o', ref);
     // spotifyHandlePlaylistSelect mirrors the SDK's track window straight into
     // the queue store when it succeeds.
@@ -199,9 +194,9 @@ export function useCollectionLoader({
     const providerId = targetDescriptor.id;
     const name = selection.name;
 
-    if (activeDescriptor && activeDescriptor.id !== providerId) {
-      activeDescriptor.playback.pause().catch(() => {});
-    }
+    // Silence the outgoing provider now rather than after the track list
+    // loads, and even if the load fails. playTrack completes the handoff.
+    playbackStore.pauseOutgoing(providerId);
 
     const token = beginLoad(selection);
     try {
@@ -230,7 +225,7 @@ export function useCollectionLoader({
       return handleLoadError(err, 'Failed to load collection.');
     }
   }, [
-    activeDescriptor, beginLoad, clearWithError, handleLoadError,
+    beginLoad, clearWithError, handleLoadError,
     applyTracks, loadContextPlayback, playTrack, record,
   ]);
 
@@ -274,13 +269,9 @@ export function useCollectionLoader({
 
       const token = loadGuard.begin();
 
-      const provider = selectionProvider(selection);
-      const targetDescriptor = provider ? getDescriptor(provider) : activeDescriptor;
-      const targetProviderId = provider ?? activeDescriptor?.id;
+      const targetProviderId = selectionProvider(selection) ?? activeDescriptor?.id;
 
-      if (targetDescriptor && activeDescriptor && activeDescriptor.id !== targetDescriptor.id) {
-        activeDescriptor.playback.pause().catch(() => {});
-      }
+      if (targetProviderId) playbackStore.pauseOutgoing(targetProviderId);
 
       setError(null);
       setIsLoading(true);
@@ -305,7 +296,7 @@ export function useCollectionLoader({
     },
     [
       radioStateIsActive, stopRadioBase, loadGuard,
-      getDescriptor, activeDescriptor,
+      activeDescriptor,
       setError, setIsLoading, setSelection,
       applyTracks, setActiveProviderId, playTrack,
     ]

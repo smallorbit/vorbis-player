@@ -200,6 +200,29 @@ describe('SpotifyPlayerService — SDK/API boundary', () => {
     expect(playerHarness.player.resume).not.toHaveBeenCalled();
   });
 
+  it('waitForPlaybackOrResume does not resume when paused while the timeout path reads state', async () => {
+    // #given
+    vi.useFakeTimers();
+    const spotifyPlayer = await freshPlayerService();
+    await spotifyPlayer.initialize();
+    vi.mocked(playerHarness.player.resume).mockClear();
+    let releaseState: (state: ReturnType<typeof minimalPlaybackState>) => void = () => {};
+    vi.mocked(playerHarness.player.getCurrentState).mockReturnValue(
+      new Promise((resolve) => { releaseState = resolve; }),
+    );
+    spotifyPlayer.waitForPlaybackOrResume(vi.fn().mockResolvedValue(undefined), SPOTIFY_RESUME_TIMEOUT_MS);
+    await vi.advanceTimersByTimeAsync(SPOTIFY_RESUME_TIMEOUT_MS + 50);
+
+    // #when the handoff pause lands while the watchdog is still awaiting state
+    await spotifyPlayer.pause();
+    releaseState(minimalPlaybackState({ paused: true, position: 0 }));
+    await vi.advanceTimersByTimeAsync(0);
+
+    // #then
+    expect(playerHarness.player.resume).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
   it('waitForPlaybackOrResume falls back after timeout when no state event arrives', async () => {
     // #given
     vi.useFakeTimers();

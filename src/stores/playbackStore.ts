@@ -43,6 +43,7 @@ import {
   NEAR_END_FALLBACK_MS,
 } from '@/constants/timing';
 import { logQueue, logArtRace, logSeek } from '@/lib/debugLog';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 export interface PlaybackSnapshot {
   isPlaying: boolean;
@@ -142,6 +143,29 @@ function getDrivingDescriptor(trackProvider?: ProviderId | null): ProviderDescri
 function setDrivingProvider(providerId: ProviderId | null): void {
   if (providerId === snapshot.drivingProviderId) return;
   commit({ drivingProviderId: providerId });
+}
+
+/**
+ * Silence the driving provider if `nextProvider` is about to replace it. Safe
+ * to call before the switch is certain (e.g. while a collection loads): the
+ * driving provider is left unchanged.
+ */
+function pauseOutgoing(nextProvider: ProviderId): void {
+  const outgoing = snapshot.drivingProviderId;
+  if (!outgoing || outgoing === nextProvider) return;
+  providerRegistry.get(outgoing)?.playback.pause().catch((err: unknown) => {
+    logCaughtError(`playbackStore.pauseOutgoing.${outgoing}`, err);
+  });
+}
+
+/**
+ * The one cross-provider handoff: pause the outgoing provider, then make
+ * `nextProvider` the driving one. Pausing must read the driving provider
+ * before it is overwritten, so callers never write it themselves first.
+ */
+function handoffTo(nextProvider: ProviderId): void {
+  pauseOutgoing(nextProvider);
+  setDrivingProvider(nextProvider);
 }
 
 /**
@@ -445,6 +469,8 @@ export const playbackStore = {
   resolveDrivingProviderId,
   getDrivingDescriptor,
   setDrivingProvider,
+  pauseOutgoing,
+  handoffTo,
   setActiveProviderFallback,
   beginTransition,
   clearTransition,

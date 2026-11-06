@@ -3,6 +3,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import { createDeferredFn } from '@/test/asyncRace';
 import { queueStore } from '@/stores/queueStore';
+import { SKIP_ON_ERROR_DELAY_MS } from '@/constants/timing';
 
 // The adapter's playTrack is the awaited async dependency whose two invocations
 // we settle out of order. Each render of the descriptor shares this deferred fn.
@@ -94,6 +95,59 @@ describe('useProviderPlayback — playTrack stale-write race', () => {
     expect(committed).not.toContain(1);
     expect(queueStore.getCurrentIndex()).toBe(2);
     expect(mockPause).not.toHaveBeenCalled();
+  });
+
+  async function supersedeSpotifyStartWithDropbox(result: { current: ReturnType<typeof useProviderPlayback> }) {
+    const callsBefore = play.callCount;
+    let pSpotify!: Promise<void>;
+    await act(async () => {
+      pSpotify = result.current.playTrack(0, true);
+      await waitFor(() => expect(play.callCount).toBe(callsBefore + 1));
+      void result.current.playTrack(1);
+      await waitFor(() => expect(play.callCount).toBe(callsBefore + 2));
+    });
+    return { spotifyCall: callsBefore, pSpotify };
+  }
+
+  it('does not skip ahead when a superseded start fails', async () => {
+    // #given
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    queueStore.replaceQueue([makeTrack('t0'), makeTrack('t1', 'dropbox'), makeTrack('t2')], { currentIndex: 0 });
+    const { result } = renderHook(() => useProviderPlayback({}));
+    const { spotifyCall, pSpotify } = await supersedeSpotifyStartWithDropbox(result);
+    const callsAfterHandoff = play.callCount;
+
+    // #when the cancelled Spotify start fails (e.g. interrupted by the handoff pause)
+    await act(async () => {
+      play.reject(spotifyCall, new Error('play() interrupted by pause()'));
+      await pSpotify;
+      await vi.advanceTimersByTimeAsync(SKIP_ON_ERROR_DELAY_MS * 2);
+    });
+
+    // #then no retry of the old queue is scheduled
+    expect(play.callCount).toBe(callsAfterHandoff);
+    vi.useRealTimers();
+  });
+
+  it('does not skip ahead when the re-pause of a superseded start fails', async () => {
+    // #given
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    queueStore.replaceQueue([makeTrack('t0'), makeTrack('t1', 'dropbox'), makeTrack('t2')], { currentIndex: 0 });
+    const { result } = renderHook(() => useProviderPlayback({}));
+    const { spotifyCall, pSpotify } = await supersedeSpotifyStartWithDropbox(result);
+    const callsAfterHandoff = play.callCount;
+    mockPause.mockRejectedValueOnce(new Error('sdk gone'));
+
+    // #when the cancelled start lands and its re-pause rejects
+    await act(async () => {
+      play.resolve(spotifyCall, undefined);
+      await pSpotify;
+      await vi.advanceTimersByTimeAsync(SKIP_ON_ERROR_DELAY_MS * 2);
+    });
+
+    // #then
+    expect(play.callCount).toBe(callsAfterHandoff);
+    vi.useRealTimers();
   });
 
   it('re-pauses the outgoing provider when its superseded start lands after the handoff', async () => {

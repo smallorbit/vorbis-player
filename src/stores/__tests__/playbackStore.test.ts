@@ -97,6 +97,59 @@ describe('playbackStore', () => {
     vi.restoreAllMocks();
   });
 
+  describe('cross-provider handoff', () => {
+    beforeEach(() => {
+      makeFakeProvider('spotify');
+      makeFakeProvider('dropbox');
+    });
+
+    it('handoffTo pauses the outgoing provider and makes the new one driving', () => {
+      // #given
+      playbackStore.setDrivingProvider('spotify');
+
+      // #when
+      playbackStore.handoffTo('dropbox');
+
+      // #then
+      expect(fakeProviders.get('spotify')?.playback.pause).toHaveBeenCalledOnce();
+      expect(fakeProviders.get('dropbox')?.playback.pause).not.toHaveBeenCalled();
+      expect(playbackStore.getSnapshot().drivingProviderId).toBe('dropbox');
+    });
+
+    it('handoffTo the provider already driving pauses nothing', () => {
+      // #given
+      playbackStore.setDrivingProvider('spotify');
+
+      // #when
+      playbackStore.handoffTo('spotify');
+
+      // #then
+      expect(fakeProviders.get('spotify')?.playback.pause).not.toHaveBeenCalled();
+    });
+
+    it('pauseOutgoing silences the driving provider without changing it', () => {
+      // #given
+      playbackStore.setDrivingProvider('spotify');
+
+      // #when
+      playbackStore.pauseOutgoing('dropbox');
+
+      // #then
+      expect(fakeProviders.get('spotify')?.playback.pause).toHaveBeenCalledOnce();
+      expect(playbackStore.getSnapshot().drivingProviderId).toBe('spotify');
+    });
+
+    it('logs a failed outgoing pause instead of rejecting', async () => {
+      // #given
+      playbackStore.setDrivingProvider('spotify');
+      fakeProviders.get('spotify')?.playback.pause.mockRejectedValueOnce(new Error('sdk gone'));
+
+      // #when / #then
+      expect(() => playbackStore.handoffTo('dropbox')).not.toThrow();
+      await Promise.resolve();
+    });
+  });
+
   describe('driving-provider resolver (#1694)', () => {
     it('resolves track provider → driving provider → active fallback, in that order', () => {
       // #given — nothing set

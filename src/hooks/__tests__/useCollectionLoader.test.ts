@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useCollectionLoader } from '../useCollectionLoader';
 import { playbackStore } from '@/stores/playbackStore';
+import { providerRegistry } from '@/services/providerRegistry';
 import { queueStore } from '@/stores/queueStore';
 import { makeTrack, makeProviderDescriptor, makePlaybackProvider, makeCapabilities } from '@/test/fixtures';
 import { LIKED_SONGS_NAME } from '@/constants/playlist';
@@ -277,6 +278,28 @@ describe('useCollectionLoader', () => {
     expect(queueStore.getTracks()).toEqual(expectedMergedOrder);
     expect(queueStore.getSnapshot().originalTracks).toEqual(expectedMergedOrder);
     expect(trackCount).toEqual({ status: 'loaded', count: 3 });
+  });
+
+  it('silences the driving provider even when the new collection fails to load', async () => {
+    // #given Spotify drives a queued track while Dropbox is the active provider
+    const spotifyPause = vi.fn().mockResolvedValue(undefined);
+    const spotify = stubDescriptor({ id: 'spotify', pause: spotifyPause });
+    vi.spyOn(providerRegistry, 'get').mockImplementation((id) => (id === 'spotify' ? spotify : undefined));
+    playbackStore.setDrivingProvider('spotify');
+    mockActiveDescriptor = stubDescriptor({
+      id: 'dropbox',
+      listTracks: vi.fn().mockRejectedValue(new Error('network down')),
+    });
+    const { result } = renderLoader();
+
+    // #when
+    await act(async () => {
+      await result.current.loadCollection(folderSel('/album'));
+    });
+
+    // #then
+    expect(spotifyPause).toHaveBeenCalled();
+    expect(mockPlayTrack).not.toHaveBeenCalled();
   });
 
   it('an empty collection result sets error state', async () => {
